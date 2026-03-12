@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jobalto Dashboards</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f8f9fa;color:#1a1a2e}
+.header{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);color:#fff;padding:2rem;text-align:center}
+.header h1{font-size:1.8rem;margin-bottom:0.5rem}
+.header p{opacity:0.8;font-size:0.95rem}
+.logo{font-size:2.2rem;font-weight:700;color:#e94560;margin-bottom:0.5rem}
+.container{max-width:900px;margin:2rem auto;padding:0 1rem}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.08);padding:1.5rem;margin-bottom:1rem;transition:transform 0.2s,box-shadow 0.2s;display:flex;justify-content:space-between;align-items:center}
+.card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,0.12)}
+.card h3{font-size:1.1rem;margin-bottom:0.3rem}
+.card .meta{color:#666;font-size:0.85rem}
+.card a{display:inline-block;padding:0.5rem 1.2rem;background:#e94560;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;font-size:0.9rem}
+.card a:hover{background:#c73650}
+.empty{text-align:center;padding:3rem;color:#999}
+#dashboard-list .card .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.75rem;font-weight:600;margin-left:8px}
+.badge-advertsdata{background:#e8f5e9;color:#2e7d32}
+.badge-bnb{background:#e3f2fd;color:#1565c0}
+.badge-easypay{background:#fff3e0;color:#e65100}
+.badge-indeed{background:#fce4ec;color:#c62828}
+.badge-other{background:#f3e5f5;color:#7b1fa2}
+footer{text-align:center;padding:2rem;color:#999;font-size:0.8rem}
+</style>
+</head>
+<body>
+<div class="header">
+<div class="logo">Jobalto</div>
+<h1>Dashboards Hub</h1>
+<p>Prospection, analyse financiere, recrutement</p>
+</div>
+<div class="container">
+<div id="dashboard-list"><div class="empty">Chargement des dashboards...</div></div>
+</div>
+<footer>Jobalto SA &mdash; Dashboards auto-publies via GitHub Pages</footer>
+<script>
+// Fetch repo contents via GitHub API (public repo, no auth needed)
+async function loadDashboards() {
+  const container = document.getElementById('dashboard-list');
+  try {
+    const resp = await fetch('https://api.github.com/repos/diegotkt/jobalto-dashboards/contents/', {
+      headers: {'Accept': 'application/vnd.github+json'}
+    });
+    const files = await resp.json();
+    const htmlFiles = files.filter(f => f.name.endsWith('.html') && f.name !== 'index.html');
+    
+    if (htmlFiles.length === 0) {
+      container.innerHTML = '<div class="empty">Aucun dashboard publie pour le moment.<br>Les dashboards apparaitront ici automatiquement.</div>';
+      return;
+    }
+    
+    // Sort by name descending (newest first if date-prefixed)
+    htmlFiles.sort((a, b) => b.name.localeCompare(a.name));
+    
+    container.innerHTML = htmlFiles.map(f => {
+      const name = f.name.replace('.html', '').replace(/-/g, ' ').replace(/_/g, ' ');
+      let badge = 'other', badgeLabel = 'Dashboard';
+      if (f.name.includes('advertsdata') || f.name.includes('hiring')) { badge = 'advertsdata'; badgeLabel = 'Hiring Signals'; }
+      else if (f.name.includes('bnb') || f.name.includes('financ')) { badge = 'bnb'; badgeLabel = 'Analyse BNB'; }
+      else if (f.name.includes('easypay')) { badge = 'easypay'; badgeLabel = 'Easypay'; }
+      else if (f.name.includes('indeed')) { badge = 'indeed'; badgeLabel = 'Indeed'; }
+      const url = 'https://diegotkt.github.io/jobalto-dashboards/' + f.name;
+      return '<div class="card"><div><h3>' + name + ' <span class="badge badge-' + badge + '">' + badgeLabel + '</span></h3><div class="meta">Taille: ' + (f.size/1024).toFixed(1) + ' KB</div></div><a href="' + url + '">Ouvrir</a></div>';
+    }).join('');
+  } catch(e) {
+    container.innerHTML = '<div class="empty">Erreur de chargement: ' + e.message + '</div>';
+  }
+}
+loadDashboards();
+</script>
+</body>
+</html>

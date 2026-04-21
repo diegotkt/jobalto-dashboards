@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>OKDO Building Maintenance — Analyse financière & Benchmark Bruxelles</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,sans-serif;background:#ECF1F0;color:#333;line-height:1.5;padding:0}
+.container{max-width:1600px;margin:0 auto;padding:24px}
+.header{background:linear-gradient(135deg,#0E2424,#143635);color:#fff;padding:40px;border-radius:12px;border-bottom:4px solid #E6B527;margin-bottom:24px;box-shadow:0 4px 16px rgba(20,54,53,0.15)}
+.header h1{font-size:32px;margin-bottom:8px;font-weight:700}
+.header .subtitle{font-size:15px;opacity:0.85;margin-bottom:4px}
+.header .date{font-size:13px;opacity:0.7;margin-top:12px}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:32px}
+.kpi-card{background:#fff;border:1px solid rgba(20,54,53,0.1);border-radius:8px;padding:20px;box-shadow:0 2px 6px rgba(0,0,0,0.03)}
+.kpi-card .label{font-size:12px;color:#666;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
+.kpi-card .value{font-size:26px;color:#143635;font-weight:700;line-height:1.1}
+.kpi-card .hint{font-size:12px;color:#888;margin-top:6px}
+.kpi-card.hot .value{color:#c9302c}
+.kpi-card.good .value{color:#1e7a4b}
+.section-title{color:#143635;font-size:20px;font-weight:700;margin:32px 0 14px;padding-bottom:10px;border-bottom:2px solid #E6B527}
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+.chart-card{background:#fff;border-radius:8px;padding:20px;border:1px solid rgba(20,54,53,0.1);box-shadow:0 2px 6px rgba(0,0,0,0.03)}
+.chart-card h3{color:#143635;font-size:15px;margin-bottom:16px;font-weight:600}
+.chart-container{position:relative;height:300px}
+.chart-card.wide{grid-column:span 2}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,0.03);font-size:13px}
+thead{background:#143635;color:#fff}
+thead th{padding:12px 10px;text-align:left;font-weight:600;font-size:12px;letter-spacing:0.3px;white-space:nowrap}
+tbody tr{border-bottom:1px solid #eee;transition:background 0.15s}
+tbody tr:hover{background:#f5faf9}
+tbody tr.target{background:#fff9e6;border-left:4px solid #E6B527}
+tbody tr.target:hover{background:#fff3c7}
+tbody td{padding:10px;vertical-align:top}
+.bce{font-family:'SF Mono',Monaco,monospace;font-size:11px;color:#666}
+.city{font-size:11px;color:#888}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;background:#e9eeec;color:#143635;margin-right:3px}
+.tag.target{background:#E6B527;color:#143635}
+.tag.ref{background:#0E2424;color:#fff}
+.model{display:inline-block;padding:2px 6px;background:#eaf0ee;border-radius:3px;font-size:10px;color:#555;font-family:monospace}
+.growth-up{color:#1e7a4b;font-weight:600;font-size:11px}
+.growth-down{color:#c9302c;font-weight:600;font-size:11px}
+.growth-stable{color:#999;font-size:11px}
+.mb-col{background:rgba(230,181,39,0.06);font-weight:600}
+thead th.mb-col{background:rgba(230,181,39,0.25)}
+.loss{color:#c9302c;font-weight:600}
+.gain{color:#1e7a4b;font-weight:600}
+.nota{font-size:11px;color:#777;margin-top:10px;font-style:italic}
+.reco{background:#fff;border-radius:8px;padding:24px;border-left:4px solid #E6B527;box-shadow:0 2px 6px rgba(0,0,0,0.03);margin-bottom:16px}
+.reco h3{color:#143635;margin-bottom:12px;font-size:16px}
+.reco p{color:#333;margin-bottom:10px;font-size:14px}
+.reco ul{margin-left:20px;margin-top:6px}
+.reco li{margin-bottom:6px;font-size:14px}
+.badge-target{background:#E6B527;color:#143635;padding:4px 12px;border-radius:4px;font-weight:700;font-size:11px;display:inline-block;margin-bottom:6px}
+.footer{text-align:center;color:#888;font-size:12px;margin-top:40px;padding:20px}
+.ref-note{background:#fdf7e3;padding:12px 16px;border-radius:6px;font-size:13px;color:#7a6410;margin:12px 0;border-left:3px solid #E6B527}
+@media (max-width:900px){.chart-grid{grid-template-columns:1fr}.chart-card.wide{grid-column:auto}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>OKDO Building Maintenance — Analyse financière & benchmark bruxellois</h1>
+    <div class="subtitle">Société cible : OKDO BUILDING MAINTENANCE · BCE 0892.302.901 · Saint-Gilles (1060)</div>
+    <div class="subtitle">Secteur NACE 81.100 — Activités de soutien combinées pour les installations (Facility Management / Building Maintenance)</div>
+    <div class="subtitle">Benchmark : 11 concurrents bruxellois PME + ISS (leader marché) · Source BNB-CBSO · 3 exercices (2022-2024)</div>
+    <div class="date">Généré le 21 avril 2026 par Jobalto</div>
+  </div>
+
+  <h2 class="section-title">OKDO en chiffres — Exercice 2024</h2>
+  <div class="kpi-grid" id="okdo-kpis"></div>
+
+  <div class="ref-note">
+    <strong>⚠️ Alerte performance :</strong> OKDO présente la marge brute la plus élevée du panel PME (2,27 M€) mais est la seule société à perdre de l'argent en 2024 (-72 k€), après 2 années bénéficiaires. Rapport masse salariale / marge brute à 88% — bien au-dessus de la norme sectorielle (65-75%).
+  </div>
+
+  <h2 class="section-title">Positionnement vs concurrents PME (MB 2024)</h2>
+  <div class="chart-grid">
+    <div class="chart-card"><h3>Marge brute 2024 (k€) — Top PME</h3><div class="chart-container"><canvas id="chart-mb"></canvas></div></div>
+    <div class="chart-card"><h3>ETP 2024 — Effectifs</h3><div class="chart-container"><canvas id="chart-etp"></canvas></div></div>
+    <div class="chart-card wide"><h3>Évolution marge brute 2022-2024 (k€) — 6 principales PME</h3><div class="chart-container" style="height:320px"><canvas id="chart-mb-trend"></canvas></div></div>
+    <div class="chart-card"><h3>Résultat net 2024 (k€)</h3><div class="chart-container"><canvas id="chart-rnet"></canvas></div></div>
+    <div class="chart-card"><h3>Productivité : MB par ETP 2024 (k€/ETP)</h3><div class="chart-container"><canvas id="chart-prod"></canvas></div></div>
+  </div>
+
+  <h2 class="section-title">Tableau comparatif — Modèles abrégés (PME, code 9900 marge brute)</h2>
+  <div style="overflow-x:auto"><table id="table-abr"><thead id="head-abr"></thead><tbody id="body-abr"></tbody></table></div>
+  <div class="nota">MB = Marge brute (code BNB 9900). NA = donnée non disponible (bilan social non publié ou société dormante cette année-là). ETP code 1003.</div>
+
+  <h2 class="section-title">Référence marché — ISS Facility Services (modèle complet, code 70 CA)</h2>
+  <div style="overflow-x:auto"><table id="table-comp"><thead id="head-comp"></thead><tbody id="body-comp"></tbody></table></div>
+  <div class="nota">ISS est le leader belge incontesté du FM. Utile comme référence d'échelle, non comparable structurellement à OKDO.</div>
+
+  <h2 class="section-title">Recommandations stratégiques</h2>
+
+  <div class="reco">
+    <h3>🎯 Lecture du marché — OKDO dans son écosystème</h3>
+    <p>OKDO est le <strong>plus gros des "boutique" bruxellois</strong> du panel analysé :</p>
+    <ul>
+      <li><strong>38 ETP</strong> vs 14 max chez ses plus proches concurrents (Belgo Facility, Belgium Cleaning Facilities)</li>
+      <li><strong>Marge brute 2,27 M€</strong> — 48% au-dessus du suivant (P.H. Clean 1,52 M€)</li>
+      <li>Structure à <strong>93% ouvriers</strong> (35,6 ouvriers / 3,4 employés) — typique du nettoyage vs FM technique</li>
+      <li>Présence établie depuis 2007 (17 ans) — crédibilité structurelle</li>
+    </ul>
+  </div>
+
+  <div class="reco">
+    <h3>⚠️ Alertes financières 2024 — À creuser en rendez-vous</h3>
+    <ul>
+      <li><strong>Retournement en perte</strong> : -72 k€ après +85 k€ (2022) et +9 k€ (2023). Cash-flow opérationnel négatif (-93 k€).</li>
+      <li><strong>Dégradation de la marge</strong> : MB 2024 en baisse de 5% vs 2023 (2,38 M→ 2,27 M) alors que la masse salariale tient (2,06 M→ 2,00 M).</li>
+      <li><strong>Masse salariale / MB = 88%</strong> — vs 65-75% pour des concurrents rentables comme Belgium Cleaning Facilities (42%) ou P.H. Clean (65%).</li>
+      <li><strong>Capitaux propres fragilisés</strong> : 345 k€ fin 2024 vs 418 k€ fin 2023 (-17%). Encore confortable mais en érosion.</li>
+      <li><strong>Bilan en croissance</strong> (+12% à 1,86 M€) alors que l'activité se contracte → possible accumulation de créances clients ou stocks.</li>
+    </ul>
+  </div>
+
+  <div class="reco">
+    <h3>💡 Angles d'approche commerciale Jobalto</h3>
+    <p><strong>Profil de besoins intérim probables :</strong> agents de nettoyage, techniciens maintenance légère, manutentionnaires, personnel de surface. Principalement ouvriers CP 121 (nettoyage) ou CP 124 (construction si bâti technique).</p>
+    <p><strong>Opportunités Jobalto :</strong></p>
+    <ul>
+      <li><strong>Flexibilisation de la masse salariale</strong> : OKDO emploie 35,6 ouvriers en direct. En cas de perte de contrat ou de saisonnalité, l'intérim réduit le risque fixe. <em>Argument clé dans un contexte de contraction de marge.</em></li>
+      <li><strong>Remplacements</strong> : en facility management, l'absentéisme (maladie, accidents) est élevé. Jobalto peut garantir des remplacements rapides pour ne pas pénaliser les SLA clients.</li>
+      <li><strong>Développement de nouveaux contrats</strong> : Bruxelles voit de nouveaux immeubles de bureaux livrés en 2026-2027. Jobalto peut pourvoir immédiatement aux ramp-ups sans engagement CDI.</li>
+      <li><strong>Bilan social non publié en abrégé</strong> → impossible de voir s'ils utilisent déjà de l'intérim. À qualifier en RDV. S'ils ne l'utilisent pas, fort potentiel de conversion.</li>
+    </ul>
+  </div>
+
+  <div class="reco">
+    <h3>🎯 Cibles complémentaires identifiées</h3>
+    <p>Autres PME bruxelloises pertinentes à approcher (même secteur NACE 81.1/81.2) :</p>
+    <ul>
+      <li><strong>Belgium Cleaning Facilities</strong> (1030) — 14 ETP, MB +60% en 1 an, très rentable (35% marge nette). Probable croissance forte → besoins intérim en hausse.</li>
+      <li><strong>P.H. Clean</strong> (1030) — 13 ETP stables, MB 1,52 M€ en croissance régulière. Profil similaire à OKDO en plus petit.</li>
+      <li><strong>Green Clean</strong> (1070) — ETP en baisse (23→22→NA), MB en contraction. Possible restructuration → intérim = solution flex.</li>
+      <li><strong>Belgo Facility Services</strong> (1120) — croissance rapide (9 → 14 ETP en 2 ans, MB ×1,6). Scaling = besoins intérim.</li>
+      <li><strong>Belgium Building Cleaning</strong> (Zaventem 1930) — très rentable, bilan en croissance, mais n'a pas publié ses ETP → nécessite vérif.</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    Dashboard généré par Jobalto · Données BNB Centrale des Bilans (CBSO) · Extraction 21/04/2026
+  </div>
+</div>
+
+<script>
+const abreges = [{"name": "OKDO Building Maintenance", "bce": "0892302901", "city": "1060 Saint-Gilles", "note": "Target", "official": "OKDO BUILDING MAINTENANCE", "y": {"2024": {"model": "m01-f", "ca": 0, "mb": 2265901.17, "etp": 38.4, "ouvr": 35.6, "empl": 3.4, "rnet": -72497.46, "rexp": -92922.1, "bilan": 1861207.76, "cp": 345334.84, "sal": 1998301.4, "i617": 0, "iEtp": 0, "iH": 0}, "2023": {"model": "m01-f", "ca": 0, "mb": 2384637.64, "etp": 36.7, "ouvr": 36.3, "empl": 0.5, "rnet": 9414.07, "rexp": 103710.77, "bilan": 1658975.26, "cp": 417832.3, "sal": 2057212.07, "i617": 0, "iEtp": 0, "iH": 0}, "2022": {"model": "m01-f", "ca": 0, "mb": 2206444.2, "etp": 36.7, "ouvr": 36.3, "empl": 0.5, "rnet": 85090.33, "rexp": 148568.02, "bilan": 1510621.33, "cp": 408418.23, "sal": 1809392.57, "i617": 0, "iEtp": 0, "iH": 0}}}, {"name": "P.H. Clean", "bce": "0464723238", "city": "1030 Schaerbeek", "note": "", "official": "P.H. CLEAN", "y": {"2024": {"model": "m81-f", "ca": 0, "mb": 1523732.87, "etp": 13.2, "ouvr": 11.3, "empl": 3.0, "rnet": 273368.76, "rexp": 390311.5, "bilan": 1615724.08, "cp": 755762.25, "sal": 993980.01, "i617": 0, "iEtp": 0, "iH": 0}, "2023": {"model": "m81-f", "ca": 0, "mb": 1458511.76, "etp": 13.2, "ouvr": 11.3, "empl": 3.0, "rnet": 255704.86, "rexp": 366545.43, "bilan": 1649320.41, "cp": 777795.99, "sal": 950457.58, "i617": 0, "iEtp": 0, "iH": 0}, "2022": {"model": "m81-f", "ca": 3532674.04, "mb": 1391179.46, "etp": 13.0, "ouvr": 10.7, "empl": 3.5, "rnet": 233982.04, "rexp": 346316.61, "bilan": 1825006.14, "cp": 753493.63, "sal": 887416.6, "i617": 0, "iEtp": 0, "iH": 0}}}, {"name": "Belgium Cleaning Facilities", "bce": "0704995703", "city": "1030 Schaerbeek", "note": "", "official": "BELGIUM CLEANING FACILITIES", "y": {"2024": {"model": "m81-f", "ca": 0, "mb": 1471359.88, "etp": 14.5, "ouvr": 2.6, "empl": 21.5, "rnet": 519450.0, "rexp": 796184.02, "bilan": 2299986.83, "cp": 1643507.03, "sal": 614277.37, "i617": 0, "iEtp": 0, "iH": 0}, "2023": {"model": "m81-f", "ca": 0, "mb": 917761.74, "etp": 11.4, "ouvr": 3.0, "empl": 14.9, "rnet": 273768.45, "rexp": 418661.8, "bilan": 1659190.46, "cp": 1192057.03, "sal": 460989.07, "i617": 0, "iEtp": 0, "iH": 0}, "2022": {"model": "m81-f", "ca": 0, "mb": 961138.34, "etp": 10.0, "ouvr": 2.4, "empl": 14.4, "rnet": 338104.72, "rexp": 518378.87, "bilan": 1436331.88, "cp": 918288.58, "sal": 351243.55, "i617": 0, "iEtp": 0, "iH": 0}}}, {"name": "Belgium Building Cleaning", "bce": "0542530106", "city": "1930 Zaventem", "note": "", "official": "BELGIUM BUILDING CLEANING", "y": {"2024": {"model": "m01-f", "ca": 0, "mb": 1115026.87, "etp": 0, "ouvr": 0, "empl": 0, "rnet": 144738.7, "rexp": 360386.83, "bilan": 1691842.38, "cp": 1144464.1, "sal": 726601.5, "i617": 0, "iEtp": 0, "iH": 0}, "2023": {"model": "m01-f", "ca": 0, "mb": 1298079.65, "etp": 0, "ouvr": 0, "empl": 0, "rnet": 570769.04, "rexp": 653906.78, "bilan": 1352903.54, "cp": 999725.4, "sal": 607585.29, "i617": 0, "iEtp": 0, "iH": 0}, "2022": {"model": "m07-f", "ca": 0, "mb": 1168971.71, "etp": 0, "ouvr": 0, "empl": 0, "rnet": 299850.17, "rexp": 493465.12, "bilan": 908467.77, "cp": 578956.36, "sal": 639819.82, "i617": 0, "iEtp": 0, "iH": 0}}}, {"name": "Green Clean", "bce": "0817877373", "city": "1070 Anderlecht", "note": "", "official": "GREEN CLEAN", "y": {"2024": {"model": "m87-f", "ca": 0, "mb": 1037891.9, "etp": 0, "ouvr": 0, "empl": 0, "rnet": 5802.5, "rexp": 258.05, "bilan": 1349407.08, "cp": 606763.01, "sal": 982396.15, "i617": 0, "iEtp": 0, "iH": 0}, "2023": {"model": "m81-f", "ca": 0, "mb": 1255110.43, "etp": 22.3, "ouvr": 6.0, "empl": 28.3, "rnet": 3467.3, "rexp": 118845.51, "bilan": 1462895.35, "cp": 600960.51, "sal": 1046732.94, "i617": 0, "iEtp": 0, "iH": 0}, "2022": {"model": "m01-f", "ca": 0, "mb": 1164070.75, "etp": 22.8, "ouvr": 6.1, "empl": 29.8, "rnet": 32251.04, "rexp": 33456.89, "bilan": 1709276.09, "cp": 623493.21, "sal": 1046562.24, "i617": 0, "iEtp": 0, "iH": 0}}}, {"name": "Belgo Facility Services", "bce": "0832584553", "city": "1120 Bruxelles", "note": "", "official": "Belgo Facility Services", "y": {"2024": {"model": "m01-f", "ca": 0, "mb": 660519.37, "etp": 14.1, "ouvr": 3.0, "empl": 29.2, "rnet": 25317.99, "rexp": 37688.84, "bilan": 759878.35, "cp": 123730.46, "sal": 606800.13, "i617": 0, "iEtp": 0, "iH": 0}, "2023": {"model": "m01-f", "ca": 0, "mb": 566374.14, "etp": 12.5, "ouvr": 2.3, "empl": 26.0, "rnet": 23026.76, "rexp": 8149.54, "bilan": 646659.23, "cp": 108412.47, "sal": 536940.09, "i617": 0, "iEtp": 0, "iH": 0}, "2022": {"model": "m07-f", "ca": 0, "mb": 420520.86, "etp": 9.4, "ouvr": 2.0, "empl": 18.6, "rnet": 63495.65, "rexp": 74546.64, "bilan": 637778.6, "cp": 100385.71, "sal": 329308.75, "i617": 0, "iEtp": 0, "iH": 0}}}, {"name": "Global Cleaning Belgium", "bce": "0862489158", "city": "1000 Bruxelles", "note": "", "official": "GLOBAL CLEANING BELGIUM", "y": {"2024": {"model": "m81-f", "ca": 0, "mb": 454498.83, "etp": 8.1, "ouvr": 6.4, "empl": 3.8, "rnet": 58259.28, "rexp": 103497.52, "bilan": 495493.45, "cp": 119532.66, "sal": 326753.54, "i617": 0, "iEtp": 0, "iH": 0}, "2023": {"model": "m81-f", "ca": 0, "mb": 402064.8, "etp": 7.9, "ouvr": 7.0, "empl": 2.0, "rnet": 42273.38, "rexp": 95740.92, "bilan": 255352.52, "cp": 61273.38, "sal": 264533.03, "i617": 0, "iEtp": 0, "iH": 0}, "2022": {"model": "m01-f", "ca": 0, "mb": 348387.0, "etp": 0, "ouvr": 0, "empl": 0, "rnet": -17509.0, "rexp": 85755.0, "bilan": 360058.0, "cp": 237403.0, "sal": 252543.0, "i617": 0, "iEtp": 0, "iH": 0}}}, {"name": "Belgo Cleaning", "bce": "0875163989", "city": "1070 Anderlecht", "note": "", "official": "BELGO CLEANING", "y": {"2024": {"model": "m81-f", "ca": 0, "mb": 424026.2, "etp": 0, "ouvr": 0, "empl": 0, "rnet": 131300.07, "rexp": 133116.18, "bilan": 2906612.76, "cp": 622065.86, "sal": 241429.38, "i617": 0, "iEtp": 0, "iH": 0}, "2023": {"model": "m81-f", "ca": 0, "mb": 571304.6, "etp": 0, "ouvr": 0, "empl": 0, "rnet": 170724.31, "rexp": 175738.11, "bilan": 1280873.29, "cp": 510255.84, "sal": 332019.81, "i617": 0, "iEtp": 0, "iH": 0}, "2022": {"model": "m87-f", "ca": 0, "mb": 251222.23, "etp": 0, "ouvr": 0, "empl": 0, "rnet": -335631.83, "rexp": 75446.56, "bilan": 885947.96, "cp": -573403.47, "sal": 150716.34, "i617": 0, "iEtp": 0, "iH": 0}}}, {"name": "Mister Cleaning", "bce": "0544519002", "city": "1030 Schaerbeek", "note": "", "official": "MISTER CLEANING", "y": {"2024": {"model": "m81-f", "ca": 0, "mb": 377101.25, "etp": 6.9, "ouvr": 2.8, "empl": 11.5, "rnet": 43312.08, "rexp": 82210.31, "bilan": 1328322.81, "cp": 144099.37, "sal": 281318.46, "i617": 0, "iEtp": 0, "iH": 0}, "2023": {"model": "m81-f", "ca": 0, "mb": 395032.95, "etp": 8.6, "ouvr": 3.8, "empl": 9.2, "rnet": 28661.38, "rexp": 29494.67, "bilan": 696090.29, "cp": 100787.29, "sal": 339961.03, "i617": 0, "iEtp": 0, "iH": 0}, "2022": {"model": "m87-f", "ca": 0, "mb": 331647.01, "etp": 7.5, "ouvr": 2.8, "empl": 7.8, "rnet": 24521.84, "rexp": 40503.39, "bilan": 547494.95, "cp": 90725.91, "sal": 277685.7, "i617": 0, "iEtp": 0, "iH": 0}}}, {"name": "XS Clean", "bce": "0838397328", "city": "1200 Woluwe-St-Lambert", "note": "", "official": "XS CLEAN", "y": {"2024": {"model": "m87-f", "ca": 0, "mb": 223121.0, "etp": 2.4, "ouvr": 2.4, "empl": 0, "rnet": 64686.0, "rexp": 90549.0, "bilan": 381783.0, "cp": 286546.0, "sal": 121602.0, "i617": 0, "iEtp": 0, "iH": 0}, "2023": {"model": "m87-f", "ca": 0, "mb": 213328.0, "etp": 3.1, "ouvr": 3.0, "empl": 0.2, "rnet": 35540.0, "rexp": 51414.0, "bilan": 359993.0, "cp": 229860.0, "sal": 151372.0, "i617": 0, "iEtp": 0, "iH": 0}, "2022": {"model": "m87-f", "ca": 0, "mb": 156126.0, "etp": 2.6, "ouvr": 2.6, "empl": 0, "rnet": 23727.0, "rexp": 34044.0, "bilan": 309943.0, "cp": 206320.0, "sal": 115848.0, "i617": 0, "iEtp": 0, "iH": 0}}}, {"name": "Cleanex Facility Services", "bce": "0822133101", "city": "1030 Schaerbeek", "note": "", "official": "CLEANEX FACILITY SERVICES", "y": {"2024": {"model": "m87-f", "ca": 0, "mb": 208235.26, "etp": 3.3, "ouvr": 0, "empl": 5.0, "rnet": 39889.52, "rexp": 53822.55, "bilan": 127077.02, "cp": 49813.04, "sal": 149528.79, "i617": 0, "iEtp": 0, "iH": 0}, "2023": {"model": "m87-f", "ca": 0, "mb": 166783.17, "etp": 4.0, "ouvr": 0, "empl": 7.6, "rnet": 10089.18, "rexp": 13297.57, "bilan": 141233.07, "cp": 33923.52, "sal": 148355.39, "i617": 0, "iEtp": 0, "iH": 0}, "2022": {"model": "m87-f", "ca": 0, "mb": 212998.87, "etp": 4.1, "ouvr": 0, "empl": 8.0, "rnet": 37982.49, "rexp": 41475.2, "bilan": 148816.17, "cp": 23834.34, "sal": 161637.33, "i617": 0, "iEtp": 0, "iH": 0}}}];
+const complets = [{"name": "ISS Facility Services", "bce": "0403313330", "city": "1000 Bruxelles", "note": "Leader marché (ref)", "official": "ISS FACILITY SERVICES", "y": {"2024": {"model": "m02-f", "ca": 360050937.66, "mb": 0, "etp": 5396.3, "ouvr": 2353.7, "empl": 5040.3, "rnet": 12874508.43, "rexp": 15576119.61, "bilan": 211455758.79, "cp": 47118954.34, "sal": 243822656.51, "i617": 17948605.0, "iEtp": 306.7, "iH": 559697.0}, "2023": {"model": "m02-f", "ca": 343988848.68, "mb": 0, "etp": 5402.4, "ouvr": 2347.4, "empl": 5103.9, "rnet": 16886088.95, "rexp": 21509503.21, "bilan": 221857806.58, "cp": 44744445.91, "sal": 231786740.89, "i617": 21916801.57, "iEtp": 390.8, "iH": 712975.0}, "2022": {"model": "m02-f", "ca": 305255371.32, "mb": 0, "etp": 5334.0, "ouvr": 2198.8, "empl": 5202.9, "rnet": 4109233.06, "rexp": 16414291.06, "bilan": 175434401.36, "cp": 42358356.96, "sal": 209495268.16, "i617": 27921097.14, "iEtp": 530.5, "iH": 936667.0}}}];
+
+function fmt(n,decimals=0){if(!n||n===0)return'-';return n.toLocaleString('fr-BE',{maximumFractionDigits:decimals})}
+function fmtK(n){if(!n||n===0)return'-';if(Math.abs(n)>=1000000)return(n/1000000).toFixed(2)+' M';if(Math.abs(n)>=1000)return(n/1000).toFixed(0)+' k';return fmt(n)}
+function trend(a,b,c){const vals=[a,b,c].filter(v=>v&&v>0);if(vals.length<2)return '<span class="growth-stable">—</span>';const p=((vals[vals.length-1]-vals[0])/vals[0]*100).toFixed(0);if(p>5)return '<span class="growth-up">↑+'+p+'%</span>';if(p<-5)return '<span class="growth-down">↓'+p+'%</span>';return '<span class="growth-stable">→'+p+'%</span>'}
+function sign(n){if(!n||n===0)return'-';const cls=n<0?'loss':'gain';return '<span class="'+cls+'">'+fmtK(n)+' €</span>'}
+
+// OKDO KPIs
+const okdo = abreges.find(c=>c.bce==='0892302901');
+const y24=okdo.y['2024'], y23=okdo.y['2023'], y22=okdo.y['2022'];
+const mb_growth = ((y24.mb-y22.mb)/y22.mb*100).toFixed(1);
+const ratioSalMb = (y24.sal/y24.mb*100).toFixed(0);
+
+document.getElementById('okdo-kpis').innerHTML = `
+  <div class="kpi-card"><div class="label">Marge brute 2024</div><div class="value">${fmtK(y24.mb)}€</div><div class="hint">+${mb_growth}% depuis 2022</div></div>
+  <div class="kpi-card"><div class="label">ETP 2024</div><div class="value">${y24.etp.toFixed(0)}</div><div class="hint">${y24.ouvr.toFixed(0)} ouvriers · ${y24.empl.toFixed(0)} employés</div></div>
+  <div class="kpi-card hot"><div class="label">Résultat net 2024</div><div class="value">${fmt(y24.rnet)} €</div><div class="hint">vs +9 k€ en 2023 · +85 k€ en 2022</div></div>
+  <div class="kpi-card hot"><div class="label">Salaires / MB</div><div class="value">${ratioSalMb}%</div><div class="hint">Norme secteur : 65-75%</div></div>
+  <div class="kpi-card"><div class="label">Capitaux propres</div><div class="value">${fmtK(y24.cp)}€</div><div class="hint">-17% vs 2023 (érosion)</div></div>
+  <div class="kpi-card"><div class="label">Bilan total</div><div class="value">${fmtK(y24.bilan)}€</div><div class="hint">+12% vs 2023</div></div>
+`;
+
+const COLORS = ['#143635','#E6B527','#3a8a85','#7bc4a6','#9d4edd','#f4a261','#e76f51','#2a9d8f','#e63946','#457b9d','#6d597a','#b5838d'];
+
+// Charts
+const pmeSorted = abreges.filter(c=>c.y['2024']).map(c=>({name:c.name,mb:c.y['2024'].mb,rnet:c.y['2024'].rnet,etp:c.y['2024'].etp,bce:c.bce,target:c.bce==='0892302901'})).sort((a,b)=>b.mb-a.mb);
+
+new Chart(document.getElementById('chart-mb'),{type:'bar',data:{labels:pmeSorted.map(c=>c.name),datasets:[{data:pmeSorted.map(c=>c.mb/1000),backgroundColor:pmeSorted.map(c=>c.target?'#E6B527':'#143635'),borderColor:pmeSorted.map(c=>c.target?'#d19f0e':'#0E2424'),borderWidth:1}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>v+'k'}}}}});
+
+const etpSorted = pmeSorted.filter(c=>c.etp>0).sort((a,b)=>b.etp-a.etp);
+new Chart(document.getElementById('chart-etp'),{type:'bar',data:{labels:etpSorted.map(c=>c.name),datasets:[{data:etpSorted.map(c=>c.etp),backgroundColor:etpSorted.map(c=>c.target?'#E6B527':'#3a8a85')}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
+
+// MB trend (top 6 PME)
+const topPme = [...pmeSorted].slice(0,6);
+const trendData = topPme.map((c,i)=>{const co=abreges.find(x=>x.bce===c.bce);return {label:co.name,data:[co.y['2022']?.mb/1000||0,co.y['2023']?.mb/1000||0,co.y['2024']?.mb/1000||0],borderColor:COLORS[i],backgroundColor:'transparent',tension:0.3,borderWidth:c.target?3:2,pointRadius:c.target?5:3,pointBackgroundColor:COLORS[i]}});
+new Chart(document.getElementById('chart-mb-trend'),{type:'line',data:{labels:['2022','2023','2024'],datasets:trendData},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11}}}},scales:{y:{ticks:{callback:v=>v+'k'}}}}});
+
+// Rnet
+const rnetSorted = [...pmeSorted].sort((a,b)=>b.rnet-a.rnet);
+new Chart(document.getElementById('chart-rnet'),{type:'bar',data:{labels:rnetSorted.map(c=>c.name),datasets:[{data:rnetSorted.map(c=>c.rnet/1000),backgroundColor:rnetSorted.map(c=>c.rnet<0?'#c9302c':(c.target?'#E6B527':'#2a9d8f'))}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>v+'k'}}}}});
+
+// Productivity MB/ETP
+const prodData = pmeSorted.filter(c=>c.etp>0).map(c=>({name:c.name,val:c.mb/c.etp/1000,target:c.target})).sort((a,b)=>b.val-a.val);
+new Chart(document.getElementById('chart-prod'),{type:'bar',data:{labels:prodData.map(c=>c.name),datasets:[{data:prodData.map(c=>c.val),backgroundColor:prodData.map(c=>c.target?'#E6B527':'#7bc4a6')}]},options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>v+'k'}}}}});
+
+// Table abrégés
+document.getElementById('head-abr').innerHTML = `<tr>
+  <th>Société</th><th>BCE</th><th>Commune</th><th>Modèle</th>
+  <th>ETP 22</th><th>ETP 23</th><th>ETP 24</th><th>Tend.</th>
+  <th class="mb-col">MB 22</th><th class="mb-col">MB 23</th><th class="mb-col">MB 24</th><th class="mb-col">Tend.</th>
+  <th>Salaires 24</th><th>Sal/MB</th><th>Rés net 24</th><th>Bilan 24</th><th>CP 24</th>
+</tr>`;
+document.getElementById('body-abr').innerHTML = abreges.map(c=>{
+  const y22=c.y['2022']||{},y23=c.y['2023']||{},y24=c.y['2024']||{};
+  const isTarget = c.bce==='0892302901';
+  const tag = isTarget?'<span class="tag target">CIBLE</span>':'<span class="tag">PME</span>';
+  const salMb = (y24.sal && y24.mb) ? (y24.sal/y24.mb*100).toFixed(0)+'%' : '-';
+  const salMbColor = (y24.sal && y24.mb && y24.sal/y24.mb>0.85) ? 'class="loss"' : (y24.sal && y24.mb && y24.sal/y24.mb<0.70 ? 'class="gain"' : '');
+  return `<tr class="${isTarget?'target':''}"><td>${tag}<br><strong>${c.name}</strong></td>
+    <td class="bce">${c.bce.replace(/^(\d{4})(\d{3})(\d{3})$/,'$1.$2.$3')}</td>
+    <td class="city">${c.city||'-'}</td>
+    <td><span class="model">${y24.model||'-'}</span></td>
+    <td>${y22.etp?y22.etp.toFixed(0):'-'}</td>
+    <td>${y23.etp?y23.etp.toFixed(0):'-'}</td>
+    <td>${y24.etp?y24.etp.toFixed(0):'-'}</td>
+    <td>${trend(y22.etp,y23.etp,y24.etp)}</td>
+    <td class="mb-col">${fmtK(y22.mb)}€</td>
+    <td class="mb-col">${fmtK(y23.mb)}€</td>
+    <td class="mb-col"><strong>${fmtK(y24.mb)}€</strong></td>
+    <td class="mb-col">${trend(y22.mb,y23.mb,y24.mb)}</td>
+    <td>${fmtK(y24.sal)}€</td>
+    <td ${salMbColor}>${salMb}</td>
+    <td>${sign(y24.rnet)}</td>
+    <td>${fmtK(y24.bilan)}€</td>
+    <td>${fmtK(y24.cp)}€</td>
+  </tr>`;
+}).join('');
+
+// Table complets (ISS)
+document.getElementById('head-comp').innerHTML = `<tr>
+  <th>Société</th><th>BCE</th><th>Commune</th><th>Modèle</th>
+  <th>ETP 22</th><th>ETP 23</th><th>ETP 24</th><th>Tend.</th>
+  <th>CA 22</th><th>CA 23</th><th>CA 24</th><th>Tend.</th>
+  <th>Salaires 24</th><th>Rés net 24</th><th>Bilan 24</th>
+</tr>`;
+document.getElementById('body-comp').innerHTML = complets.map(c=>{
+  const y22=c.y['2022']||{},y23=c.y['2023']||{},y24=c.y['2024']||{};
+  return `<tr><td><span class="tag ref">REF</span><br><strong>${c.name}</strong></td>
+    <td class="bce">${c.bce.replace(/^(\d{4})(\d{3})(\d{3})$/,'$1.$2.$3')}</td>
+    <td class="city">${c.city||'-'}</td>
+    <td><span class="model">${y24.model}</span></td>
+    <td>${y22.etp?y22.etp.toFixed(0):'-'}</td>
+    <td>${y23.etp?y23.etp.toFixed(0):'-'}</td>
+    <td>${y24.etp?y24.etp.toFixed(0):'-'}</td>
+    <td>${trend(y22.etp,y23.etp,y24.etp)}</td>
+    <td>${fmtK(y22.ca)}€</td>
+    <td>${fmtK(y23.ca)}€</td>
+    <td><strong>${fmtK(y24.ca)}€</strong></td>
+    <td>${trend(y22.ca,y23.ca,y24.ca)}</td>
+    <td>${fmtK(y24.sal)}€</td>
+    <td>${sign(y24.rnet)}</td>
+    <td>${fmtK(y24.bilan)}€</td>
+  </tr>`;
+}).join('');
+</script>
+</body>
+</html>

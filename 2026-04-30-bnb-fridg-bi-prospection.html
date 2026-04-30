@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FRIDG'BI SRL — Analyse financière Jobalto</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Suisse Intl', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: #F9F7F0;
+    color: #333333;
+    line-height: 1.5;
+    padding: 32px 28px 64px;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; }
+
+  /* ---------- HEADER ---------- */
+  .hero {
+    background: linear-gradient(135deg, #143635 0%, #1d4a48 100%);
+    color: #fff;
+    border-radius: 8px;
+    padding: 36px 40px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; width: 6px; height: 100%;
+    background: #E6B527;
+  }
+  .hero .eyebrow {
+    color: #E6B527;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .hero h1 {
+    font-size: 38px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .hero .meta {
+    font-size: 15px;
+    opacity: 0.85;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+  .hero .meta strong { color: #E6B527; font-weight: 700; }
+  .hero .badge {
+    display: inline-block;
+    background: rgba(230, 181, 39, 0.18);
+    color: #E6B527;
+    border: 1px solid rgba(230, 181, 39, 0.4);
+    padding: 4px 10px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 14px;
+  }
+
+  /* ---------- KPI ROW ---------- */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .kpi {
+    background: #fff;
+    border-radius: 6px;
+    border: 1px solid #e8e4d6;
+    border-left: 4px solid #E6B527;
+    padding: 20px 22px;
+  }
+  .kpi .label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #6b6b6b;
+    margin-bottom: 8px;
+  }
+  .kpi .value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #143635;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .kpi .value.negative { color: #C0392B; }
+  .kpi .delta {
+    font-size: 13px;
+    color: #6b6b6b;
+  }
+  .kpi .delta.up { color: #2A6B69; }
+  .kpi .delta.down { color: #C0392B; }
+
+  /* ---------- SECTION ---------- */
+  .section { margin-bottom: 36px; }
+  .section h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #143635;
+    margin-bottom: 16px;
+    padding-left: 12px;
+    border-left: 4px solid #E6B527;
+  }
+  .section h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #143635;
+    margin-bottom: 10px;
+  }
+
+  /* ---------- VERDICT CARD ---------- */
+  .verdict {
+    background: #fff;
+    border-radius: 6px;
+    border: 1px solid #e8e4d6;
+    padding: 24px 28px;
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 28px;
+    align-items: center;
+  }
+  .verdict .stamp {
+    text-align: center;
+    background: linear-gradient(135deg, #143635, #1d4a48);
+    color: #fff;
+    border-radius: 6px;
+    padding: 18px 14px;
+  }
+  .verdict .stamp .level {
+    font-size: 22px;
+    font-weight: 700;
+    color: #E6B527;
+    margin-bottom: 4px;
+  }
+  .verdict .stamp .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    opacity: 0.9;
+  }
+  .verdict p { font-size: 15px; }
+  .verdict p + p { margin-top: 10px; }
+
+  /* ---------- CHARTS ---------- */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .chart-card {
+    background: #fff;
+    border: 1px solid #e8e4d6;
+    border-radius: 6px;
+    padding: 18px 20px;
+  }
+  .chart-card h3 { margin-bottom: 12px; }
+  .chart-card .chart-host { position: relative; height: 240px; }
+
+  /* ---------- TABLE ---------- */
+  .data-table {
+    background: #fff;
+    border: 1px solid #e8e4d6;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th, td {
+    padding: 12px 16px;
+    text-align: right;
+    font-size: 14px;
+  }
+  th:first-child, td:first-child { text-align: left; }
+  thead {
+    background: #143635;
+    color: #fff;
+  }
+  th {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  tbody tr:nth-child(even) { background: #F9F7F0; }
+  tbody tr:hover { background: #FFF7DD; }
+  tbody td.metric-name { font-weight: 600; color: #143635; }
+  td.negative { color: #C0392B; font-weight: 600; }
+  td.positive { color: #2A6B69; font-weight: 600; }
+
+  /* ---------- TWO COL ---------- */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .panel {
+    background: #fff;
+    border: 1px solid #e8e4d6;
+    border-radius: 6px;
+    padding: 22px 24px;
+  }
+  .panel ul { list-style: none; padding: 0; }
+  .panel li {
+    padding: 10px 0 10px 28px;
+    border-bottom: 1px solid #f0ecde;
+    position: relative;
+    font-size: 14px;
+  }
+  .panel li:last-child { border-bottom: none; }
+  .panel li::before {
+    content: '▸';
+    color: #E6B527;
+    font-weight: 700;
+    position: absolute;
+    left: 4px;
+    top: 10px;
+  }
+  .panel li.warn::before { content: '⚠'; color: #C0392B; }
+  .panel li.good::before { content: '✓'; color: #2A6B69; }
+  .panel li.hot::before { content: '🔥'; }
+  .panel li .tag {
+    display: inline-block;
+    background: rgba(230, 181, 39, 0.15);
+    color: #8B6E10;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-left: 6px;
+  }
+
+  /* ---------- APPROACH STEPS ---------- */
+  .steps { display: grid; gap: 12px; margin-top: 8px; }
+  .step {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 16px;
+    align-items: start;
+    background: #F9F7F0;
+    padding: 14px 18px;
+    border-radius: 4px;
+    border-left: 3px solid #E6B527;
+  }
+  .step .num {
+    background: #143635;
+    color: #E6B527;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+  .step strong { color: #143635; display: block; margin-bottom: 4px; }
+  .step .body { font-size: 14px; }
+
+  /* ---------- FOOTER ---------- */
+  footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #e8e4d6;
+    font-size: 12px;
+    color: #888;
+    text-align: center;
+  }
+  footer a { color: #143635; text-decoration: none; }
+  footer a:hover { color: #E6B527; }
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width: 900px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .charts-grid, .two-col { grid-template-columns: 1fr; }
+    .verdict { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="eyebrow">Analyse financière · Prospection Jobalto</div>
+    <h1>FRIDG'BI SRL</h1>
+    <div class="meta">
+      <span><strong>BCE :</strong> 0870.152.455</span>
+      <span><strong>Forme :</strong> SRL</span>
+      <span><strong>Siège :</strong> Rue des Saucelles 8, 7170 Manage</span>
+      <span><strong>Statut :</strong> Actif — Situation normale</span>
+    </div>
+    <span class="badge">Modèle abrégé · Comptes 2022-2024</span>
+  </header>
+
+  <!-- KPI ROW -->
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="label">Marge brute 2024</div>
+      <div class="value">1,78 M€</div>
+      <div class="delta up">+1,6 % vs 2022</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Effectif réel</div>
+      <div class="value">~30</div>
+      <div class="delta">20 ouvriers + 10 bureau</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Résultat net 2024</div>
+      <div class="value negative">-234 k€</div>
+      <div class="delta down">2 exercices déficitaires</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Solvabilité</div>
+      <div class="value">47,4 %</div>
+      <div class="delta up">CP 2,33 M€ · solide</div>
+    </div>
+  </div>
+
+  <!-- VERDICT -->
+  <div class="section">
+    <h2>Évaluation Jobalto</h2>
+    <div class="verdict">
+      <div class="stamp">
+        <div class="level">🔥 HAUT</div>
+        <div class="label">Potentiel intérim</div>
+      </div>
+      <div>
+        <p><strong>Compte stratégique grande distribution + spécialiste pénurique.</strong> FRIDG'BI installe des chambres frigo et équipements pour Colruyt, Lidl, Delhaize, Cora, Leclerc — clientèle premium à fort volume récurrent. 20 ouvriers + 10 bureau pour ~30 personnes au total, mais aucun intérim utilisé aujourd'hui (codes 617 et 9097/9098 absents BNB). Terrain commercial entièrement vierge.</p>
+        <p><strong>Angle gagnant :</strong> Jobalto comme partenaire <em>multi-agences</em> sur l'axe BeNeLux + Grand Est France, capable de fournir des frigoristes/monteurs mobiles pour les chantiers retail. Le boss (frigoriste, 50 ans, intéressé par une reprise) est ouvert aux solutions qui optimisent la structure de coût et la flexibilité — argument de cession à venir.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="section">
+    <h2>Évolution sur 3 exercices</h2>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>Marge brute vs masse salariale (€)</h3>
+        <div class="chart-host"><canvas id="chartMB"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Effectif (ETP)</h3>
+        <div class="chart-host"><canvas id="chartETP"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Résultat d'exploitation &amp; résultat net (€)</h3>
+        <div class="chart-host"><canvas id="chartResult"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Capitaux propres &amp; total bilan (€)</h3>
+        <div class="chart-host"><canvas id="chartBilan"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DATA TABLE -->
+  <div class="section">
+    <h2>Données détaillées</h2>
+    <div class="data-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Indicateur</th>
+            <th>2022</th>
+            <th>2023</th>
+            <th>2024</th>
+            <th>Évolution</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="metric-name">Marge brute (9900)</td>
+            <td>1 750 370 €</td>
+            <td>1 734 853 €</td>
+            <td>1 778 618 €</td>
+            <td class="positive">+1,6 %</td>
+          </tr>
+          <tr>
+            <td class="metric-name">Masse salariale (62)</td>
+            <td>1 437 704 €</td>
+            <td>1 567 571 €</td>
+            <td>1 532 728 €</td>
+            <td>+6,6 %</td>
+          </tr>
+          <tr>
+            <td class="metric-name">Résultat d'exploitation (9901)</td>
+            <td class="positive">126 565 €</td>
+            <td>74 178 €</td>
+            <td class="negative">-82 039 €</td>
+            <td class="negative">en rouge</td>
+          </tr>
+          <tr>
+            <td class="metric-name">Résultat net (9904)</td>
+            <td class="positive">15 591 €</td>
+            <td class="negative">-86 651 €</td>
+            <td class="negative">-233 951 €</td>
+            <td class="negative">forte chute</td>
+          </tr>
+          <tr>
+            <td class="metric-name">Total bilan (20/58)</td>
+            <td>3 840 970 €</td>
+            <td>5 365 940 €</td>
+            <td>4 915 174 €</td>
+            <td class="positive">+28 %</td>
+          </tr>
+          <tr>
+            <td class="metric-name">Capitaux propres (10/15)</td>
+            <td>1 180 326 €</td>
+            <td>2 577 901 €</td>
+            <td>2 328 175 €</td>
+            <td class="positive">+97 %</td>
+          </tr>
+          <tr>
+            <td class="metric-name">ETP total (1003)</td>
+            <td>22,7</td>
+            <td>22,0</td>
+            <td>19,5</td>
+            <td class="negative">-3,2</td>
+          </tr>
+          <tr>
+            <td class="metric-name">Ouvriers (1001)</td>
+            <td>21,2</td>
+            <td>20,3</td>
+            <td>17,8</td>
+            <td class="negative">-3,4</td>
+          </tr>
+          <tr>
+            <td class="metric-name">Employés (1002)</td>
+            <td>1,9</td>
+            <td>2,0</td>
+            <td>2,0</td>
+            <td>stable</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- RATIOS -->
+  <div class="section">
+    <h2>Ratios opérationnels</h2>
+    <div class="data-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Ratio</th>
+            <th>2022</th>
+            <th>2023</th>
+            <th>2024</th>
+            <th>Lecture</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="metric-name">Marge brute / ETP</td>
+            <td>77 109 €</td>
+            <td>78 857 €</td>
+            <td>91 211 €</td>
+            <td class="positive">↑ productivité</td>
+          </tr>
+          <tr>
+            <td class="metric-name">Masse salariale / ETP</td>
+            <td>63 335 €</td>
+            <td>71 253 €</td>
+            <td>78 601 €</td>
+            <td class="negative">↑↑ +24 % en 2 ans</td>
+          </tr>
+          <tr>
+            <td class="metric-name">Masse salariale / Marge brute</td>
+            <td>82,1 %</td>
+            <td>90,4 %</td>
+            <td>86,2 %</td>
+            <td class="negative">élevé · pression</td>
+          </tr>
+          <tr>
+            <td class="metric-name">Solvabilité (CP / Bilan)</td>
+            <td>30,7 %</td>
+            <td>48,0 %</td>
+            <td>47,4 %</td>
+            <td class="positive">solide</td>
+          </tr>
+          <tr>
+            <td class="metric-name">ROE</td>
+            <td>1,3 %</td>
+            <td>-3,4 %</td>
+            <td>-10,0 %</td>
+            <td class="negative">dégradation</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MARCHÉS & TERRITOIRE -->
+  <div class="section">
+    <h2>Marchés, clientèle &amp; territoire</h2>
+    <div class="two-col">
+      <div class="panel">
+        <h3>Clients existants</h3>
+        <ul>
+          <li class="hot"><strong>Groupe Colruyt</strong> — leader BE distribution alimentaire</li>
+          <li class="hot"><strong>Lidl</strong> — réseau hard-discount BE/FR/LU/NL</li>
+          <li class="hot"><strong>Delhaize</strong> — chaîne supermarchés BE</li>
+          <li class="hot"><strong>Cora</strong> — hypermarchés BE/FR (Louis Delhaize)</li>
+          <li class="hot"><strong>Leclerc</strong> — hypermarchés FR (centres E.Leclerc)</li>
+        </ul>
+        <p style="margin-top:14px;font-size:13px;color:#6b6b6b;">Tous des comptes B2B retail à fort volume récurrent, planning chantiers à l'année, exigences techniques élevées (HACCP, normes froid).</p>
+      </div>
+      <div class="panel">
+        <h3>Territoire d'intervention</h3>
+        <ul>
+          <li class="good"><strong>Belgique</strong> — Wallonie + Flandre</li>
+          <li class="good"><strong>France</strong> — Nord + Grand Est</li>
+          <li class="good"><strong>Luxembourg</strong></li>
+          <li class="good"><strong>Pays-Bas</strong> — Sud (Limbourg, Brabant)</li>
+          <li><strong>Allemagne</strong> — interventions ponctuelles</li>
+        </ul>
+        <p style="margin-top:14px;font-size:13px;color:#6b6b6b;">Activité multi-pays = besoin permanent de profils <strong>mobiles, polyvalents et autonomes</strong> sur chantier. Permis B obligatoire, anglais ou néerlandais utile.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIVITÉ DÉTAILLÉE -->
+  <div class="section">
+    <h2>Périmètre métier</h2>
+    <div class="two-col">
+      <div class="panel">
+        <h3>Activités exercées</h3>
+        <ul>
+          <li class="good">Montage de <strong>chambres frigorifiques</strong></li>
+          <li class="good">Montage de <strong>salles frigorifiques</strong> (cold rooms)</li>
+          <li class="good">Installation de <strong>plans de travail</strong> et inox</li>
+          <li class="good">Pose d'<strong>armoires et frigos</strong> commerciaux</li>
+          <li>Codes NACE : <strong>43.211</strong> électrotechnique · <strong>43.230</strong> isolation · <strong>33.200</strong> installation équipement industriel</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Hors périmètre — choix stratégique</h3>
+        <ul>
+          <li class="warn"><strong>Pas de raccordement aux gaz frigorifiques</strong></li>
+        </ul>
+        <p style="margin-top:10px;font-size:14px;">Le boss exclut volontairement la soudure frigorifique : trop de risques juridiques (assurance, dédommagements en cas de fuite, intervention d'urgence). Conséquence : FRIDG'BI sous-traite cette étape ou intervient en complément d'un frigoriste-soudeur tiers.</p>
+        <p style="margin-top:10px;font-size:13px;color:#6b6b6b;"><strong>Implication intérim :</strong> les profils recherchés sont des <strong>monteurs / installateurs / électriciens / aides-monteurs</strong> — pas de soudeur frigo certifié. Ça simplifie le sourcing Jobalto.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ORGANIGRAMME & GOUVERNANCE -->
+  <div class="section">
+    <h2>Organigramme &amp; gouvernance</h2>
+    <div class="two-col">
+      <div class="panel">
+        <h3>Effectif réel (terrain)</h3>
+        <ul>
+          <li class="good"><strong>20 ouvriers</strong> — monteurs, installateurs, électriciens chantier</li>
+          <li class="good"><strong>10 employés bureau</strong> — admin, planning, devis, achats, QSE</li>
+          <li><strong>≈ 30 personnes</strong> au total</li>
+        </ul>
+        <p style="margin-top:10px;font-size:13px;color:#6b6b6b;">⚠ Écart avec BNB 2024 (19,5 ETP au bilan social) : croissance d'effectif 2025-2026 non encore reflétée dans les comptes officiels, ou contrats freelance / intra-groupe non comptabilisés en ETP.</p>
+      </div>
+      <div class="panel">
+        <h3>Direction</h3>
+        <ul>
+          <li class="hot"><strong>Boss · 50 ans · profil frigoriste</strong> — opérationnel, intéressé par une reprise</li>
+          <li class="good"><strong>Federico Bibi</strong> — Administrateur depuis le 15/12/2023</li>
+          <li class="good"><strong>Béatrice Morisco</strong> — Administrateur depuis le 15/12/2023</li>
+        </ul>
+        <h3 style="margin-top:18px;">Signaux stratégiques</h3>
+        <ul>
+          <li class="warn">Recapitalisation fin 2023 (CP +1,4 M€) + nouveaux administrateurs</li>
+          <li class="hot">Boss <strong>ouvert à une cession / reprise</strong> → fenêtre de négociation commerciale</li>
+          <li>Direction encore en phase de structuration : le bon moment pour s'imposer comme partenaire stratégique RH</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILES & RISKS -->
+  <div class="section">
+    <h2>Recommandations Jobalto</h2>
+    <div class="two-col">
+      <div class="panel">
+        <h3>Profils à proposer (CP 200, mobiles)</h3>
+        <ul>
+          <li class="hot"><strong>Monteur / installateur chambres frigo</strong> — cœur de métier</li>
+          <li class="hot"><strong>Électricien chantier BA4-BA5</strong> — raccordement armoires</li>
+          <li><strong>Inoxiste / monteur plans de travail inox</strong></li>
+          <li><strong>Aide-monteur polyvalent chantier retail</strong> — volume + permis B</li>
+          <li><strong>Câbleur armoire électrique / régulation</strong></li>
+          <li><strong>Chef d'équipe / superviseur de pose</strong> — profil sénior</li>
+        </ul>
+        <p style="margin-top:10px;font-size:13px;color:#6b6b6b;">Pas de soudeur frigorifique nécessaire (activité exclue par FRIDG'BI). Sourcing simplifié.</p>
+      </div>
+      <div class="panel">
+        <h3>Atouts Jobalto pour ce client</h3>
+        <ul>
+          <li class="good"><strong>Réseau d'agences multi-pays</strong> — couverture BeNeLux + Grand Est</li>
+          <li class="good">Pool candidats <strong>mobiles inter-chantiers</strong> (essentiel pour retail multi-sites)</li>
+          <li class="good">Relations <strong>secteur grande distribution</strong> partagées avec autres clients</li>
+          <li class="good">Outil de planning multi-sites + reporting unifié pour le bureau FRIDG'BI</li>
+          <li class="good">Argument différenciant : taux de transformation intérim → CDI</li>
+        </ul>
+      </div>
+    </div>
+    <div class="two-col" style="margin-top:18px;">
+      <div class="panel">
+        <h3>Volumes cibles &amp; logique économique</h3>
+        <ul>
+          <li><strong>Court terme (an 1)</strong> : 2 à 4 intérimaires en pic chantier retail</li>
+          <li><strong>Moyen terme</strong> : 4 à 6 intérimaires permanents · pool de 8-10 mobilisables</li>
+          <li><strong>Argument financier</strong> : externaliser la flexibilité plutôt que recruter en CDI sur des chantiers à durée variable — neutre voire positif sur la marge brute</li>
+          <li class="good">Chiffre d'affaires Jobalto cible an 1 : <strong>150-250 k€</strong> · an 2 : <strong>400-600 k€</strong></li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Points d'attention</h3>
+        <ul>
+          <li class="warn">Société en perte sur 2 ans → sensibilité tarif réelle</li>
+          <li class="warn">Ne pas dimensionner trop ambitieux la 1<sup>re</sup> année — tester d'abord</li>
+          <li class="warn">Vérifier la qualification CP 200 vs CP 124 (construction) selon poste réel</li>
+          <li class="good">Boss intéressé par une reprise = vision <strong>structuration P&amp;L</strong> en tête → faciliter l'entrée d'un partenaire RH propre</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- APPROACH PLAN -->
+  <div class="section">
+    <h2>Plan d'approche commerciale</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="num">1</div>
+        <div class="body">
+          <strong>Premier contact — le boss frigoriste (50 ans)</strong>
+          Demander un RDV sur site à Manage. Accroche : "On fournit déjà des monteurs frigo / électriciens à plusieurs intervenants du retail BeNeLux ; on a vu que vous travaillez avec Colruyt, Lidl, Delhaize. Je voulais voir comment Jobalto peut vous aider sur la mobilité chantier." Pas de discours intérim générique.
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">2</div>
+        <div class="body">
+          <strong>Pitch — partenaire RH multi-pays pour comptes retail</strong>
+          Mettre en avant : (a) le réseau d'agences BeNeLux pour absorber les pics multi-sites, (b) la connaissance des cahiers des charges grande distribution, (c) la proposition d'un <strong>pool mobile dédié FRIDG'BI</strong> avec engagement de réactivité 24-48 h.
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">3</div>
+        <div class="body">
+          <strong>Mission test sur un chantier retail concret</strong>
+          Cibler un déploiement Lidl ou Colruyt à venir. 1 monteur + 1 aide-monteur sur 4-6 semaines. Engagement qualité (remplacement sous 24 h, débrief hebdomadaire). Tarification adaptée au contexte P&amp;L tendu.
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">4</div>
+        <div class="body">
+          <strong>Extension — cadre de collaboration BeNeLux 12 mois</strong>
+          Si test concluant, négocier un cadre couvrant 4-6 postes intérim simultanés sur l'axe BE/FR/LU/NL, avec pricing dégressif et reporting unifié pour le bureau FRIDG'BI. Positionner Jobalto comme <strong>fournisseur RH unique</strong> pour la flexibilité chantier.
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">5</div>
+        <div class="body">
+          <strong>Suivi — accompagner la reprise</strong>
+          Le boss songe à céder : un dispositif intérim propre, structuré, avec marge bien définie est un actif de valorisation pour un repreneur. Devenir le partenaire RH de référence avant la cession sécurise le compte sur 5+ ans.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Source : <a href="https://consult.cbso.nbb.be/consult-enterprise" target="_blank" rel="noopener">Centrale des bilans BNB</a> (modèle abrégé m81-f, dépôts 2022-2024) ·
+    <a href="https://kbopub.economie.fgov.be/kbopub/toonondernemingps.html?lang=fr&ondernemingsnummer=0870152455" target="_blank" rel="noopener">BCE Public Search</a> ·
+    Données extraites le 30/04/2026 · Analyse Jobalto
+  </footer>
+</div>
+
+<script>
+(function(){
+  const teal = '#143635';
+  const tealLight = '#5A9E9C';
+  const gold = '#E6B527';
+  const goldDark = '#D4870E';
+  const red = '#C0392B';
+  const green = '#2A6B69';
+  const ink = '#33373D';
+  const muted = '#888';
+
+  const years = ['2022', '2023', '2024'];
+
+  Chart.defaults.font.family = "'Suisse Intl', -apple-system, sans-serif";
+  Chart.defaults.color = ink;
+  Chart.defaults.plugins.legend.position = 'bottom';
+  Chart.defaults.plugins.legend.labels.boxWidth = 12;
+  Chart.defaults.plugins.legend.labels.padding = 14;
+
+  const fmtEUR = (v) => {
+    if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(2) + ' M€';
+    if (Math.abs(v) >= 1e3) return Math.round(v / 1e3) + ' k€';
+    return v + ' €';
+  };
+
+  // 1. Marge brute vs Masse salariale
+  new Chart(document.getElementById('chartMB'), {
+    type: 'bar',
+    data: {
+      labels: years,
+      datasets: [
+        { label: 'Marge brute', data: [1750370, 1734853, 1778618], backgroundColor: teal, borderRadius: 4 },
+        { label: 'Masse salariale', data: [1437704, 1567571, 1532728], backgroundColor: gold, borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { ticks: { callback: (v) => fmtEUR(v) }, grid: { color: '#eee' } },
+        x: { grid: { display: false } }
+      },
+      plugins: {
+        tooltip: { callbacks: { label: (c) => c.dataset.label + ': ' + fmtEUR(c.parsed.y) } }
+      }
+    }
+  });
+
+  // 2. ETP
+  new Chart(document.getElementById('chartETP'), {
+    type: 'bar',
+    data: {
+      labels: years,
+      datasets: [
+        { label: 'Ouvriers', data: [21.2, 20.3, 17.8], backgroundColor: teal, borderRadius: 4, stack: 's' },
+        { label: 'Employés', data: [1.9, 2.0, 2.0], backgroundColor: gold, borderRadius: 4, stack: 's' }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { stacked: true, grid: { color: '#eee' }, beginAtZero: true },
+        x: { stacked: true, grid: { display: false } }
+      }
+    }
+  });
+
+  // 3. Résultats
+  new Chart(document.getElementById('chartResult'), {
+    type: 'bar',
+    data: {
+      labels: years,
+      datasets: [
+        {
+          label: 'Résultat exploitation',
+          data: [126565, 74178, -82039],
+          backgroundColor: [green, gold, red],
+          borderRadius: 4
+        },
+        {
+          label: 'Résultat net',
+          data: [15591, -86651, -233951],
+          backgroundColor: [tealLight, red, red],
+          borderRadius: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { ticks: { callback: (v) => fmtEUR(v) }, grid: { color: '#eee' } },
+        x: { grid: { display: false } }
+      },
+      plugins: {
+        tooltip: { callbacks: { label: (c) => c.dataset.label + ': ' + fmtEUR(c.parsed.y) } }
+      }
+    }
+  });
+
+  // 4. Capitaux propres & Bilan
+  new Chart(document.getElementById('chartBilan'), {
+    type: 'line',
+    data: {
+      labels: years,
+      datasets: [
+        {
+          label: 'Total bilan',
+          data: [3840970, 5365940, 4915174],
+          borderColor: teal,
+          backgroundColor: 'rgba(20, 54, 53, 0.1)',
+          tension: 0.3,
+          borderWidth: 3,
+          pointRadius: 5,
+          pointBackgroundColor: teal,
+          fill: true
+        },
+        {
+          label: 'Capitaux propres',
+          data: [1180326, 2577901, 2328175],
+          borderColor: gold,
+          backgroundColor: 'rgba(230, 181, 39, 0.15)',
+          tension: 0.3,
+          borderWidth: 3,
+          pointRadius: 5,
+          pointBackgroundColor: gold,
+          fill: true
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { ticks: { callback: (v) => fmtEUR(v) }, grid: { color: '#eee' } },
+        x: { grid: { display: false } }
+      },
+      plugins: {
+        tooltip: { callbacks: { label: (c) => c.dataset.label + ': ' + fmtEUR(c.parsed.y) } }
+      }
+    }
+  });
+})();
+</script>
+</body>
+</html>

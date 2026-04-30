@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FRIDG'BI SRL — Due Diligence Rachat</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Suisse Intl', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: #F9F7F0;
+    color: #333333;
+    line-height: 1.5;
+    padding: 32px 28px 64px;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; }
+
+  /* ---------- HERO (DD signature) ---------- */
+  .hero {
+    background: linear-gradient(135deg, #2A1F0F 0%, #4A3618 60%, #6b4f1f 100%);
+    color: #fff;
+    border-radius: 8px;
+    padding: 36px 40px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; width: 6px; height: 100%;
+    background: #E6B527;
+  }
+  .hero .eyebrow {
+    color: #E6B527;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .hero h1 {
+    font-size: 38px;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .hero .meta {
+    font-size: 15px;
+    opacity: 0.9;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+  .hero .meta strong { color: #E6B527; font-weight: 700; }
+  .hero .badge {
+    display: inline-block;
+    background: rgba(230, 181, 39, 0.2);
+    color: #E6B527;
+    border: 1px solid rgba(230, 181, 39, 0.45);
+    padding: 4px 10px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 14px;
+  }
+
+  /* ---------- KPI ROW ---------- */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .kpi {
+    background: #fff;
+    border-radius: 6px;
+    border: 1px solid #e8e4d6;
+    border-left: 4px solid #E6B527;
+    padding: 20px 22px;
+  }
+  .kpi.danger { border-left-color: #C0392B; }
+  .kpi.warn { border-left-color: #D4870E; }
+  .kpi.good { border-left-color: #2A6B69; }
+  .kpi .label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #6b6b6b;
+    margin-bottom: 8px;
+  }
+  .kpi .value {
+    font-size: 26px;
+    font-weight: 700;
+    color: #2A1F0F;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .kpi .value.negative { color: #C0392B; }
+  .kpi .value.warn { color: #D4870E; }
+  .kpi .delta { font-size: 13px; color: #6b6b6b; }
+  .kpi .delta.up { color: #2A6B69; }
+  .kpi .delta.down { color: #C0392B; }
+
+  /* ---------- SECTION ---------- */
+  .section { margin-bottom: 36px; }
+  .section h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #2A1F0F;
+    margin-bottom: 16px;
+    padding-left: 12px;
+    border-left: 4px solid #E6B527;
+  }
+  .section h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #2A1F0F;
+    margin-bottom: 10px;
+  }
+
+  /* ---------- VERDICT ---------- */
+  .verdict {
+    background: #fff;
+    border-radius: 6px;
+    border: 1px solid #e8e4d6;
+    padding: 24px 28px;
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 28px;
+    align-items: center;
+  }
+  .verdict .stamp {
+    text-align: center;
+    background: linear-gradient(135deg, #2A1F0F, #4A3618);
+    color: #fff;
+    border-radius: 6px;
+    padding: 18px 14px;
+  }
+  .verdict .stamp .level {
+    font-size: 20px;
+    font-weight: 700;
+    color: #E6B527;
+    margin-bottom: 4px;
+  }
+  .verdict .stamp .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.4px;
+    opacity: 0.9;
+  }
+  .verdict p { font-size: 15px; }
+  .verdict p + p { margin-top: 10px; }
+
+  /* ---------- CHARTS ---------- */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .chart-card {
+    background: #fff;
+    border: 1px solid #e8e4d6;
+    border-radius: 6px;
+    padding: 18px 20px;
+  }
+  .chart-card h3 { margin-bottom: 12px; }
+  .chart-card .chart-host { position: relative; height: 260px; }
+
+  /* ---------- TABLE ---------- */
+  .data-table {
+    background: #fff;
+    border: 1px solid #e8e4d6;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th, td {
+    padding: 11px 14px;
+    text-align: right;
+    font-size: 14px;
+  }
+  th:first-child, td:first-child { text-align: left; }
+  thead { background: #2A1F0F; color: #fff; }
+  th {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  tbody tr:nth-child(even) { background: #F9F7F0; }
+  tbody tr:hover { background: #FFF7DD; }
+  tbody td.metric-name { font-weight: 600; color: #2A1F0F; }
+  td.negative { color: #C0392B; font-weight: 600; }
+  td.positive { color: #2A6B69; font-weight: 600; }
+  td.warn { color: #D4870E; font-weight: 600; }
+  td.note { font-size: 12px; color: #6b6b6b; font-style: italic; text-align: left; }
+  thead.subhead { background: #6b4f1f; }
+
+  /* ---------- TWO COL ---------- */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .three-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+  }
+  .panel {
+    background: #fff;
+    border: 1px solid #e8e4d6;
+    border-radius: 6px;
+    padding: 22px 24px;
+  }
+  .panel ul { list-style: none; padding: 0; }
+  .panel li {
+    padding: 10px 0 10px 28px;
+    border-bottom: 1px solid #f0ecde;
+    position: relative;
+    font-size: 14px;
+  }
+  .panel li:last-child { border-bottom: none; }
+  .panel li::before {
+    content: '▸';
+    color: #E6B527;
+    font-weight: 700;
+    position: absolute;
+    left: 4px;
+    top: 10px;
+  }
+  .panel li.warn::before { content: '⚠'; color: #C0392B; }
+  .panel li.good::before { content: '✓'; color: #2A6B69; }
+  .panel li.attention::before { content: '!'; color: #D4870E; font-weight: 700; }
+
+  /* ---------- VALUATION CARDS ---------- */
+  .valo-card {
+    background: #fff;
+    border: 1px solid #e8e4d6;
+    border-radius: 6px;
+    padding: 20px 22px;
+    border-top: 4px solid #E6B527;
+  }
+  .valo-card h3 {
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #6b6b6b;
+    margin-bottom: 12px;
+  }
+  .valo-card .price {
+    font-size: 28px;
+    font-weight: 700;
+    color: #2A1F0F;
+    margin-bottom: 8px;
+  }
+  .valo-card .price.negative { color: #C0392B; }
+  .valo-card .formula {
+    font-size: 12px;
+    color: #6b6b6b;
+    margin-bottom: 14px;
+    line-height: 1.4;
+  }
+  .valo-card .verdict {
+    background: #F9F7F0;
+    padding: 10px 12px;
+    border-radius: 3px;
+    font-size: 13px;
+    border-left: 3px solid #6b4f1f;
+    display: block;
+  }
+
+  /* ---------- ACTIONNARIAT ---------- */
+  .shareholders {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .person {
+    display: grid;
+    grid-template-columns: 56px 1fr auto;
+    gap: 18px;
+    align-items: center;
+    background: #F9F7F0;
+    padding: 14px 18px;
+    border-radius: 4px;
+    border-left: 3px solid #E6B527;
+  }
+  .avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2A1F0F, #6b4f1f);
+    color: #E6B527;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 18px;
+  }
+  .person .name { font-weight: 700; color: #2A1F0F; font-size: 16px; margin-bottom: 2px; }
+  .person .info { font-size: 13px; color: #6b6b6b; }
+  .person .role {
+    background: #2A1F0F;
+    color: #E6B527;
+    padding: 4px 10px;
+    border-radius: 3px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+  }
+
+  /* ---------- CHECKLIST ---------- */
+  .checklist .item {
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0ecde;
+    font-size: 14px;
+  }
+  .checklist .item:last-child { border-bottom: none; }
+  .checklist .item .box {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #6b4f1f;
+    border-radius: 3px;
+    margin-top: 2px;
+  }
+  .checklist .item strong { display: block; color: #2A1F0F; margin-bottom: 2px; }
+
+  /* ---------- TIMELINE ---------- */
+  .timeline {
+    position: relative;
+    padding-left: 24px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    background: #6b4f1f;
+  }
+  .tl-item {
+    position: relative;
+    padding-bottom: 16px;
+    font-size: 14px;
+  }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -22px;
+    top: 4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #E6B527;
+    border: 2px solid #6b4f1f;
+  }
+  .tl-item .date {
+    font-weight: 700;
+    color: #2A1F0F;
+    font-size: 13px;
+    margin-bottom: 2px;
+  }
+
+  /* ---------- LINK NAV ---------- */
+  .nav-link {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 8px 16px;
+    background: #E6B527;
+    color: #2A1F0F;
+    text-decoration: none;
+    font-weight: 700;
+    border-radius: 3px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .nav-link:hover { background: #D4A017; }
+
+  /* ---------- FOOTER ---------- */
+  footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #e8e4d6;
+    font-size: 12px;
+    color: #888;
+    text-align: center;
+  }
+  footer a { color: #2A1F0F; text-decoration: none; }
+  footer a:hover { color: #E6B527; }
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width: 900px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .charts-grid, .two-col, .three-col { grid-template-columns: 1fr; }
+    .verdict { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="eyebrow">Due Diligence · Potentiel rachat</div>
+    <h1>FRIDG'BI SRL</h1>
+    <div class="meta">
+      <span><strong>BCE :</strong> 0870.152.455</span>
+      <span><strong>Forme :</strong> SRL (depuis déc. 2023)</span>
+      <span><strong>Siège :</strong> Rue des Saucelles 8, 7170 Manage</span>
+      <span><strong>Création :</strong> 24/11/2004</span>
+    </div>
+    <span class="badge">Bilan abrégé · Comptes 2024 · Notaire : Nicolas Demolin (Manage)</span>
+  </header>
+
+  <!-- KPI ROW -->
+  <div class="kpi-row">
+    <div class="kpi warn">
+      <div class="label">EBITDA 2024</div>
+      <div class="value warn">+118 k€</div>
+      <div class="delta">6,6 % de la marge brute</div>
+    </div>
+    <div class="kpi danger">
+      <div class="label">Dette nette / EBITDA</div>
+      <div class="value negative">9,3 ×</div>
+      <div class="delta down">norme < 4 × · stress</div>
+    </div>
+    <div class="kpi good">
+      <div class="label">Solvabilité</div>
+      <div class="value">47,4 %</div>
+      <div class="delta up">CP / Bilan</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Valorisation indicative</div>
+      <div class="value">~ 2,0 M€</div>
+      <div class="delta">approche patrimoniale</div>
+    </div>
+  </div>
+
+  <!-- VERDICT -->
+  <div class="section">
+    <h2>Lecture acquéreur</h2>
+    <div class="verdict">
+      <div class="stamp">
+        <div class="level">⚠ MIXTE</div>
+        <div class="label">Profil rachat</div>
+      </div>
+      <div>
+        <p><strong>Société à valeur patrimoniale et stratégique forte, mais P&amp;L tendu.</strong> L'actif central est l'<strong>immobilier de Manage (2,4 M€)</strong> + les contrats grande distribution (Colruyt, Lidl, Delhaize, Cora, Leclerc). L'EBITDA est faible (118 k€) et la dette nette élevée (1,1 M€) — un repreneur paie pour le patrimoine et le carnet de commandes, pas pour le cash-flow.</p>
+        <p><strong>Stratégie d'acquisition typique :</strong> sale &amp; lease-back du bâtiment + reprise des contrats retail + restructuration de la dette + intégration verticale (avec un soudeur frigorifique pour internaliser la marge). Cible plutôt un acquéreur industriel BeNeLux qu'un investisseur financier pur.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIONNARIAT -->
+  <div class="section">
+    <h2>Structure actionnariat &amp; gouvernance</h2>
+    <div class="two-col">
+      <div class="panel">
+        <h3>Dirigeants (publication Moniteur belge 10/01/2024)</h3>
+        <div class="shareholders">
+          <div class="person">
+            <div class="avatar">FB</div>
+            <div>
+              <div class="name">Federico Bibi</div>
+              <div class="info">Né le 27/03/1970 à Haine-Saint-Paul — domicilié 1700 Dilbeek</div>
+              <div class="info">Profil frigoriste opérationnel · ~56 ans</div>
+            </div>
+            <div class="role">Administrateur</div>
+          </div>
+          <div class="person">
+            <div class="avatar">BM</div>
+            <div>
+              <div class="name">Béatrice Morisco</div>
+              <div class="info">Née le 21/04/1967 à Dinant — domiciliée 1700 Dilbeek</div>
+              <div class="info">Co-domicile avec F. Bibi · ~59 ans</div>
+            </div>
+            <div class="role">Administrateur</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Lecture stratégique</h3>
+        <ul>
+          <li class="good">Couple cogérant — pas de conflit d'actionnaires probable</li>
+          <li class="good">F. Bibi né à Haine-Saint-Paul (5 km de Manage) → ancrage local fort</li>
+          <li class="good">Compétence frigoriste enregistrée depuis 10/01/2019</li>
+          <li class="attention"><strong>Société à 100 actions</strong> — actionnariat probablement concentré sur le couple Bibi-Morisco</li>
+          <li class="attention">Boss intéressé par une reprise → fenêtre de cession ouverte (2026-2028)</li>
+          <li class="warn">Pas d'autre actionnaire identifié dans les actes publics → due diligence à approfondir auprès du notaire Demolin</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- TIMELINE -->
+  <div class="section">
+    <h2>Historique des actes (Moniteur belge)</h2>
+    <div class="panel">
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="date">2004 · Constitution</div>
+          Création de la SPRL. Siège initial à Bruxelles (Rue Notre-Dame de Lourdes 1, 1090 Bruxelles).
+        </div>
+        <div class="tl-item">
+          <div class="date">2007-2018 · Stabilité</div>
+          Société active comme SPRL, dépôts annuels réguliers. Activité historique : entretien/réparation/installation isolation thermique &amp; véhicules motorisés.
+        </div>
+        <div class="tl-item">
+          <div class="date">2016 · Déménagement Hainaut</div>
+          Transfert du siège à Morlanwelz (Rue Sainte Henriette 212).
+        </div>
+        <div class="tl-item">
+          <div class="date">2019 · Implantation Manage + frigorisme</div>
+          Siège transféré à Manage (Rue des Saucelles 8, depuis le 1<sup>er</sup> janvier 2019). Enregistrement des compétences <strong>installateur-frigoriste</strong>, <strong>électrotechnique</strong>, <strong>chauffage / climatisation / gaz / sanitaire</strong> (10/01/2019). <em>Pivot stratégique vers l'installation frigorifique grande distribution.</em>
+        </div>
+        <div class="tl-item">
+          <div class="date">2023 · Recapitalisation + conversion SRL</div>
+          Apport de <strong>~1,5 M€ en prime d'émission</strong> (capitaux propres : 1,18 → 2,58 M€). Acte du 15/12/2023 (notaire Demolin) : conversion SPRL → SRL, dispense de libération du solde du capital (6 200 €), nouveaux statuts. Nomination Bibi/Morisco comme administrateurs non-statutaires (renouvellement de gérants statutaires antérieurs).
+        </div>
+        <div class="tl-item">
+          <div class="date">2024-2025 · Pertes</div>
+          Dégradation P&amp;L : RNet -87 k€ (2023) puis -234 k€ (2024). Effectif ouvrier 21,2 → 17,8 ETP.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BILAN STRUCTURE -->
+  <div class="section">
+    <h2>Composition du bilan 2024</h2>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>Actif (4,92 M€)</h3>
+        <div class="chart-host"><canvas id="chartActif"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Passif (4,92 M€)</h3>
+        <div class="chart-host"><canvas id="chartPassif"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BILAN DETAIL TABLE -->
+  <div class="section">
+    <h2>Bilan détaillé 2024</h2>
+    <div class="data-table">
+      <table>
+        <thead><tr><th>Poste</th><th>Code</th><th>Montant</th><th>%</th><th>Lecture</th></tr></thead>
+        <tbody>
+          <tr><td colspan="5" style="background:#6b4f1f;color:#fff;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:1.2px;text-align:left;">Actif immobilisé · 3,27 M€ (66,6 %)</td></tr>
+          <tr><td class="metric-name">Immobilisations incorporelles</td><td>21</td><td>176 579 €</td><td>3,6 %</td><td class="note">Goodwill, marques, logiciels</td></tr>
+          <tr><td class="metric-name">Terrains et constructions</td><td>22</td><td>2 431 037 €</td><td>49,5 %</td><td class="note positive">⭐ Bâtiment Manage — actif clé</td></tr>
+          <tr><td class="metric-name">Installations, machines, outillage</td><td>23</td><td>14 910 €</td><td>0,3 %</td><td class="note">Faible · sous-investissement</td></tr>
+          <tr><td class="metric-name">Mobilier &amp; matériel roulant</td><td>24</td><td>41 177 €</td><td>0,8 %</td><td class="note">Flotte véhicules limitée</td></tr>
+          <tr><td class="metric-name">Immobilisations financières</td><td>28</td><td>607 668 €</td><td>12,4 %</td><td class="note attention">Participations à investiguer</td></tr>
+          <tr><td colspan="5" style="background:#6b4f1f;color:#fff;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:1.2px;text-align:left;">Actif circulant · 1,64 M€ (33,4 %)</td></tr>
+          <tr><td class="metric-name">Stocks</td><td>30/36</td><td>562 633 €</td><td>11,4 %</td><td class="note">Matériel chantier en cours</td></tr>
+          <tr><td class="metric-name">Créances commerciales</td><td>40</td><td>845 541 €</td><td>17,2 %</td><td class="note">DSO ~70 j (typique retail)</td></tr>
+          <tr><td class="metric-name">Autres créances</td><td>41</td><td>164 358 €</td><td>3,3 %</td><td class="note">Comptes courants associés ?</td></tr>
+          <tr><td class="metric-name">Trésorerie</td><td>50/53</td><td>10 000 €</td><td>0,2 %</td><td class="note negative">⚠ Tension liquidité</td></tr>
+          <tr><td class="metric-name">Comptes de régularisation</td><td>54/58</td><td>33 576 €</td><td>0,7 %</td><td class="note">—</td></tr>
+          <tr><td colspan="5" style="background:#6b4f1f;color:#fff;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:1.2px;text-align:left;">Capitaux propres · 2,33 M€ (47,4 %)</td></tr>
+          <tr><td class="metric-name">Capital</td><td>10/11</td><td>12 400 €</td><td>0,3 %</td><td class="note">Capital nominal très faible</td></tr>
+          <tr><td class="metric-name">Primes d'émission</td><td>12</td><td>1 500 000 €</td><td>30,5 %</td><td class="note positive">⭐ Apport 2023 — recapitalisation</td></tr>
+          <tr><td class="metric-name">Réserves</td><td>13</td><td>70 860 €</td><td>1,4 %</td><td class="note">Réserve légale</td></tr>
+          <tr><td class="metric-name">Résultat reporté</td><td>14</td><td>603 723 €</td><td>12,3 %</td><td class="note">Bénéfices accumulés (avant pertes)</td></tr>
+          <tr><td class="metric-name">Subsides en capital</td><td>15</td><td>141 192 €</td><td>2,9 %</td><td class="note">Aides régionales</td></tr>
+          <tr><td colspan="5" style="background:#6b4f1f;color:#fff;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:1.2px;text-align:left;">Dettes · 2,59 M€ (52,6 %)</td></tr>
+          <tr><td class="metric-name">Dettes financières LT</td><td>170/4</td><td>561 718 €</td><td>11,4 %</td><td class="note">Crédits hypothécaires probables</td></tr>
+          <tr><td class="metric-name">Dettes financières CT (échues)</td><td>42</td><td>224 694 €</td><td>4,6 %</td><td class="note">Tranche annuelle dette LT</td></tr>
+          <tr><td class="metric-name">Établissements de crédit (CT)</td><td>43</td><td>316 074 €</td><td>6,4 %</td><td class="note attention">Découvert / ligne CT</td></tr>
+          <tr><td class="metric-name">Dettes commerciales</td><td>44</td><td>544 831 €</td><td>11,1 %</td><td class="note">Fournisseurs · ratio sain</td></tr>
+          <tr><td class="metric-name">Dettes fiscales / sociales</td><td>45</td><td>896 765 €</td><td>18,2 %</td><td class="note negative">⚠ ONSS / TVA / IS — point de vigilance majeur</td></tr>
+          <tr><td class="metric-name">Acomptes reçus</td><td>46</td><td>10 143 €</td><td>0,2 %</td><td class="note">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- RATIOS DD -->
+  <div class="section">
+    <h2>Ratios long terme — angle acquéreur</h2>
+    <div class="data-table">
+      <table>
+        <thead>
+          <tr><th>Ratio</th><th>Valeur 2024</th><th>Norme / cible</th><th>Évaluation</th><th>Lecture rachat</th></tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="5" style="background:#6b4f1f;color:#fff;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:1.2px;text-align:left;">Rentabilité</td></tr>
+          <tr><td class="metric-name">EBITDA</td><td>+ 117 624 €</td><td>—</td><td class="warn">faible</td><td class="note">Positif mais marginal</td></tr>
+          <tr><td class="metric-name">Marge EBITDA / MB</td><td>6,6 %</td><td>&gt; 12 % bon</td><td class="warn">sous la norme</td><td class="note">Pression sur masse salariale</td></tr>
+          <tr><td class="metric-name">EBIT (résultat exploit.)</td><td>- 82 039 €</td><td>positif</td><td class="negative">en rouge</td><td class="note">Activité destructrice de valeur</td></tr>
+          <tr><td class="metric-name">ROE</td><td>- 10,0 %</td><td>&gt; 8 %</td><td class="negative">négatif</td><td class="note">Capital actionnaire en érosion</td></tr>
+          <tr><td class="metric-name">ROIC</td><td>- 2,1 %</td><td>&gt; coût capital</td><td class="negative">destruction valeur</td><td class="note">Capital investi mal rémunéré</td></tr>
+          <tr><td colspan="5" style="background:#6b4f1f;color:#fff;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:1.2px;text-align:left;">Endettement &amp; solvabilité</td></tr>
+          <tr><td class="metric-name">Dette financière brute</td><td>1 102 486 €</td><td>—</td><td>—</td><td class="note">LT 562 k + CT 541 k</td></tr>
+          <tr><td class="metric-name">Dette financière nette</td><td>1 092 486 €</td><td>—</td><td class="warn">élevée</td><td class="note">Tréso quasi nulle</td></tr>
+          <tr><td class="metric-name">Dette nette / EBITDA</td><td>9,3 ×</td><td>&lt; 4 × bon</td><td class="negative">stress</td><td class="note negative">⚠ Refinancement nécessaire</td></tr>
+          <tr><td class="metric-name">Couverture intérêts (EBITDA / charges fin.)</td><td>0,70 ×</td><td>&gt; 3 ×</td><td class="negative">insuffisant</td><td class="note negative">⚠ EBITDA &lt; charges financières</td></tr>
+          <tr><td class="metric-name">Solvabilité (CP / Bilan)</td><td>47,4 %</td><td>&gt; 30 %</td><td class="positive">solide</td><td class="note">Recapitalisation 2023 a aidé</td></tr>
+          <tr><td class="metric-name">Gearing (Dette nette / CP)</td><td>46,9 %</td><td>&lt; 100 %</td><td class="positive">acceptable</td><td class="note">Marge de manœuvre LT</td></tr>
+          <tr><td colspan="5" style="background:#6b4f1f;color:#fff;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:1.2px;text-align:left;">Liquidité &amp; BFR</td></tr>
+          <tr><td class="metric-name">Trésorerie</td><td>10 000 €</td><td>—</td><td class="negative">critique</td><td class="note negative">⚠ 0,2 % du bilan</td></tr>
+          <tr><td class="metric-name">Cash ratio</td><td>0,5 %</td><td>&gt; 20 %</td><td class="negative">alerte</td><td class="note negative">Dépendance au crédit CT</td></tr>
+          <tr><td class="metric-name">Quick ratio</td><td>50,9 %</td><td>&gt; 100 %</td><td class="negative">tendu</td><td class="note">Risque sur honoraires fournisseurs</td></tr>
+          <tr><td class="metric-name">Current ratio</td><td>82,0 %</td><td>&gt; 100 %</td><td class="warn">stress</td><td class="note">Working capital négatif</td></tr>
+          <tr><td class="metric-name">Working capital</td><td>- 361 075 €</td><td>positif</td><td class="negative">négatif</td><td class="note">Financement CT du LT</td></tr>
+          <tr><td class="metric-name">BFR opérationnel (S + Cli - Frs)</td><td>+ 863 343 €</td><td>—</td><td class="warn">lourd</td><td class="note">~ 6 mois de marge brute immobilisée</td></tr>
+          <tr><td class="metric-name">DSO (jours créances clients)</td><td>~ 70 j</td><td>30-45 j</td><td class="warn">long</td><td class="note">Cohérent avec retail (60-90 j)</td></tr>
+          <tr><td colspan="5" style="background:#6b4f1f;color:#fff;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:1.2px;text-align:left;">Patrimoine &amp; structure</td></tr>
+          <tr><td class="metric-name">Immobilier / Bilan</td><td>49,5 %</td><td>—</td><td class="positive">poids fort</td><td class="note positive">Actif tangible mobilisable</td></tr>
+          <tr><td class="metric-name">Immo financières / Bilan</td><td>12,4 %</td><td>—</td><td class="warn">à investiguer</td><td class="note">Filiale ? Compte courant ? À clarifier</td></tr>
+          <tr><td class="metric-name">Concentration clientèle</td><td>5 clients ≈ 100 %</td><td>—</td><td class="negative">élevée</td><td class="note negative">⚠ Risque de perte de compte</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- VALORISATION -->
+  <div class="section">
+    <h2>Approches de valorisation</h2>
+    <div class="three-col">
+      <div class="valo-card">
+        <h3>1. Multiple EBITDA</h3>
+        <div class="price negative">~ 0 € equity</div>
+        <div class="formula">EBITDA 117 k€ × 5 = 587 k€ EV<br>– Dette nette 1 092 k€<br>= valeur des titres &lt; 0</div>
+        <span class="verdict">Valorisation classique impossible — l'EBITDA ne couvre pas la dette. Il faut normaliser ou changer d'approche.</span>
+      </div>
+      <div class="valo-card">
+        <h3>2. Patrimoniale (ANR)</h3>
+        <div class="price">~ 2,15 M€</div>
+        <div class="formula">CP 2 328 k€<br>– Goodwill 177 k€<br>= ANR 2 151 k€</div>
+        <span class="verdict">Valeur des actifs nets corporels. Floor théorique pour un acquéreur si l'immobilier conserve sa valeur de marché.</span>
+      </div>
+      <div class="valo-card">
+        <h3>3. Sale &amp; lease-back + business</h3>
+        <div class="price">~ 1,5 - 2,5 M€</div>
+        <div class="formula">Bâtiment vendu 2,5 M€ → cash<br>+ business loué (5-7 % loyer)<br>+ EV business 0,5-1 M€</div>
+        <span class="verdict">Approche stratégique : extraire la valeur immobilière, restructurer la dette, garder l'opérationnel comme exploitation pure. Plus élevé pour un acquéreur industriel.</span>
+      </div>
+    </div>
+    <p style="margin-top:14px;font-size:13px;color:#6b6b6b;font-style:italic;">⚠ Estimations indicatives basées sur le bilan publié 2024. Une expertise immobilière, un audit DD et une normalisation EBITDA (charges exceptionnelles, rémunérations dirigeants, baux) sont requis avant tout engagement chiffré.</p>
+  </div>
+
+  <!-- FORCES & RISQUES -->
+  <div class="section">
+    <h2>Forces &amp; risques pour un repreneur</h2>
+    <div class="two-col">
+      <div class="panel">
+        <h3>Forces (atouts à valoriser)</h3>
+        <ul>
+          <li class="good"><strong>Patrimoine immobilier</strong> 2,4 M€ (bâtiment Manage) — actif liquidable</li>
+          <li class="good"><strong>Carnet retail premium</strong> Colruyt, Lidl, Delhaize, Cora, Leclerc</li>
+          <li class="good"><strong>Compétences certifiées</strong> frigoriste, électrotechnique, chauffage — barrières à l'entrée</li>
+          <li class="good"><strong>Couverture multi-pays</strong> BeNeLux + Grand Est France — marché captif retail</li>
+          <li class="good"><strong>Solvabilité 47 %</strong> — recapitalisation récente (1,5 M€ primes 2023)</li>
+          <li class="good"><strong>Capital social très bas</strong> (12,4 k€) → fiscalité de cession optimisée pour le vendeur</li>
+          <li class="good"><strong>Immo financières 608 k€</strong> — participations possibles dans entités liées</li>
+          <li class="good"><strong>Boss vendeur</strong> ouvert à la cession — pas de blocage psychologique</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Risques (à pricer dans la décote)</h3>
+        <ul>
+          <li class="warn"><strong>EBITDA marginal</strong> (118 k€) — incapable de servir la dette financière (charges 169 k€)</li>
+          <li class="warn"><strong>Dette nette 1,1 M€</strong> · 9,3× EBITDA → besoin de refinancement</li>
+          <li class="warn"><strong>Trésorerie 10 k€</strong> · risque de cessation de paiement court terme</li>
+          <li class="warn"><strong>Dettes fiscales/sociales 897 k€</strong> · vérifier ONSS, TVA, précompte — risque rappel</li>
+          <li class="warn"><strong>Concentration clientèle 5 comptes</strong> — perte d'un client = -20 % CA</li>
+          <li class="warn"><strong>Perte d'effectif</strong> 21,2 → 17,8 ETP en 2 ans — savoir-faire qui s'érode</li>
+          <li class="warn"><strong>Pas de soudure frigo</strong> · marge confiée aux sous-traitants — opportunité d'intégration mais aussi dépendance actuelle</li>
+          <li class="warn"><strong>Personnes morales liées</strong> (immo financières 608 k€) à clarifier — risque hors-bilan</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- DD CHECKLIST -->
+  <div class="section">
+    <h2>Check-list due diligence à conduire</h2>
+    <div class="two-col">
+      <div class="panel">
+        <h3>Financière &amp; fiscale</h3>
+        <div class="checklist">
+          <div class="item"><div class="box"></div><div><strong>Normalisation EBITDA</strong>Retraitement rémunérations dirigeants, charges exceptionnelles, loyers intra-groupe.</div></div>
+          <div class="item"><div class="box"></div><div><strong>Dette ONSS / TVA / IS</strong>Audit du compte 45 (897 k€) — plan de paiement existant ? Pénalités ?</div></div>
+          <div class="item"><div class="box"></div><div><strong>Tableau de flux de trésorerie</strong>Reconstituer cash-flow 2022-2024 pour comprendre le drainage.</div></div>
+          <div class="item"><div class="box"></div><div><strong>Échéancier dette financière</strong>Crédits hypothécaires, lignes CT, garanties, covenants.</div></div>
+          <div class="item"><div class="box"></div><div><strong>Compte 8259 - Apports 2023</strong>Origine des 1,5 M€ : capital frais ? Compte courant transformé ?</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Commerciale &amp; opérationnelle</h3>
+        <div class="checklist">
+          <div class="item"><div class="box"></div><div><strong>Contrats retail</strong>Termes Colruyt, Lidl, Delhaize, Cora, Leclerc · clauses de cessibilité ? Durée ?</div></div>
+          <div class="item"><div class="box"></div><div><strong>Carnet de commandes</strong>Backlog signé · projection 12-24 mois.</div></div>
+          <div class="item"><div class="box"></div><div><strong>Concentration top 5</strong>% du CA par client · marge par client.</div></div>
+          <div class="item"><div class="box"></div><div><strong>Sous-traitance soudure frigo</strong>Identité des sous-traitants · risque de captation · opportunité d'intégration.</div></div>
+          <div class="item"><div class="box"></div><div><strong>Effectif terrain</strong>Pyramide des âges · turnover · convention collective applicable.</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="two-col" style="margin-top:18px;">
+      <div class="panel">
+        <h3>Juridique &amp; structure</h3>
+        <div class="checklist">
+          <div class="item"><div class="box"></div><div><strong>Pacte d'actionnaires</strong>Existe-t-il ? Bibi/Morisco 100 % ? Tag-along, drag-along ?</div></div>
+          <div class="item"><div class="box"></div><div><strong>Immobilisations financières (608 k€)</strong>Quelle filiale ou participation ? Bilan consolidé ?</div></div>
+          <div class="item"><div class="box"></div><div><strong>Statuts SRL refondus 2023</strong>Récupérer texte intégral via notaire Demolin.</div></div>
+          <div class="item"><div class="box"></div><div><strong>Litiges en cours</strong>Procédures civiles, sociales, commerciales.</div></div>
+          <div class="item"><div class="box"></div><div><strong>Garanties données</strong>Cautions personnelles dirigeants ? Sûretés sur immobilier ?</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Patrimoine &amp; immobilier</h3>
+        <div class="checklist">
+          <div class="item"><div class="box"></div><div><strong>Expertise immobilière indépendante</strong>Bâtiment Rue des Saucelles 8 · valeur de marché vs VNC 2,4 M€.</div></div>
+          <div class="item"><div class="box"></div><div><strong>Hypothèques</strong>Inscriptions sur le bien · ordre de priorité.</div></div>
+          <div class="item"><div class="box"></div><div><strong>Faisabilité sale &amp; lease-back</strong>Acheteurs immobiliers · niveau de loyer cible.</div></div>
+          <div class="item"><div class="box"></div><div><strong>Subsides 141 k€</strong>Conditions de récupération en cas de cession.</div></div>
+          <div class="item"><div class="box"></div><div><strong>Stocks 562 k€</strong>Inventaire physique · obsolescence · valorisation.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LINK BACK -->
+  <div class="section" style="text-align:center;">
+    <a href="fridg-bi-dashboard.html" class="nav-link">← Voir aussi le dashboard commercial Jobalto</a>
+  </div>
+
+  <footer>
+    Source : <a href="https://consult.cbso.nbb.be/consult-enterprise" target="_blank" rel="noopener">Centrale des bilans BNB</a> ·
+    <a href="https://kbopub.economie.fgov.be/kbopub/toonondernemingps.html?lang=fr&ondernemingsnummer=0870152455" target="_blank" rel="noopener">BCE Public Search</a> ·
+    <a href="https://www.ejustice.just.fgov.be/cgi_tsv/list.pl?language=fr&btw=0870152455" target="_blank" rel="noopener">Moniteur belge — publications FRIDG'BI</a> ·
+    Données extraites le 30/04/2026 — Analyse Jobalto · Indicatif uniquement, pas un conseil d'investissement
+  </footer>
+</div>
+
+<script>
+(function(){
+  const teal = '#143635';
+  const tealLight = '#5A9E9C';
+  const gold = '#E6B527';
+  const goldDark = '#D4870E';
+  const red = '#C0392B';
+  const green = '#2A6B69';
+  const ink = '#2A1F0F';
+  const muted = '#888';
+  const brown = '#6b4f1f';
+
+  Chart.defaults.font.family = "'Suisse Intl', -apple-system, sans-serif";
+  Chart.defaults.color = ink;
+  Chart.defaults.plugins.legend.position = 'right';
+  Chart.defaults.plugins.legend.labels.boxWidth = 12;
+  Chart.defaults.plugins.legend.labels.padding = 10;
+  Chart.defaults.plugins.legend.labels.font = { size: 12 };
+
+  const fmtEUR = (v) => {
+    if (Math.abs(v) >= 1e6) return (v / 1e6).toFixed(2) + ' M€';
+    if (Math.abs(v) >= 1e3) return Math.round(v / 1e3) + ' k€';
+    return v + ' €';
+  };
+
+  // ACTIF
+  new Chart(document.getElementById('chartActif'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Bâtiment & terrain', 'Immo financières', 'Autres immo corp.', 'Goodwill', 'Stocks', 'Créances', 'Trésorerie & autres'],
+      datasets: [{
+        data: [2431037, 607668, 56086, 176579, 562633, 1009900, 71151],
+        backgroundColor: [brown, gold, '#a48041', '#d4a017', tealLight, teal, muted],
+        borderWidth: 2,
+        borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        tooltip: { callbacks: { label: (c) => c.label + ': ' + fmtEUR(c.parsed) + ' (' + (c.parsed * 100 / 4915174).toFixed(1) + '%)' } }
+      }
+    }
+  });
+
+  // PASSIF
+  new Chart(document.getElementById('chartPassif'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Primes émission', 'Résultat reporté', 'Subsides', 'Réserves', 'Capital', 'Dette financière LT', 'Dette financière CT', 'Dette commerciale', 'Dette fiscale/sociale', 'Autres dettes'],
+      datasets: [{
+        data: [1500000, 603723, 141192, 70860, 12400, 561718, 540768, 544831, 896765, 42918],
+        backgroundColor: [gold, '#d4a017', '#e8c66b', '#f3dca6', '#fbeed1', red, '#e85a4f', '#a48041', brown, muted],
+        borderWidth: 2,
+        borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        tooltip: { callbacks: { label: (c) => c.label + ': ' + fmtEUR(c.parsed) + ' (' + (c.parsed * 100 / 4915174).toFixed(1) + '%)' } }
+      }
+    }
+  });
+})();
+</script>
+</body>
+</html>

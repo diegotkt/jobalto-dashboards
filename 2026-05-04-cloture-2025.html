@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clôture 2025 — Jobalto</title>
+<style>
+  :root {
+    color-scheme: light;
+    --teal: #1f7a76;
+    --teal-dark: #145955;
+    --teal-light: #e6f3f2;
+    --gold: #c9a961;
+    --gold-light: #f5ecd6;
+    --bg: #fafaf9;
+    --card: #ffffff;
+    --border: #e5e5e3;
+    --text: #1c1c1b;
+    --text-muted: #6b6b68;
+    --shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.02);
+
+    --st-attr: #6b7280; --st-attr-bg: #f3f4f6;
+    --st-cours: #b45309; --st-cours-bg: #fef3c7;
+    --st-trouve: #0e7490; --st-trouve-bg: #cffafe;
+    --st-envoye: #1d4ed8; --st-envoye-bg: #dbeafe;
+    --st-quest: #7c3aed; --st-quest-bg: #ede9fe;
+    --st-bloque: #b91c1c; --st-bloque-bg: #fee2e2;
+    --st-clos: #166534; --st-clos-bg: #dcfce7;
+
+    --owner-diego: #1d4ed8; --owner-diego-bg: #dbeafe;
+    --owner-palof: #0d9488; --owner-palof-bg: #ccfbf1;
+    --owner-compta: #7c3aed; --owner-compta-bg: #ede9fe;
+    --owner-none: #6b7280; --owner-none-bg: #f3f4f6;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .header {
+    background: linear-gradient(135deg, var(--teal) 0%, var(--teal-dark) 100%);
+    color: white;
+    padding: 18px 24px;
+    border-bottom: 4px solid var(--gold);
+  }
+  .header h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -.01em; }
+  .header .sub { font-size: 12px; opacity: .85; margin-top: 4px; }
+
+  .container { max-width: 1280px; margin: 0 auto; padding: 16px 20px 32px; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .stat {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 14px; box-shadow: var(--shadow); cursor: pointer;
+    transition: transform .08s ease, box-shadow .15s ease;
+  }
+  .stat:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+  .stat.active { border-color: var(--teal); background: var(--teal-light); }
+  .stat .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+  .stat .value { font-size: 22px; font-weight: 600; margin-top: 2px; }
+  .stat.attr .value { color: var(--st-attr); }
+  .stat.cours .value { color: var(--st-cours); }
+  .stat.bloque .value { color: var(--st-bloque); }
+  .stat.clos .value { color: var(--st-clos); }
+  .stat.total .value { color: var(--teal); }
+
+  .toolbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 12px; box-shadow: var(--shadow);
+  }
+  .toolbar label { font-size: 12px; color: var(--text-muted); }
+  .toolbar select, .toolbar input[type=text] {
+    font-size: 13px; padding: 5px 8px; border: 1px solid var(--border);
+    border-radius: 6px; background: white; color: var(--text);
+  }
+  .toolbar input[type=text] { min-width: 180px; }
+  .switch { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .switch input { accent-color: var(--teal); }
+
+  .tabs {
+    display: flex; gap: 4px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 4px; margin-bottom: 14px; overflow-x: auto;
+  }
+  .tab {
+    flex: 1 1 auto; min-width: 120px; padding: 8px 12px; border: 0; background: transparent;
+    border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text-muted);
+    font-weight: 500; transition: background .12s, color .12s; white-space: nowrap;
+  }
+  .tab .count { display: inline-block; min-width: 20px; padding: 1px 6px; margin-left: 4px;
+    background: var(--bg); color: var(--text-muted); border-radius: 10px; font-size: 11px;
+    font-weight: 500; }
+  .tab.active { background: var(--teal); color: white; }
+  .tab.active .count { background: rgba(255,255,255,.22); color: white; }
+  .tab:not(.active):hover { background: var(--bg); color: var(--text); }
+
+  .group { margin-bottom: 18px; }
+  .group-header {
+    font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: .05em; padding: 6px 4px; margin-bottom: 4px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .group-header .group-count { color: var(--teal); }
+
+  .row {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 6px; box-shadow: var(--shadow);
+    display: grid; grid-template-columns: 1fr auto auto auto auto; gap: 10px; align-items: center;
+    transition: opacity .15s;
+  }
+  .row.is-clos { opacity: .55; }
+  .row .main { min-width: 0; }
+  .row .item-name { font-weight: 600; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; }
+  .row .item-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px;
+    display: flex; gap: 10px; flex-wrap: wrap; }
+  .row .item-meta .amount { font-weight: 500; color: var(--text); }
+  .row .problem { font-size: 12px; color: var(--text-muted); margin-top: 4px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 500;
+    cursor: pointer; border: 1px solid transparent; white-space: nowrap;
+    transition: filter .12s;
+  }
+  .pill:hover { filter: brightness(.96); }
+  .pill .arrow { font-size: 9px; opacity: .55; }
+
+  .pill.st-attr { background: var(--st-attr-bg); color: var(--st-attr); }
+  .pill.st-cours { background: var(--st-cours-bg); color: var(--st-cours); }
+  .pill.st-trouve { background: var(--st-trouve-bg); color: var(--st-trouve); }
+  .pill.st-envoye { background: var(--st-envoye-bg); color: var(--st-envoye); }
+  .pill.st-quest { background: var(--st-quest-bg); color: var(--st-quest); }
+  .pill.st-bloque { background: var(--st-bloque-bg); color: var(--st-bloque); }
+  .pill.st-clos { background: var(--st-clos-bg); color: var(--st-clos); }
+
+  .pill.ow-diego { background: var(--owner-diego-bg); color: var(--owner-diego); }
+  .pill.ow-palof { background: var(--owner-palof-bg); color: var(--owner-palof); }
+  .pill.ow-compta { background: var(--owner-compta-bg); color: var(--owner-compta); }
+  .pill.ow-none { background: var(--owner-none-bg); color: var(--owner-none); }
+
+  .link-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 600;
+    background: var(--gold-light); color: #8a6d2a; border: 1px solid #e3d4a8;
+    text-decoration: none; cursor: pointer; white-space: nowrap;
+    transition: filter .12s, transform .08s;
+  }
+  .link-btn:hover { filter: brightness(.95); transform: translateY(-1px); }
+  .link-btn.gmail { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+  .link-btn.portal { background: var(--gold-light); color: #8a6d2a; border-color: #e3d4a8; }
+  .link-btn.empty {
+    background: transparent; color: var(--text-muted); border: 1px dashed var(--border);
+    font-weight: 400; font-style: italic;
+  }
+  .link-btn .icon { font-size: 12px; }
+
+  .menu {
+    position: absolute; z-index: 50; background: white; border: 1px solid var(--border);
+    border-radius: 8px; padding: 4px; min-width: 170px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.12);
+  }
+  .menu button {
+    display: block; width: 100%; text-align: left; padding: 7px 10px; font-size: 12.5px;
+    border: 0; background: transparent; cursor: pointer; border-radius: 5px; color: var(--text);
+  }
+  .menu button:hover { background: var(--bg); }
+  .menu button .mi-pill {
+    display: inline-block; padding: 2px 7px; border-radius: 999px; font-size: 11px; margin-right: 6px;
+  }
+
+  .expand-btn {
+    border: 0; background: transparent; cursor: pointer; padding: 4px 6px; color: var(--text-muted);
+    font-size: 12px; border-radius: 4px;
+  }
+  .expand-btn:hover { background: var(--bg); }
+
+  .details {
+    grid-column: 1 / -1; background: var(--bg); border-radius: 6px; padding: 10px 12px;
+    margin-top: 6px; font-size: 12.5px;
+  }
+  .details .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: .04em; margin-bottom: 4px; }
+  .details .value { margin-bottom: 8px; white-space: pre-wrap; }
+  .details textarea, .details input[type=url] {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border);
+    border-radius: 6px; font-family: inherit; font-size: 12.5px;
+    background: white; box-sizing: border-box;
+  }
+  .details textarea { min-height: 70px; resize: vertical; }
+  .details input[type=url] { font-size: 12px; color: #1d4ed8; }
+  .details .save-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+  .details button.save {
+    padding: 6px 12px; background: var(--teal); color: white; border: 0; border-radius: 6px;
+    font-size: 12px; cursor: pointer; font-weight: 500;
+  }
+  .details button.save:hover { background: var(--teal-dark); }
+  .details button.save:disabled { background: var(--text-muted); cursor: default; }
+
+  .empty {
+    text-align: center; padding: 36px 16px; color: var(--text-muted);
+    background: var(--card); border: 1px dashed var(--border); border-radius: 8px;
+  }
+  .loading { text-align: center; padding: 60px 16px; color: var(--text-muted); }
+  .error {
+    background: var(--st-bloque-bg); color: var(--st-bloque); padding: 10px 14px;
+    border-radius: 8px; margin-bottom: 12px; font-size: 13px;
+  }
+
+  .toast {
+    position: fixed; bottom: 16px; right: 16px; background: var(--teal); color: white;
+    padding: 8px 14px; border-radius: 6px; font-size: 13px; box-shadow: 0 4px 14px rgba(0,0,0,.18);
+    opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 100;
+  }
+  .toast.show { opacity: 1; }
+  .toast.error { background: #b91c1c; }
+
+  @media (max-width: 760px) {
+    .row { grid-template-columns: 1fr auto; row-gap: 8px; }
+    .row .pill { grid-column: 2; }
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
+    <div>
+      <h1>Clôture comptable 2025</h1>
+      <div class="sub">Suivi collaboratif Diego &amp; Palof — postes ouverts clients &amp; fournisseurs</div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button id="refresh-btn" style="
+        padding: 8px 14px; background: rgba(255,255,255,.18); color: white;
+        border: 1px solid rgba(255,255,255,.3); border-radius: 6px;
+        font-size: 13px; cursor: pointer; font-weight: 500;
+        transition: background .15s;
+      " onmouseover="this.style.background='rgba(255,255,255,.28)'"
+         onmouseout="this.style.background='rgba(255,255,255,.18)'">↻ Recharger</button>
+      <button id="settings-btn" title="Reinitialiser le token Airtable" style="
+        padding: 8px 12px; background: rgba(255,255,255,.18); color: white;
+        border: 1px solid rgba(255,255,255,.3); border-radius: 6px;
+        font-size: 13px; cursor: pointer;
+      " onmouseover="this.style.background='rgba(255,255,255,.28)'"
+         onmouseout="this.style.background='rgba(255,255,255,.18)'">⚙</button>
+    </div>
+  </div>
+</div>
+<div class="container">
+  <div id="root">
+    <div class="loading">Chargement des postes ouverts…</div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  // PAT Airtable charge depuis localStorage (chaque user le saisit une fois)
+  // C'est plus secure que de l'embarquer dans le source public.
+  const PAT_STORAGE_KEY = 'cloture2025.airtablePat';
+  function getPat() { return localStorage.getItem(PAT_STORAGE_KEY) || ''; }
+  function setPat(pat) { localStorage.setItem(PAT_STORAGE_KEY, pat); }
+  function clearPat() { localStorage.removeItem(PAT_STORAGE_KEY); }
+
+  const BASE_ID = 'appglh7wfz1QDn8N9';
+  const TABLE_ID = 'tblna1Xzs6Np66ROd';
+  const AIRTABLE_BASE_URL = `https://api.airtable.com/v0/${BASE_ID}/${TABLE_ID}`;
+
+  const F = {
+    ITEM: 'fldcSJwvAZtCwUUK0',
+    TYPE: 'fldMlvU6ESB1c202m',
+    NOM: 'fldfkDQuiXo0GPgDl',
+    CAT: 'fldow5LqIkU3iWVrQ',
+    MONTANT: 'fldpI6JBOXUMe3mJI',
+    DATE: 'fld2oU3Cl1lq13642',
+    PROBLEME: 'fldEOcOXx9xYzAE0U',
+    STATUT: 'fldaE4qvJum78fVFS',
+    OWNER: 'fldV0VqBuT1LUBdBX',
+    NOTES: 'fldHiX4kzgZGnyNEx',
+    MAJ: 'fldXlD9MKqqkFftGE',
+    LIEN: 'fld2qB50smVNwCgDZ'
+  };
+
+  const STATUTS = ['A traiter', 'En cours', 'Document trouve', 'Envoye compta', 'Question posee', 'Bloque', 'Clos'];
+  const STATUT_LABEL = {
+    'A traiter': 'À traiter',
+    'En cours': 'En cours',
+    'Document trouve': 'Document trouvé',
+    'Envoye compta': 'Envoyé compta',
+    'Question posee': 'Question posée',
+    'Bloque': 'Bloqué',
+    'Clos': 'Clos'
+  };
+  const STATUT_CLASS = {
+    'A traiter': 'st-attr', 'En cours': 'st-cours', 'Document trouve': 'st-trouve',
+    'Envoye compta': 'st-envoye', 'Question posee': 'st-quest', 'Bloque': 'st-bloque', 'Clos': 'st-clos'
+  };
+  const OWNERS = ['Non assigne', 'Diego', 'Palof', 'Comptable'];
+  const OWNER_LABEL = { 'Non assigne': 'Non assigné', 'Diego': 'Diego', 'Palof': 'Palof', 'Comptable': 'Comptable' };
+  const OWNER_CLASS = { 'Non assigne': 'ow-none', 'Diego': 'ow-diego', 'Palof': 'ow-palof', 'Comptable': 'ow-compta' };
+
+  const TABS = [
+    { key: 'clients', label: 'Clients ouverts',
+      filter: r => r.type === 'Client',
+      groupBy: r => r.cat || 'Autres' },
+    { key: 'recurrent', label: 'Fournisseurs — Factures email (récurrents)',
+      filter: r => r.cat === 'Fournisseur - Facture email (recurrent)',
+      groupBy: () => null },
+    { key: 'ponctuel', label: 'Fournisseurs — Tickets &amp; Scans (ponctuels)',
+      filter: r => r.cat === 'Fournisseur - Ticket/Scan (ponctuel)',
+      groupBy: () => null },
+    { key: 'autres', label: 'Portails &amp; Litiges',
+      filter: r => r.type === 'Fournisseur' &&
+                   (r.cat === 'Fournisseur - Portail en ligne' || r.cat === 'Fournisseur - Question/Litige'),
+      groupBy: r => r.cat || 'Autres' }
+  ];
+
+  const state = {
+    records: [],
+    loading: true,
+    error: null,
+    activeTab: localStorage.getItem('cloture2025.tab') || 'clients',
+    hideClosedRaw: localStorage.getItem('cloture2025.hideClosed'),
+    statusFilter: localStorage.getItem('cloture2025.statusFilter') || '',
+    ownerFilter: localStorage.getItem('cloture2025.ownerFilter') || '',
+    search: '',
+    expanded: new Set(),
+    pendingMenu: null
+  };
+  // default hide-closed = true unless explicitly turned off
+  state.hideClosed = state.hideClosedRaw === null ? true : state.hideClosedRaw === 'true';
+
+  function val(rec, fieldId) {
+    // Airtable raw API avec returnFieldsByFieldId=true : singleSelect renvoie le name string directement
+    const v = rec.fields ? rec.fields[fieldId] : undefined;
+    if (v === undefined || v === null) return null;
+    // garde-fou si l'API renvoie un objet (au cas ou)
+    if (typeof v === 'object' && 'name' in v) return v.name;
+    return v;
+  }
+
+  function flatten(rec) {
+    return {
+      id: rec.id,
+      item: val(rec, F.ITEM) || '',
+      type: val(rec, F.TYPE),
+      nom: val(rec, F.NOM) || '',
+      cat: val(rec, F.CAT),
+      montant: val(rec, F.MONTANT),
+      date: val(rec, F.DATE),
+      probleme: val(rec, F.PROBLEME) || '',
+      statut: val(rec, F.STATUT) || 'A traiter',
+      owner: val(rec, F.OWNER) || 'Non assigne',
+      notes: val(rec, F.NOTES) || '',
+      lien: val(rec, F.LIEN) || '',
+      maj: val(rec, F.MAJ)
+    };
+  }
+
+  async function airtableFetch(url, opts) {
+    const pat = getPat();
+    if (!pat) throw new Error('NO_PAT');
+    const headers = Object.assign({
+      'Authorization': `Bearer ${pat}`,
+      'Content-Type': 'application/json'
+    }, opts && opts.headers || {});
+    const res = await fetch(url, Object.assign({}, opts, { headers }));
+    if (res.status === 401 || res.status === 403) { throw new Error('BAD_PAT'); }
+    if (!res.ok) {
+      let msg = `Airtable ${res.status}`;
+      try { const e = await res.json(); msg += ' — ' + (e.error && e.error.message || JSON.stringify(e)); } catch(_) {}
+      throw new Error(msg);
+    }
+    return await res.json();
+  }
+
+  async function fetchAll() {
+    let all = []; let offset = null;
+    do {
+      const params = new URLSearchParams({ pageSize: '100', returnFieldsByFieldId: 'true' });
+      if (offset) params.set('offset', offset);
+      const data = await airtableFetch(`${AIRTABLE_BASE_URL}?${params}`);
+      if (!data || !data.records) throw new Error('Reponse Airtable inattendue');
+      all = all.concat(data.records);
+      offset = data.offset || null;
+    } while (offset);
+    return all.map(flatten);
+  }
+
+  async function updateField(recordId, fieldId, value) {
+    const fields = {};
+    fields[fieldId] = value;
+    fields[F.MAJ] = new Date().toISOString();
+    return await updateRecord(recordId, fields);
+  }
+
+  async function updateRecord(recordId, fields) {
+    const url = `${AIRTABLE_BASE_URL}?returnFieldsByFieldId=true`;
+    return await airtableFetch(url, {
+      method: 'PATCH',
+      body: JSON.stringify({ records: [{ id: recordId, fields }] })
+    });
+  }
+
+  function fmtMontant(m) {
+    if (m === null || m === undefined || m === '') return '';
+    return new Intl.NumberFormat('fr-BE', { style: 'currency', currency: 'EUR' }).format(m);
+  }
+  function fmtDate(d) {
+    if (!d) return '';
+    const [y, m, day] = d.split('-');
+    return `${day}/${m}/${y.slice(2)}`;
+  }
+  function escape(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function showToast(msg, isError) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => { t.className = 'toast' + (isError ? ' error' : ''); }, 2200);
+  }
+
+  function applyFilters(records, tab) {
+    return records.filter(r => {
+      if (!tab.filter(r)) return false;
+      if (state.hideClosed && r.statut === 'Clos') return false;
+      if (state.statusFilter && r.statut !== state.statusFilter) return false;
+      if (state.ownerFilter && r.owner !== state.ownerFilter) return false;
+      if (state.search) {
+        const q = state.search.toLowerCase();
+        const hay = (r.nom + ' ' + r.probleme + ' ' + r.notes + ' ' + r.item).toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+
+  function statKey(r) { return r.statut; }
+
+  function render() {
+    const root = document.getElementById('root');
+    if (state.loading) { root.innerHTML = '<div class="loading">Chargement des postes ouverts…</div>'; return; }
+    if (state.error) { root.innerHTML = `<div class="error">Erreur : ${escape(state.error)}</div>`; return; }
+
+    const stats = { total: state.records.length, attr: 0, cours: 0, bloque: 0, clos: 0 };
+    state.records.forEach(r => {
+      if (r.statut === 'A traiter') stats.attr++;
+      else if (r.statut === 'En cours' || r.statut === 'Document trouve' || r.statut === 'Envoye compta' || r.statut === 'Question posee') stats.cours++;
+      else if (r.statut === 'Bloque') stats.bloque++;
+      else if (r.statut === 'Clos') stats.clos++;
+    });
+
+    let html = '';
+    html += `<div class="stats">
+      <div class="stat total ${state.statusFilter === '' ? 'active' : ''}" data-stat="">
+        <div class="label">Total</div><div class="value">${stats.total}</div></div>
+      <div class="stat attr ${state.statusFilter === 'A traiter' ? 'active' : ''}" data-stat="A traiter">
+        <div class="label">À traiter</div><div class="value">${stats.attr}</div></div>
+      <div class="stat cours" data-stat="_in_progress">
+        <div class="label">En cours</div><div class="value">${stats.cours}</div></div>
+      <div class="stat bloque ${state.statusFilter === 'Bloque' ? 'active' : ''}" data-stat="Bloque">
+        <div class="label">Bloqué</div><div class="value">${stats.bloque}</div></div>
+      <div class="stat clos ${state.statusFilter === 'Clos' ? 'active' : ''}" data-stat="Clos">
+        <div class="label">Clos</div><div class="value">${stats.clos}</div></div>
+    </div>`;
+
+    html += `<div class="toolbar">
+      <input type="text" id="search" placeholder="Recherche (nom, problème, notes)…" value="${escape(state.search)}">
+      <label class="switch"><input type="checkbox" id="hideClosed" ${state.hideClosed ? 'checked' : ''}>
+        Masquer les clos</label>
+      <label>Statut <select id="statusFilter">
+        <option value="">Tous</option>
+        ${STATUTS.map(s => `<option value="${s}" ${state.statusFilter === s ? 'selected' : ''}>${STATUT_LABEL[s]}</option>`).join('')}
+      </select></label>
+      <label>Owner <select id="ownerFilter">
+        <option value="">Tous</option>
+        ${OWNERS.map(o => `<option value="${o}" ${state.ownerFilter === o ? 'selected' : ''}>${OWNER_LABEL[o]}</option>`).join('')}
+      </select></label>
+    </div>`;
+
+    html += `<div class="tabs">`;
+    TABS.forEach(t => {
+      const tabRecs = state.records.filter(r => t.filter(r) && (!state.hideClosed || r.statut !== 'Clos'));
+      html += `<button class="tab ${state.activeTab === t.key ? 'active' : ''}" data-tab="${t.key}">
+        ${t.label}<span class="count">${tabRecs.length}</span></button>`;
+    });
+    html += `</div>`;
+
+    const activeTabDef = TABS.find(t => t.key === state.activeTab) || TABS[0];
+    const visible = applyFilters(state.records, activeTabDef);
+
+    if (visible.length === 0) {
+      html += `<div class="empty">Aucune ligne ne correspond aux filtres.</div>`;
+    } else if (activeTabDef.groupBy(visible[0])) {
+      const groups = {};
+      visible.forEach(r => { const g = activeTabDef.groupBy(r); (groups[g] = groups[g] || []).push(r); });
+      Object.keys(groups).sort().forEach(g => {
+        html += `<div class="group">
+          <div class="group-header"><span>${escape(prettyCat(g))}</span><span class="group-count">${groups[g].length}</span></div>
+          ${groups[g].map(rowHtml).join('')}
+        </div>`;
+      });
+    } else {
+      html += `<div class="group">${visible.map(rowHtml).join('')}</div>`;
+    }
+
+    root.innerHTML = html;
+    bindEvents();
+  }
+
+  function prettyCat(c) {
+    if (!c) return 'Autres';
+    return c.replace('Client - ', '').replace('Fournisseur - ', '');
+  }
+
+  function linkBtnHtml(r) {
+    if (!r.lien) return `<span class="link-btn empty">—</span>`;
+    const isGmail = /mail\.google\.com/i.test(r.lien);
+    const cls = isGmail ? 'gmail' : 'portal';
+    const icon = isGmail ? '✉' : '↗';
+    const label = isGmail ? 'Gmail' : 'Portail';
+    return `<a class="link-btn ${cls}" href="${escape(r.lien)}" target="_blank" rel="noopener" title="${escape(r.lien)}">
+      <span class="icon">${icon}</span> ${label}</a>`;
+  }
+
+  function rowHtml(r) {
+    const isClos = r.statut === 'Clos';
+    const expanded = state.expanded.has(r.id);
+    const meta = [];
+    if (r.montant) meta.push(`<span class="amount">${fmtMontant(r.montant)}</span>`);
+    if (r.date) meta.push(`<span>${fmtDate(r.date)}</span>`);
+    return `<div class="row ${isClos ? 'is-clos' : ''}" data-id="${r.id}">
+      <div class="main">
+        <div class="item-name">${escape(r.nom)}</div>
+        <div class="item-meta">${meta.join('')}</div>
+        ${!expanded ? `<div class="problem">${escape(r.probleme)}</div>` : ''}
+      </div>
+      ${linkBtnHtml(r)}
+      <button class="pill ${STATUT_CLASS[r.statut]}" data-action="status" data-id="${r.id}">
+        ${escape(STATUT_LABEL[r.statut])} <span class="arrow">▾</span></button>
+      <button class="pill ${OWNER_CLASS[r.owner]}" data-action="owner" data-id="${r.id}">
+        ${escape(OWNER_LABEL[r.owner])} <span class="arrow">▾</span></button>
+      <button class="expand-btn" data-action="expand" data-id="${r.id}">${expanded ? '▴' : '▾'}</button>
+      ${expanded ? detailsHtml(r) : ''}
+    </div>`;
+  }
+
+  function detailsHtml(r) {
+    return `<div class="details">
+      <div class="label">Problème (formulation comptable)</div>
+      <div class="value">${escape(r.probleme)}</div>
+      <div class="label">Catégorie</div>
+      <div class="value">${escape(r.cat || '—')}</div>
+      ${r.maj ? `<div class="label">Dernière MAJ</div>
+        <div class="value">${escape(new Date(r.maj).toLocaleString('fr-BE'))}</div>` : ''}
+      <div class="label">Lien (URL Gmail ou portail)</div>
+      <input type="url" class="lien-input" data-id="${r.id}" placeholder="https://…" value="${escape(r.lien)}">
+      <div class="label" style="margin-top:8px">Notes (modifiables)</div>
+      <textarea data-id="${r.id}" data-action="notes-input">${escape(r.notes)}</textarea>
+      <div class="save-row">
+        <button class="save" data-action="save-details" data-id="${r.id}">Enregistrer</button>
+      </div>
+    </div>`;
+  }
+
+  function closeMenu() {
+    if (state.pendingMenu) { state.pendingMenu.remove(); state.pendingMenu = null; }
+  }
+
+  function openStatusMenu(anchor, recId) {
+    closeMenu();
+    const rect = anchor.getBoundingClientRect();
+    const m = document.createElement('div');
+    m.className = 'menu';
+    m.style.top = (window.scrollY + rect.bottom + 4) + 'px';
+    m.style.left = (window.scrollX + rect.left) + 'px';
+    m.innerHTML = STATUTS.map(s =>
+      `<button data-status="${s}"><span class="mi-pill pill ${STATUT_CLASS[s]}">${STATUT_LABEL[s]}</span></button>`
+    ).join('');
+    m.addEventListener('click', e => {
+      const btn = e.target.closest('button[data-status]'); if (!btn) return;
+      const s = btn.getAttribute('data-status'); closeMenu();
+      changeField(recId, F.STATUT, s, 'statut');
+    });
+    document.body.appendChild(m);
+    state.pendingMenu = m;
+  }
+
+  function openOwnerMenu(anchor, recId) {
+    closeMenu();
+    const rect = anchor.getBoundingClientRect();
+    const m = document.createElement('div');
+    m.className = 'menu';
+    m.style.top = (window.scrollY + rect.bottom + 4) + 'px';
+    m.style.left = (window.scrollX + rect.left) + 'px';
+    m.innerHTML = OWNERS.map(o =>
+      `<button data-owner="${o}"><span class="mi-pill pill ${OWNER_CLASS[o]}">${OWNER_LABEL[o]}</span></button>`
+    ).join('');
+    m.addEventListener('click', e => {
+      const btn = e.target.closest('button[data-owner]'); if (!btn) return;
+      const o = btn.getAttribute('data-owner'); closeMenu();
+      changeField(recId, F.OWNER, o, 'owner');
+    });
+    document.body.appendChild(m);
+    state.pendingMenu = m;
+  }
+
+  async function changeField(recId, fieldId, value, localKey) {
+    const rec = state.records.find(x => x.id === recId);
+    if (!rec) return;
+    const oldVal = rec[localKey];
+    rec[localKey] = value;
+    rec.maj = new Date().toISOString();
+    render();
+    try {
+      await updateField(recId, fieldId, value);
+      showToast(`✓ ${rec.nom} → ${value}`);
+    } catch (err) {
+      rec[localKey] = oldVal;
+      render();
+      showToast(`Erreur : ${err && err.message ? err.message : err}`, true);
+    }
+  }
+
+  async function saveDetails(recId, notes, lien) {
+    const rec = state.records.find(x => x.id === recId);
+    if (!rec) return;
+    const oldNotes = rec.notes, oldLien = rec.lien;
+    rec.notes = notes;
+    rec.lien = lien;
+    rec.maj = new Date().toISOString();
+    const fields = {};
+    fields[F.NOTES] = notes;
+    fields[F.LIEN] = lien || '';
+    fields[F.MAJ] = rec.maj;
+    try {
+      await updateRecord(recId, fields);
+      showToast(`✓ Enregistré`);
+    } catch (err) {
+      rec.notes = oldNotes; rec.lien = oldLien;
+      showToast(`Erreur : ${err && err.message ? err.message : err}`, true);
+    }
+  }
+
+  function bindEvents() {
+    const root = document.getElementById('root');
+    document.addEventListener('click', onDocClick, { once: true });
+
+    root.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => {
+      state.activeTab = b.getAttribute('data-tab');
+      localStorage.setItem('cloture2025.tab', state.activeTab);
+      render();
+    }));
+
+    root.querySelectorAll('.stat').forEach(s => s.addEventListener('click', () => {
+      const v = s.getAttribute('data-stat');
+      if (v === '_in_progress') {
+        // toggle a multi-status filter — keep simple: just don't filter
+        state.statusFilter = '';
+      } else {
+        state.statusFilter = state.statusFilter === v ? '' : v;
+      }
+      localStorage.setItem('cloture2025.statusFilter', state.statusFilter);
+      render();
+    }));
+
+    const sf = root.querySelector('#statusFilter');
+    if (sf) sf.addEventListener('change', e => {
+      state.statusFilter = e.target.value;
+      localStorage.setItem('cloture2025.statusFilter', state.statusFilter);
+      render();
+    });
+
+    const of = root.querySelector('#ownerFilter');
+    if (of) of.addEventListener('change', e => {
+      state.ownerFilter = e.target.value;
+      localStorage.setItem('cloture2025.ownerFilter', state.ownerFilter);
+      render();
+    });
+
+    const hc = root.querySelector('#hideClosed');
+    if (hc) hc.addEventListener('change', e => {
+      state.hideClosed = e.target.checked;
+      localStorage.setItem('cloture2025.hideClosed', state.hideClosed);
+      render();
+    });
+
+    const search = root.querySelector('#search');
+    if (search) search.addEventListener('input', e => {
+      state.search = e.target.value;
+      // light debounce
+      clearTimeout(window._searchTimeout);
+      window._searchTimeout = setTimeout(render, 150);
+    });
+
+    root.querySelectorAll('[data-action]').forEach(el => {
+      const action = el.getAttribute('data-action');
+      const id = el.getAttribute('data-id');
+      if (action === 'status') {
+        el.addEventListener('click', e => { e.stopPropagation(); openStatusMenu(el, id); });
+      } else if (action === 'owner') {
+        el.addEventListener('click', e => { e.stopPropagation(); openOwnerMenu(el, id); });
+      } else if (action === 'expand') {
+        el.addEventListener('click', e => {
+          e.stopPropagation();
+          if (state.expanded.has(id)) state.expanded.delete(id); else state.expanded.add(id);
+          render();
+        });
+      } else if (action === 'save-details') {
+        el.addEventListener('click', async e => {
+          e.stopPropagation();
+          const ta = root.querySelector(`textarea[data-id="${id}"]`);
+          const li = root.querySelector(`input.lien-input[data-id="${id}"]`);
+          if (!ta) return;
+          el.disabled = true; el.textContent = 'Enregistrement…';
+          await saveDetails(id, ta.value, li ? li.value.trim() : '');
+          render();
+        });
+      }
+    });
+  }
+
+  function onDocClick(e) {
+    if (state.pendingMenu && !state.pendingMenu.contains(e.target)) closeMenu();
+    document.addEventListener('click', onDocClick, { once: true });
+  }
+
+  function renderSetup(errMsg) {
+    const root = document.getElementById('root');
+    root.innerHTML = `
+      <div style="max-width: 520px; margin: 40px auto; background: white; border: 1px solid var(--border);
+                   border-radius: 10px; padding: 28px; box-shadow: var(--shadow);">
+        <div style="font-size: 13px; color: var(--text-muted); text-transform: uppercase;
+                     letter-spacing: .05em; font-weight: 600; margin-bottom: 8px;">
+          Configuration initiale
+        </div>
+        <h2 style="margin: 0 0 16px 0; font-size: 22px; color: var(--teal);">
+          Token Airtable requis
+        </h2>
+        <p style="font-size: 14px; color: var(--text); margin: 0 0 12px 0; line-height: 1.55;">
+          Pour acceder au dashboard, colle le token Airtable que Diego t'a envoye via Slack.
+          Il est stocke uniquement dans ton navigateur (localStorage) et n'est jamais transmis ailleurs.
+        </p>
+        <div style="background: #f9fafb; border-left: 3px solid var(--teal); padding: 10px 14px;
+                     border-radius: 4px; font-size: 12.5px; color: var(--text-muted); margin-bottom: 18px;">
+          <strong>Format :</strong> commence par <code>pat...</code> suivi d'un point et d'une longue chaine.
+        </div>
+        ${errMsg ? `<div class="error">${escape(errMsg)}</div>` : ''}
+        <input type="password" id="pat-input" placeholder="patXXXXXXXXX.YYYYYYY..." style="
+          width: 100%; padding: 10px 12px; font-size: 13px; font-family: ui-monospace, monospace;
+          border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box;
+          margin-bottom: 12px;
+        ">
+        <button id="pat-save" style="
+          width: 100%; padding: 11px; background: var(--teal); color: white;
+          border: 0; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer;
+        ">Enregistrer et acceder au dashboard</button>
+        <div style="font-size: 11.5px; color: var(--text-muted); text-align: center; margin-top: 14px;">
+          Tu pourras le rotater plus tard via le bouton ⚙ en haut a droite.
+        </div>
+      </div>
+    `;
+    const inp = document.getElementById('pat-input');
+    const btn = document.getElementById('pat-save');
+    inp.focus();
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') btn.click(); });
+    btn.addEventListener('click', async () => {
+      const pat = inp.value.trim();
+      if (!pat || !/^pat[A-Za-z0-9]{14,}\..+/.test(pat)) {
+        renderSetup('Format invalide. Le token doit commencer par "pat" suivi d\\'un point et d\\'une longue chaine hexa.');
+        return;
+      }
+      btn.disabled = true; btn.textContent = 'Verification…';
+      setPat(pat);
+      try {
+        // Smoke test : 1 record
+        const params = new URLSearchParams({ pageSize: '1', returnFieldsByFieldId: 'true' });
+        await airtableFetch(`${AIRTABLE_BASE_URL}?${params}`);
+        showToast('✓ Token valide');
+        init();
+      } catch (err) {
+        clearPat();
+        if (err.message === 'BAD_PAT') {
+          renderSetup('Token rejete par Airtable (401/403). Verifie aupres de Diego que le token est correct et non expire.');
+        } else {
+          renderSetup('Erreur reseau : ' + err.message);
+        }
+      }
+    });
+  }
+
+  async function init() {
+    if (!getPat()) { renderSetup(); return; }
+    try {
+      state.loading = true; render();
+      state.records = await fetchAll();
+      state.records.sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
+      state.loading = false;
+      state.error = null;
+      render();
+    } catch (err) {
+      state.loading = false;
+      if (err.message === 'BAD_PAT') {
+        clearPat();
+        renderSetup('Le token stocke a ete rejete (peut-etre expire ou revoque). Resaisis-le.');
+        return;
+      }
+      state.error = err && err.message ? err.message : String(err);
+      render();
+    }
+  }
+
+  // Bouton Recharger en haut a droite
+  document.getElementById('refresh-btn').addEventListener('click', () => {
+    state.expanded = new Set();
+    init();
+    showToast('Rechargement…');
+  });
+  // Bouton Settings (rotation/clear PAT)
+  document.getElementById('settings-btn').addEventListener('click', () => {
+    if (confirm('Effacer le token Airtable stocke et le ressaisir ?')) {
+      clearPat();
+      renderSetup();
+    }
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>

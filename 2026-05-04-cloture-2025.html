@@ -778,7 +778,7 @@
     btn.addEventListener('click', async () => {
       const pat = inp.value.trim();
       if (!pat || !/^pat[A-Za-z0-9]{14,}\..+/.test(pat)) {
-        renderSetup('Format invalide. Le token doit commencer par "pat" suivi d\\'un point et d\\'une longue chaine hexa.');
+        renderSetup("Format invalide. Le token doit commencer par 'pat' suivi d'un point et d'une longue chaine hexa.");
         return;
       }
       btn.disabled = true; btn.textContent = 'Verification…';

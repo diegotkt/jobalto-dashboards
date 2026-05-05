@@ -3878,6 +3878,28 @@ function populateColumnSelect(tableId, col, data) {
   .at-toast-ok { background:#2F855A; color:white; }
   .at-toast-err { background:#C92A2A; color:white; }
   @keyframes atSlide { from{transform:translateY(20px);opacity:0;} to{transform:translateY(0);opacity:1;} }
+
+  /* Add button + modal */
+  .at-add-btn { background:var(--primary); color:white; border:0; padding:9px 14px; border-radius:8px; font-size:13px; cursor:pointer; font-weight:600; }
+  .at-add-btn:hover:not(:disabled) { background:var(--primary-light); }
+  .at-add-btn:disabled { opacity:0.5; cursor:not-allowed; }
+  .at-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); display:flex; align-items:flex-start; justify-content:center; z-index:2000; padding:40px 20px; overflow-y:auto; }
+  .at-modal { background:white; border-radius:12px; padding:24px 28px; max-width:560px; width:100%; box-shadow:0 10px 40px rgba(0,0,0,0.3); }
+  .at-modal h3 { margin:0 0 4px; color:var(--primary); font-size:18px; border:none; padding:0; }
+  .at-modal .at-modal-sub { font-size:12px; color:var(--text-soft); margin:0 0 16px; }
+  .at-modal label { display:block; font-size:12px; font-weight:600; color:var(--text-soft); margin:14px 0 4px; }
+  .at-modal label .req { color:#C92A2A; }
+  .at-modal input[type="text"], .at-modal input[type="url"], .at-modal input[type="email"],
+  .at-modal input[type="date"], .at-modal select, .at-modal textarea {
+    width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:6px; font-size:14px; font-family:inherit; box-sizing:border-box;
+  }
+  .at-modal textarea { min-height:60px; resize:vertical; }
+  .at-modal select[multiple] { min-height:100px; }
+  .at-modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:22px; }
+  .at-modal-actions button { padding:9px 18px; border-radius:6px; border:1px solid var(--border); background:white; cursor:pointer; font-size:14px; font-weight:600; }
+  .at-modal-actions button.primary { background:var(--primary); color:white; border-color:var(--primary); }
+  .at-modal-actions button.primary:hover:not(:disabled) { background:var(--primary-light); }
+  .at-modal-actions button:disabled { opacity:0.5; cursor:not-allowed; }
 </style>
 
 <script>
@@ -4387,8 +4409,361 @@ function populateColumnSelect(tableId, col, data) {
         const page = document.getElementById(pageId);
         const banner = page && page.querySelector(".at-banner");
         if (!banner) bannerOn(pageId);
+        addEntryButton(slug);
       }, 100);
     }
+  });
+
+  // ============================================================
+  // ADD-ENTRY BUTTONS + MODALS
+  // ============================================================
+
+  function buildSquadOptions(includeEmpty) {
+    let html = includeEmpty ? '<option value="">—</option>' : '';
+    mapping.squadList.forEach(name => {
+      html += '<option value="' + mapping.squadByName[name] + '">' + name + '</option>';
+    });
+    return html;
+  }
+
+  function buildContactsOptions(includeEmpty) {
+    let html = includeEmpty ? '<option value="">—</option>' : '';
+    // Sort by name for the dropdown
+    const sorted = cache.contacts.slice().sort((a, b) => {
+      const an = (a.fields && a.fields["Société"]) || "";
+      const bn = (b.fields && b.fields["Société"]) || "";
+      return an.localeCompare(bn);
+    });
+    sorted.forEach(r => {
+      const name = (r.fields && r.fields["Société"]) || "";
+      if (name) html += '<option value="' + r.id + '">' + escapeHtml(name) + '</option>';
+    });
+    return html;
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, c => (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+    ));
+  }
+
+  function buildField(field) {
+    const req = field.required ? ' <span class="req">*</span>' : '';
+    const reqAttr = field.required ? ' required' : '';
+    const name = escapeHtml(field.name);
+    const label = '<label for="atf-' + escapeHtml(field.name) + '">' + escapeHtml(field.label) + req + '</label>';
+    const id = 'atf-' + escapeHtml(field.name);
+    let input = '';
+
+    if (field.type === "textarea") {
+      input = '<textarea id="' + id + '" name="' + name + '"' + reqAttr + '></textarea>';
+    } else if (field.type === "select") {
+      let opts = '<option value="">—</option>';
+      (field.options || []).forEach(o => {
+        const sel = o === field.default ? ' selected' : '';
+        opts += '<option value="' + escapeHtml(o) + '"' + sel + '>' + escapeHtml(o) + '</option>';
+      });
+      input = '<select id="' + id + '" name="' + name + '"' + reqAttr + '>' + opts + '</select>';
+    } else if (field.type === "select-squad") {
+      input = '<select id="' + id + '" name="' + name + '"' + reqAttr + '>' + buildSquadOptions(true) + '</select>';
+    } else if (field.type === "select-squad-multi") {
+      input = '<select id="' + id + '" name="' + name + '" multiple>' + buildSquadOptions(false) + '</select>';
+    } else if (field.type === "select-contacts") {
+      input = '<select id="' + id + '" name="' + name + '"' + reqAttr + '>' + buildContactsOptions(true) + '</select>';
+    } else {
+      // text, url, email, date
+      const t = field.type === "date" ? "date" : (field.type === "url" ? "url" : (field.type === "email" ? "email" : "text"));
+      input = '<input type="' + t + '" id="' + id + '" name="' + name + '"' + reqAttr + '>';
+    }
+
+    return label + input;
+  }
+
+  function openModal(config) {
+    if (!pat) {
+      toast("Connecte-toi à Airtable d'abord", false);
+      return;
+    }
+    closeModal();
+
+    const overlay = document.createElement("div");
+    overlay.className = "at-modal-overlay";
+    overlay.id = "at-modal-overlay";
+
+    let formHtml = '';
+    config.fields.forEach(f => { formHtml += buildField(f); });
+
+    overlay.innerHTML =
+      '<div class="at-modal">' +
+        '<h3>' + escapeHtml(config.title) + '</h3>' +
+        '<p class="at-modal-sub">' + escapeHtml(config.subtitle || "") + '</p>' +
+        '<form id="at-form">' +
+          formHtml +
+          '<div class="at-modal-actions">' +
+            '<button type="button" id="at-cancel">Annuler</button>' +
+            '<button type="submit" class="primary" id="at-submit">Ajouter</button>' +
+          '</div>' +
+        '</form>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) closeModal();
+    });
+    document.getElementById("at-cancel").onclick = closeModal;
+    document.getElementById("at-form").onsubmit = (e) => {
+      e.preventDefault();
+      submitModal(config);
+    };
+  }
+
+  function closeModal() {
+    const o = document.getElementById("at-modal-overlay");
+    if (o) o.remove();
+  }
+
+  async function submitModal(config) {
+    const form = document.getElementById("at-form");
+    const submit = document.getElementById("at-submit");
+    submit.disabled = true;
+    submit.textContent = "Envoi…";
+
+    // Collect form values into Airtable fields object
+    const fields = {};
+    config.fields.forEach(f => {
+      const el = form.querySelector('[name="' + CSS.escape(f.name) + '"]');
+      if (!el) return;
+      let v;
+      if (f.type === "select-squad-multi") {
+        v = Array.from(el.selectedOptions).map(o => o.value).filter(Boolean);
+      } else {
+        v = el.value;
+      }
+      if (v === "" || v == null || (Array.isArray(v) && v.length === 0)) return;
+
+      // Map value into Airtable shape
+      if (f.type === "select-squad" || f.type === "select-contacts") {
+        fields[f.name] = [v]; // multipleRecordLinks expects array
+      } else if (f.type === "select-squad-multi") {
+        fields[f.name] = v;
+      } else {
+        fields[f.name] = v;
+      }
+    });
+
+    fields["Dernière modif"] = new Date().toISOString();
+
+    const res = await api("POST", "/" + BASE_ID + "/" + config.tableId, {
+      records: [{ fields }]
+    });
+    submit.disabled = false;
+    submit.textContent = "Ajouter";
+
+    if (!res.ok) {
+      const msg = (res.data && res.data.error && res.data.error.message) || ("HTTP " + res.status);
+      toast("Erreur : " + msg, false);
+      return;
+    }
+
+    const created = res.data.records[0];
+    toast("✓ Créé : " + (config.label(created.fields) || "OK"), true);
+    closeModal();
+
+    if (config.onCreated) config.onCreated(created);
+  }
+
+  // ---- Append-row helpers ----
+  function appendContactRow(rec) {
+    const tbody = document.querySelector("#ct-table tbody");
+    if (!tbody) return;
+    const f = rec.fields || {};
+    const tr = document.createElement("tr");
+    tr.dataset.societe       = f["Société"] || "";
+    tr.dataset.secteur       = f["Secteur"] || "";
+    tr.dataset.contact       = f["Contact"] || "";
+    tr.dataset.fonction      = f["Fonction"] || "";
+    tr.dataset.owner         = "";
+    tr.dataset.rdv           = f["RDV slot"] || "";
+    tr.dataset.statut_court  = f["Statut"] || "À contacter";
+    tr.dataset.commentaire   = f["Commentaire"] || "";
+    tr.dataset.airtableId    = rec.id;
+    const siteLink = f["Site"] ? '<a href="' + escapeHtml(f["Site"]) + '" target="_blank" rel="noopener">site</a>' : '';
+    tr.innerHTML =
+      '<td><strong>' + escapeHtml(f["Société"] || "") + '</strong>' + (siteLink ? '<br><small>' + siteLink + '</small>' : '') + '</td>' +
+      '<td>' + escapeHtml(f["Secteur"] || "") + '</td>' +
+      '<td>' + escapeHtml(f["Contact"] || "") + (f["Fonction"] ? '<br><small>' + escapeHtml(f["Fonction"]) + '</small>' : '') + '</td>' +
+      '<td></td>' +
+      '<td>' + escapeHtml(f["RDV slot"] || "—") + '</td>' +
+      '<td></td>' +
+      '<td><small>' + escapeHtml(f["Commentaire"] || "") + '</small></td>';
+    tbody.appendChild(tr);
+    // Re-bridge so the dropdowns get added to this new row
+    bridged.contacts = false;
+    bridgeContacts();
+    bridged.contacts = true;
+  }
+
+  function appendTodoRow(rec) {
+    const tbody = document.querySelector("#todo-table tbody");
+    if (!tbody) return;
+    const f = rec.fields || {};
+    // Resolve owner display name from the linked record id
+    let ownerName = "";
+    if (Array.isArray(f["Owner"]) && f["Owner"][0]) {
+      const ownerId = f["Owner"][0];
+      ownerName = Object.keys(mapping.squadByName).find(n => mapping.squadByName[n] === ownerId) || "";
+    }
+    const statut = f["Statut TODO"] || "À faire";
+    const tr = document.createElement("tr");
+    tr.dataset.owner    = ownerName;
+    tr.dataset.tache    = f["Tâche"] || "";
+    tr.dataset.categorie = "";
+    tr.dataset.deadline = f["Échéance"] || "";
+    tr.dataset.statut   = statut;
+    tr.dataset.airtableId = rec.id;
+    tr.innerHTML =
+      '<td><strong>' + escapeHtml(ownerName) + '</strong></td>' +
+      '<td>' + escapeHtml(f["Tâche"] || "") + '</td>' +
+      '<td>—</td>' +
+      '<td>' + escapeHtml(f["Échéance"] || "") + '</td>' +
+      '<td></td>';
+    tbody.appendChild(tr);
+    bridged.todo = false;
+    bridgeTODO();
+    bridged.todo = true;
+  }
+
+  // ---- Form configs ----
+  function getModalConfig(slug) {
+    if (slug === "contacts_db") {
+      return {
+        title: "Ajouter une société",
+        subtitle: "Crée un nouveau contact dans la table Airtable Contacts.",
+        tableId: TBL.CONTACTS,
+        fields: [
+          { name: "Société",       label: "Société",         type: "text",          required: true },
+          { name: "Secteur",       label: "Secteur",         type: "text" },
+          { name: "Site",          label: "Site web",        type: "url" },
+          { name: "Contact",       label: "Contact (email/nom)", type: "text" },
+          { name: "Fonction",      label: "Fonction",        type: "text" },
+          { name: "Owner",         label: "Owner",           type: "select-squad" },
+          { name: "Statut",        label: "Statut",          type: "select", options: STATUTS_CONTACTS, default: "À contacter" },
+          { name: "RDV slot",      label: "RDV slot (texte libre)", type: "text" },
+          { name: "Statut détail", label: "Statut détail",   type: "textarea" },
+          { name: "Commentaire",   label: "Commentaire",     type: "textarea" },
+          { name: "Adresse EN",    label: "Adresse (anglais)", type: "textarea" },
+          { name: "Adresse CN",    label: "Adresse (chinois)", type: "textarea" },
+        ],
+        label: f => f["Société"] || "société",
+        onCreated: (rec) => {
+          cache.contacts.push(rec);
+          const name = (rec.fields && rec.fields["Société"]) || "";
+          if (name) {
+            const k = name.toLowerCase().trim();
+            mapping.contactsBySociete[k] = rec.id;
+            mapping.contactsList.push({ key: k, id: rec.id });
+            mapping.contactsList.sort((a, b) => b.key.length - a.key.length);
+          }
+          appendContactRow(rec);
+        }
+      };
+    }
+    if (slug === "rdv") {
+      return {
+        title: "Ajouter un RDV",
+        subtitle: "Crée un événement dans la table Airtable RDV (rendez-vous réel avec date/heure/lieu). Visible dans Airtable.",
+        tableId: TBL.RDV,
+        fields: [
+          { name: "Titre",        label: "Titre",                type: "text", required: true },
+          { name: "Société",      label: "Société (lien Contacts)", type: "select-contacts" },
+          { name: "Date",         label: "Date",                 type: "date" },
+          { name: "Heure",        label: "Heure (texte libre)",  type: "text" },
+          { name: "Lieu",         label: "Lieu",                 type: "text" },
+          { name: "Statut RDV",   label: "Statut",               type: "select", options: ["Confirmé", "À confirmer", "Reprogrammer", "Annulé"], default: "À confirmer" },
+          { name: "Participants", label: "Participants (Cmd/Ctrl-clic pour multi)", type: "select-squad-multi" },
+          { name: "Notes",        label: "Notes",                type: "textarea" },
+        ],
+        label: f => f["Titre"] || "RDV",
+        onCreated: () => {
+          // Page RDV affiche les Contacts dénormalisés, pas les RDV Airtable —
+          // on ne touche pas à la table HTML.
+        }
+      };
+    }
+    if (slug === "todo") {
+      return {
+        title: "Ajouter une tâche",
+        subtitle: "Crée une tâche dans la table Airtable TODO.",
+        tableId: TBL.TODO,
+        fields: [
+          { name: "Tâche",       label: "Tâche",        type: "text", required: true },
+          { name: "Owner",       label: "Owner",        type: "select-squad" },
+          { name: "Société",     label: "Société liée (optionnel)", type: "select-contacts" },
+          { name: "Échéance",    label: "Échéance",     type: "date" },
+          { name: "Statut TODO", label: "Statut",       type: "select", options: STATUTS_TODO, default: "À faire" },
+          { name: "Priorité",    label: "Priorité",     type: "select", options: ["Critique", "Haut", "Moyen", "Bas"], default: "Moyen" },
+          { name: "Notes",       label: "Notes",        type: "textarea" },
+        ],
+        label: f => (f["Tâche"] || "tâche").substring(0, 40),
+        onCreated: (rec) => {
+          cache.todo.push(rec);
+          const t = (rec.fields && rec.fields["Tâche"]) || "";
+          if (t) mapping.todoByTache[t] = rec.id;
+          appendTodoRow(rec);
+        }
+      };
+    }
+    return null;
+  }
+
+  function addEntryButton(slug) {
+    const labelMap = {
+      contacts_db: "+ Ajouter société",
+      rdv:         "+ Ajouter RDV",
+      todo:        "+ Ajouter tâche",
+    };
+    const filterBarMap = {
+      contacts_db: "#page-contacts_db .filter-bar",
+      rdv:         "#page-rdv .filter-bar",
+      todo:        "#page-todo .filter-bar",
+    };
+    const filterBar = document.querySelector(filterBarMap[slug]);
+    if (!filterBar) return;
+    if (filterBar.querySelector(".at-add-btn")) return; // already present
+
+    const btn = document.createElement("button");
+    btn.className = "at-add-btn";
+    btn.textContent = labelMap[slug];
+    btn.disabled = !pat || mapping.squadList.length === 0; // wait until data is loaded
+    btn.title = pat ? "" : "Connecte-toi à Airtable d'abord";
+    btn.onclick = () => {
+      const cfg = getModalConfig(slug);
+      if (cfg) openModal(cfg);
+    };
+    filterBar.appendChild(btn);
+  }
+
+  function addAllEntryButtons() {
+    addEntryButton("contacts_db");
+    addEntryButton("rdv");
+    addEntryButton("todo");
+  }
+
+  // Add buttons after init + after sync (when squad is loaded)
+  setTimeout(addAllEntryButtons, 300);
+  // Re-enable / refresh buttons after sync completes
+  const _origSync = syncAll;
+  syncAll = async function() {
+    await _origSync.apply(this, arguments);
+    // Force-refresh buttons (in case they were disabled before squad loaded)
+    document.querySelectorAll(".at-add-btn").forEach(b => b.remove());
+    addAllEntryButtons();
+  };
+
+  // Esc closes modal
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeModal();
   });
 })();
 </script>

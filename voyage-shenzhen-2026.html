@@ -4715,23 +4715,25 @@ function populateColumnSelect(tableId, col, data) {
     }
     if (slug === "rdv") {
       return {
-        title: "Ajouter un RDV",
-        subtitle: "Crée un événement dans la table Airtable RDV (date + durée → fin auto-calculée pour la vue calendrier).",
+        title: "Ajouter un événement à l'agenda",
+        subtitle: "Crée un événement dans la table Airtable Agenda (RDV, repas, exploration, soirée, logistique, travel, ou personnel).",
         tableId: TBL.RDV,
         fields: [
           { name: "Titre",        label: "Titre",                type: "text", required: true },
-          { name: "Société",      label: "Société (lien Contacts)", type: "select-contacts" },
+          { name: "Type",         label: "Type",                 type: "select", options: ["RDV business", "Exploration tech", "Repas", "Soirée", "Logistique", "Personnel", "Travel"], default: "RDV business" },
+          { name: "Société",      label: "Société (lien Contacts, optionnel)", type: "select-contacts" },
           { name: "Date",         label: "Début (date + heure)", type: "datetime", default: "2026-06-22T09:30" },
-          { name: "Durée",        label: "Durée (h:mm)",         type: "duration", default: "2:30" },
+          { name: "Durée",        label: "Durée (h:mm)",         type: "duration", default: "1:00" },
           { name: "Lieu",         label: "Lieu",                 type: "text" },
-          { name: "Statut RDV",   label: "Statut",               type: "select", options: ["Confirmé", "À confirmer", "Reprogrammer", "Annulé"], default: "À confirmer" },
+          { name: "Statut RDV",   label: "Statut (uniquement pour les RDV business)", type: "select", options: ["Confirmé", "À confirmer", "Reprogrammer", "Annulé"] },
           { name: "Participants", label: "Participants (Cmd/Ctrl-clic pour multi)", type: "select-squad-multi" },
           { name: "Notes",        label: "Notes",                type: "textarea" },
         ],
-        label: f => f["Titre"] || "RDV",
-        onCreated: () => {
-          // Page RDV affiche les Contacts dénormalisés, pas les RDV Airtable —
-          // on ne touche pas à la table HTML.
+        label: f => f["Titre"] || "événement",
+        onCreated: (rec) => {
+          // Add to cache and re-render the agenda views
+          if (cache.rdv) cache.rdv.push(rec);
+          if (typeof setupAgenda === "function") setupAgenda();
         }
       };
     }
@@ -4764,7 +4766,7 @@ function populateColumnSelect(tableId, col, data) {
   function addEntryButton(slug) {
     const labelMap = {
       contacts_db: "+ Ajouter société",
-      rdv:         "+ Ajouter RDV",
+      rdv:         "+ Ajouter événement",
       todo:        "+ Ajouter tâche",
     };
     const filterBarMap = {
@@ -5015,6 +5017,8 @@ function populateColumnSelect(tableId, col, data) {
     await _origSyncAll2.apply(this, arguments);
     installFilterOverrides();
     installAllMultiSelects();
+    // Re-render the planning agenda using the freshly-fetched Airtable data
+    if (typeof setupAgenda === "function") setupAgenda();
   };
 
   // Also install at boot in case static data is enough
@@ -5109,7 +5113,91 @@ function populateColumnSelect(tableId, col, data) {
     return "";
   }
 
+  // Map Airtable Agenda records to the parsed-events shape used by renderAgenda.
+  // Used as the primary source once the bridge has fetched data; the static HTML
+  // gantt-table parser below remains as fallback for offline/disconnected mode.
+  const DATE_TO_DAY = {
+    "2026-06-20": "sam20", "2026-06-21": "dim21", "2026-06-22": "lun22",
+    "2026-06-23": "mar23", "2026-06-24": "mer24", "2026-06-25": "jeu25",
+  };
+  const TYPE_TO_COLOR = {
+    "RDV business":     "#c6efce",
+    "Exploration tech": "#ddebf7",
+    "Repas":            "#fce4d6",
+    "Soirée":           "#e4dfec",
+    "Logistique":       "#f2f2f2",
+    "Personnel":        "",
+    "Travel":           "#f2f2f2",
+  };
+
+  function isoToBrussels(iso) {
+    // ISO is in UTC ("...Z"). The Agenda Date field is configured Europe/Brussels (CEST = UTC+2 in June).
+    // Shift by +2h to get the wall-clock time used in the trip planning.
+    if (!iso) return null;
+    const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    if (!m) return null;
+    let [, year, month, day, hour, minute] = m;
+    year = parseInt(year, 10); month = parseInt(month, 10); day = parseInt(day, 10);
+    hour = parseInt(hour, 10) + 2; minute = parseInt(minute, 10);
+    if (hour >= 24) { hour -= 24; day += 1; }
+    return {
+      date:  year + "-" + String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0"),
+      time:  String(hour).padStart(2, "0") + ":" + String(minute).padStart(2, "0"),
+      epoch: Date.UTC(year, month - 1, day, hour, minute),
+    };
+  }
+
+  function parseAgendaFromAirtable() {
+    if (!cache.rdv || !cache.rdv.length) return null;
+    const days = [
+      { id: "sam20", label: "Sam 20/06" },
+      { id: "dim21", label: "Dim 21/06" },
+      { id: "lun22", label: "Lun 22/06" },
+      { id: "mar23", label: "Mar 23/06" },
+      { id: "mer24", label: "Mer 24/06" },
+      { id: "jeu25", label: "Jeu 25/06" },
+    ];
+    const events = [];
+    cache.rdv.forEach(r => {
+      const f = r.fields || {};
+      const start = isoToBrussels(f.Date);
+      if (!start) return;
+      const day = DATE_TO_DAY[start.date];
+      if (!day) return;
+      const dureeSec = f["Durée"] || 1800; // fallback 30min
+      const endEpoch = start.epoch + dureeSec * 1000;
+      const endDt = new Date(endEpoch);
+      const endHour = endDt.getUTCHours();
+      const endMin = endDt.getUTCMinutes();
+      const endDate = endDt.toISOString().substring(0, 10);
+      let endTime = String(endHour).padStart(2, "0") + ":" + String(endMin).padStart(2, "0");
+      if (endDate !== start.date) endTime = "00:00";  // crosses midnight → render as end-of-day
+
+      let color = TYPE_TO_COLOR[f.Type] || "";
+      const status = f["Statut RDV"];
+      if (f.Type === "RDV business" && (status === "À confirmer" || status === "Reprogrammer")) {
+        color = "#fff2cc";
+      }
+
+      events.push({
+        day:       day,
+        startTime: start.time,
+        endTime:   endTime,
+        color:     color,
+        text:      f.Titre || "(sans titre)",
+        type:      f.Type || "",
+        recordId:  r.id,
+      });
+    });
+    return { days, events };
+  }
+
   function parseGanttData() {
+    // Prefer live Airtable data when available
+    const fromAt = parseAgendaFromAirtable();
+    if (fromAt && fromAt.events.length > 0) return fromAt;
+
+    // Fallback: parse the static HTML gantt-table
     const table = document.querySelector("#page-planning .gantt-table");
     if (!table) return null;
     const tbody = table.querySelector("tbody");
@@ -5369,13 +5457,20 @@ function populateColumnSelect(tableId, col, data) {
 
   function setupAgenda() {
     const planning = document.getElementById("page-planning");
-    if (!planning || planning.dataset.agendaInit) return;
+    if (!planning) return;
 
     const ganttTable = planning.querySelector(".gantt-table");
     if (!ganttTable) return;
 
     const parsed = parseGanttData();
     if (!parsed) return;
+
+    // Re-render if we already inserted an agenda but data has changed (e.g. after Airtable sync)
+    if (planning.dataset.agendaInit) {
+      // Remove old agenda nodes and rebuild from fresh data
+      planning.querySelectorAll(".agenda").forEach(a => a.remove());
+      planning.querySelectorAll("h2[data-mini-inserted]").forEach(h => delete h.dataset.miniInserted);
+    }
     planning.dataset.agendaInit = "1";
 
     // Replace the existing 6-day Gantt with the new agenda.

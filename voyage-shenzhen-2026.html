@@ -4470,6 +4470,12 @@ function populateColumnSelect(tableId, col, data) {
       input = '<select id="' + id + '" name="' + name + '" multiple>' + buildSquadOptions(false) + '</select>';
     } else if (field.type === "select-contacts") {
       input = '<select id="' + id + '" name="' + name + '"' + reqAttr + '>' + buildContactsOptions(true) + '</select>';
+    } else if (field.type === "datetime") {
+      const def = field.default ? ' value="' + escapeHtml(field.default) + '"' : '';
+      input = '<input type="datetime-local" id="' + id + '" name="' + name + '"' + reqAttr + def + '>';
+    } else if (field.type === "duration") {
+      const def = field.default ? ' value="' + escapeHtml(field.default) + '"' : '';
+      input = '<input type="text" id="' + id + '" name="' + name + '" placeholder="h:mm (ex: 2:30)" pattern="[0-9]+:[0-5][0-9]"' + reqAttr + def + '>';
     } else {
       // text, url, email, date
       const t = field.type === "date" ? "date" : (field.type === "url" ? "url" : (field.type === "email" ? "email" : "text"));
@@ -4547,6 +4553,17 @@ function populateColumnSelect(tableId, col, data) {
         fields[f.name] = [v]; // multipleRecordLinks expects array
       } else if (f.type === "select-squad-multi") {
         fields[f.name] = v;
+      } else if (f.type === "datetime") {
+        // datetime-local "2026-06-22T09:30" → ISO with timezone
+        // Treat as Europe/Brussels local time (the squad's home tz)
+        try {
+          const d = new Date(v);
+          if (!isNaN(d.getTime())) fields[f.name] = d.toISOString();
+        } catch (e) { /* skip invalid */ }
+      } else if (f.type === "duration") {
+        // h:mm → seconds
+        const m = String(v).match(/^(\d+):([0-5]\d)$/);
+        if (m) fields[f.name] = parseInt(m[1], 10) * 3600 + parseInt(m[2], 10) * 60;
       } else {
         fields[f.name] = v;
       }
@@ -4672,13 +4689,13 @@ function populateColumnSelect(tableId, col, data) {
     if (slug === "rdv") {
       return {
         title: "Ajouter un RDV",
-        subtitle: "Crée un événement dans la table Airtable RDV (rendez-vous réel avec date/heure/lieu). Visible dans Airtable.",
+        subtitle: "Crée un événement dans la table Airtable RDV (date + durée → fin auto-calculée pour la vue calendrier).",
         tableId: TBL.RDV,
         fields: [
           { name: "Titre",        label: "Titre",                type: "text", required: true },
           { name: "Société",      label: "Société (lien Contacts)", type: "select-contacts" },
-          { name: "Date",         label: "Date",                 type: "date" },
-          { name: "Heure",        label: "Heure (texte libre)",  type: "text" },
+          { name: "Date",         label: "Début (date + heure)", type: "datetime", default: "2026-06-22T09:30" },
+          { name: "Durée",        label: "Durée (h:mm)",         type: "duration", default: "2:30" },
           { name: "Lieu",         label: "Lieu",                 type: "text" },
           { name: "Statut RDV",   label: "Statut",               type: "select", options: ["Confirmé", "À confirmer", "Reprogrammer", "Annulé"], default: "À confirmer" },
           { name: "Participants", label: "Participants (Cmd/Ctrl-clic pour multi)", type: "select-squad-multi" },

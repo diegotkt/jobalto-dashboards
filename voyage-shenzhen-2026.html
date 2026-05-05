@@ -3885,6 +3885,23 @@ function populateColumnSelect(tableId, col, data) {
   .agenda-ics-btn { background:var(--primary); color:white; border:0; padding:7px 12px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600; }
   .agenda-ics-btn:hover { background:var(--primary-light); }
 
+  /* Day map widget */
+  .day-map-details { margin:14px 0 22px; border:1px solid var(--border); border-radius:10px; background:white; }
+  .day-map-summary { padding:12px 18px; cursor:pointer; font-size:14px; font-weight:600; color:var(--primary); user-select:none; list-style:none; display:flex; align-items:center; justify-content:space-between; }
+  .day-map-summary::-webkit-details-marker { display:none; }
+  .day-map-summary::after { content:"▾"; font-size:11px; opacity:0.5; transition:transform 0.15s; }
+  .day-map-details[open] .day-map-summary::after { transform:rotate(180deg); }
+  .day-map-summary:hover { background:#F8FAFC; }
+  .day-map-content { padding:0 18px 18px; }
+  .day-map-img { width:100%; height:auto; max-width:640px; border-radius:6px; border:1px solid var(--border); display:block; margin:0 auto 12px; }
+  .day-map-actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; font-size:13px; }
+  .day-map-link { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; background:var(--primary); color:white; border-radius:6px; text-decoration:none; font-weight:600; }
+  .day-map-link:hover { background:var(--primary-light); border-bottom:0; }
+  .day-map-list { font-size:12.5px; color:var(--text); margin:10px 0 0; padding-left:0; list-style:none; }
+  .day-map-list li { padding:3px 0; display:flex; align-items:flex-start; gap:8px; }
+  .day-map-list li::before { content:attr(data-label); flex:0 0 22px; height:22px; background:#C92A2A; color:white; border-radius:50%; font-size:11px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; }
+  .day-map-list li.is-hotel::before { background:#1F4E78; content:"H"; }
+
   /* Planning page day filter */
   .planning-filter-bar { display:flex; flex-wrap:wrap; gap:8px; background:#F1F5F9; padding:14px 16px; border-radius:10px; margin:14px 0 24px; align-items:center; }
   .planning-filter-bar .pf-label { font-weight:600; font-size:13px; color:var(--text-soft); margin-right:6px; }
@@ -5525,6 +5542,225 @@ function populateColumnSelect(tableId, col, data) {
   }
 
   setTimeout(setupAgenda, 250);
+
+  // ============================================================
+  // DAY MAP WIDGETS (Google Static Maps + interactive Maps link)
+  // ============================================================
+  const GMAPS_API_KEY = "AIzaSyCwLxIiG9BAf7sAf-EljjequDtlB-2xbi8";
+  const HOTEL_COORDS = { lat: 22.5466, lng: 114.0594, title: "Fraser Suites Futian (hôtel)" };
+
+  // Approximate coords for the Shenzhen / Guangzhou area places used in the trip.
+  // Match keys are lowercased substrings tested against (Lieu + Titre).
+  const LIEU_COORDS = {
+    "fraser suites":   { lat: 22.5466, lng: 114.0594, title: "Fraser Suites Futian" },
+    "showroom shenzhen": { lat: 22.5380, lng: 114.0570, title: "Pudu showroom (Futian)" },
+    "pudu":            { lat: 22.5380, lng: 114.0570, title: "Pudu" },
+    "allybot":         { lat: 22.5560, lng: 114.0590, title: "Allybot office (Futian)" },
+    "yi fenghua":      { lat: 22.6940, lng: 114.0050, title: "Yi Fenghua Park (Longhua)" },
+    "zuowei":          { lat: 22.6940, lng: 114.0050, title: "Zuowei (Longhua)" },
+    "longhua":         { lat: 22.6940, lng: 114.0050, title: "Longhua district" },
+    "golden apple":    { lat: 22.7233, lng: 114.2400, title: "Golden Apple Park (Longgang)" },
+    "youibot":         { lat: 22.7233, lng: 114.2400, title: "Youibot (Longgang)" },
+    "longgang":        { lat: 22.7233, lng: 114.2400, title: "Longgang district" },
+    "han's laser":     { lat: 22.5403, lng: 113.9485, title: "Han's Laser Building (Nanshan)" },
+    "legend robot":    { lat: 22.5403, lng: 113.9485, title: "Legend Robot (Nanshan)" },
+    "ubtech":          { lat: 22.5530, lng: 113.9490, title: "UBTech HQ (Nanshan)" },
+    "nanshan":         { lat: 22.5403, lng: 113.9485, title: "Nanshan district" },
+    "huaqiangbei":     { lat: 22.5424, lng: 114.0867, title: "Huaqiangbei electronics market" },
+    "da dong":         { lat: 22.5470, lng: 114.0590, title: "Da Dong restaurant" },
+    "hotpot":          { lat: 22.5440, lng: 114.0680, title: "Hotpot resto (Futian)" },
+    "teppanyaki":      { lat: 22.5440, lng: 114.0680, title: "Teppanyaki resto" },
+    "speakeasy":       { lat: 22.5403, lng: 113.9485, title: "Speakeasy (Nanshan)" },
+    "oil club":        { lat: 22.5466, lng: 114.0594, title: "Oil Club" },
+    "rooftop":         { lat: 22.5466, lng: 114.0594, title: "Rooftop bar (Futian)" },
+    "yacht":           { lat: 22.4830, lng: 113.9100, title: "Shenzhen Bay marina" },
+    "shenzhen bay":    { lat: 22.4830, lng: 113.9100, title: "Shenzhen Bay" },
+    "blade runner":    { lat: 22.5380, lng: 113.9500, title: "Nanshan night walk" },
+    "tech tour":       { lat: 22.5424, lng: 114.0570, title: "Tech tour (Futian central)" },
+    "byd":             { lat: 22.6970, lng: 114.3500, title: "BYD Pingshan HQ" },
+    "xpeng":           { lat: 22.5466, lng: 114.0594, title: "XPeng (Futian provisional)" },
+    "ehang":           { lat: 23.1700, lng: 113.4320, title: "EHang Guangzhou" },
+    "guangzhou":       { lat: 23.1291, lng: 113.2644, title: "Guangzhou (HSR)" },
+    "hsr":             { lat: 22.5320, lng: 114.0570, title: "Futian HSR Station" },
+    "szx":             { lat: 22.6403, lng: 113.8101, title: "Shenzhen Bao'an Airport (SZX)" },
+    "aéroport":        { lat: 22.6403, lng: 113.8101, title: "Shenzhen Bao'an Airport (SZX)" },
+    "futian":          { lat: 22.5466, lng: 114.0594, title: "Futian district" },
+  };
+
+  function findCoords(lieu, title) {
+    const hay = ((lieu || "") + " " + (title || "")).toLowerCase();
+    // Sort keys longest-first to prefer specific matches
+    const keys = Object.keys(LIEU_COORDS).sort((a, b) => b.length - a.length);
+    for (const k of keys) {
+      if (hay.indexOf(k) !== -1) return LIEU_COORDS[k];
+    }
+    return null;
+  }
+
+  function buildStaticMapUrl(points) {
+    const params = [
+      "size=640x320",
+      "scale=2",
+      "maptype=roadmap",
+      "key=" + encodeURIComponent(GMAPS_API_KEY),
+    ];
+    points.forEach(p => {
+      const color = p.label === "H" ? "blue" : "red";
+      params.push("markers=color:" + color + "%7Clabel:" + encodeURIComponent(p.label) + "%7C" + p.lat + "," + p.lng);
+    });
+    if (points.length > 1) {
+      const path = "color:0x0066CCAA%7Cweight:3%7C" +
+        points.map(p => p.lat + "," + p.lng).join("%7C");
+      params.push("path=" + path);
+    }
+    return "https://maps.googleapis.com/maps/api/staticmap?" + params.join("&");
+  }
+
+  function buildDirectionsUrl(points) {
+    if (points.length < 2) return "https://www.google.com/maps";
+    const origin = points[0].lat + "," + points[0].lng;
+    const dest = points[points.length - 1].lat + "," + points[points.length - 1].lng;
+    const waypoints = points.slice(1, -1).map(p => p.lat + "," + p.lng).join("|");
+    let url = "https://www.google.com/maps/dir/?api=1&origin=" + origin + "&destination=" + dest;
+    if (waypoints) url += "&waypoints=" + encodeURIComponent(waypoints);
+    url += "&travelmode=driving";
+    return url;
+  }
+
+  function buildDayMapDetails(points) {
+    const details = document.createElement("details");
+    details.className = "day-map-details";
+
+    const stops = points.length - 1;  // exclude hotel
+    const summary = document.createElement("summary");
+    summary.className = "day-map-summary";
+    summary.innerHTML = "<span>🗺 Carte du jour — " + stops + " étape" + (stops > 1 ? "s" : "") + "</span>";
+    details.appendChild(summary);
+
+    const content = document.createElement("div");
+    content.className = "day-map-content";
+
+    const img = document.createElement("img");
+    img.className = "day-map-img";
+    img.alt = "Carte du jour";
+    img.loading = "lazy";
+    img.dataset.src = buildStaticMapUrl(points);
+    // Lazy-load: only fetch the static map image when the user opens the details
+    details.addEventListener("toggle", () => {
+      if (details.open && !img.src) img.src = img.dataset.src;
+    });
+    content.appendChild(img);
+
+    const actions = document.createElement("div");
+    actions.className = "day-map-actions";
+    const dirLink = document.createElement("a");
+    dirLink.className = "day-map-link";
+    dirLink.href = buildDirectionsUrl(points);
+    dirLink.target = "_blank";
+    dirLink.rel = "noopener";
+    dirLink.textContent = "🧭 Ouvrir dans Google Maps (itinéraire)";
+    actions.appendChild(dirLink);
+    const note = document.createElement("span");
+    note.style.color = "var(--text-soft)";
+    note.style.fontSize = "11px";
+    note.textContent = "Coords approximatives · taxi/métro recommandé entre districts";
+    actions.appendChild(note);
+    content.appendChild(actions);
+
+    const list = document.createElement("ol");
+    list.className = "day-map-list";
+    points.forEach((p, i) => {
+      const li = document.createElement("li");
+      if (i === 0) {
+        li.className = "is-hotel";
+      } else {
+        li.dataset.label = String(i);
+      }
+      li.append(p.title || ("Point " + i));
+      list.appendChild(li);
+    });
+    content.appendChild(list);
+
+    details.appendChild(content);
+    return details;
+  }
+
+  function setupDayMaps() {
+    const planning = document.getElementById("page-planning");
+    if (!planning) return;
+    if (!cache.rdv || !cache.rdv.length) return;
+
+    const dayMatches = [
+      { id: "sam20", date: "2026-06-20", match: "Samedi 20" },
+      { id: "dim21", date: "2026-06-21", match: "Dimanche 21" },
+      { id: "lun22", date: "2026-06-22", match: "Lundi 22" },
+      { id: "mar23", date: "2026-06-23", match: "Mardi 23" },
+      { id: "mer24", date: "2026-06-24", match: "Mercredi 24" },
+      { id: "jeu25", date: "2026-06-25", match: "Jeudi 25" },
+    ];
+
+    // Wipe previous map details so we can re-render after sync
+    planning.querySelectorAll(".day-map-details").forEach(d => d.remove());
+    planning.querySelectorAll("h2[data-map-inserted]").forEach(h => delete h.dataset.mapInserted);
+
+    planning.querySelectorAll("h2").forEach(h2 => {
+      const txt = (h2.textContent || "").trim();
+      const day = dayMatches.find(d => txt.startsWith(d.match));
+      if (!day) return;
+
+      // Find events for this day, sorted by start time
+      const dayEvents = cache.rdv
+        .filter(r => {
+          const iso = r.fields && r.fields.Date;
+          if (!iso) return false;
+          const wall = isoToBrussels(iso);
+          return wall && wall.date === day.date;
+        })
+        .sort((a, b) => (a.fields.Date || "").localeCompare(b.fields.Date || ""));
+
+      // Build the points list: hotel first, then each event with coords
+      const points = [{ ...HOTEL_COORDS, label: "H", title: HOTEL_COORDS.title }];
+      let label = 1;
+      const seenCoords = new Set();
+      seenCoords.add(HOTEL_COORDS.lat + "," + HOTEL_COORDS.lng);
+      dayEvents.forEach(r => {
+        const lieu = r.fields.Lieu || "";
+        const title = r.fields.Titre || "";
+        const coords = findCoords(lieu, title);
+        if (!coords) return;
+        const key = coords.lat + "," + coords.lng;
+        if (seenCoords.has(key)) return; // avoid consecutive same-place markers
+        seenCoords.add(key);
+        points.push({
+          lat: coords.lat, lng: coords.lng,
+          label: String(label),
+          title: title || coords.title,
+        });
+        label++;
+      });
+
+      if (points.length < 2) return; // no map worth showing
+      h2.dataset.mapInserted = "1";
+
+      const details = buildDayMapDetails(points);
+      details.dataset.planningSegment = h2.dataset.planningSegment || day.id;
+
+      // Insert AFTER the mini-agenda (which sits right after the H2)
+      let after = h2.nextElementSibling;
+      while (after && after.classList && after.classList.contains("agenda")) {
+        after = after.nextElementSibling;
+      }
+      if (after) after.parentNode.insertBefore(details, after);
+      else h2.parentNode.appendChild(details);
+    });
+  }
+
+  // Hook into the existing post-sync chain
+  const _origSyncAll3 = syncAll;
+  syncAll = async function() {
+    await _origSyncAll3.apply(this, arguments);
+    if (typeof setupDayMaps === "function") setupDayMaps();
+  };
 })();
 </script>
 

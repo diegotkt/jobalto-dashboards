@@ -3848,17 +3848,16 @@ function populateColumnSelect(tableId, col, data) {
 
   /* Planning agenda (refonte) */
   .agenda { margin:18px 0 24px; border:1px solid var(--border); border-radius:10px; background:white; overflow:hidden; }
-  .agenda-6day { overflow-x:auto; }
   .agenda-1day .agenda-header { background:var(--primary-light); }
   .agenda-header { display:grid; background:var(--primary); color:white; }
-  .agenda-6day .agenda-header { grid-template-columns:60px repeat(6, minmax(150px, 1fr)); min-width:960px; }
-  .agenda-1day .agenda-header { grid-template-columns:60px 1fr; }
-  .agenda-time-corner { padding:9px 8px; font-size:11px; opacity:0.6; text-align:center; font-weight:600; }
-  .agenda-day-header { padding:10px 12px; font-weight:600; font-size:13px; text-align:center; border-left:1px solid rgba(255,255,255,0.18); }
+  .agenda-6day .agenda-header { grid-template-columns:50px repeat(6, 1fr); }
+  .agenda-1day .agenda-header { grid-template-columns:55px 1fr; }
+  .agenda-time-corner { padding:9px 6px; font-size:10.5px; opacity:0.6; text-align:center; font-weight:600; }
+  .agenda-day-header { padding:10px 6px; font-weight:600; font-size:12.5px; text-align:center; border-left:1px solid rgba(255,255,255,0.18); }
 
   .agenda-body { display:grid; position:relative; }
-  .agenda-6day .agenda-body { grid-template-columns:60px repeat(6, minmax(150px, 1fr)); min-width:960px; }
-  .agenda-1day .agenda-body { grid-template-columns:60px 1fr; }
+  .agenda-6day .agenda-body { grid-template-columns:50px repeat(6, 1fr); }
+  .agenda-1day .agenda-body { grid-template-columns:55px 1fr; }
   .agenda-time-col { background:#FAFBFC; border-right:1px solid var(--border); position:relative; }
   .agenda-hour { position:absolute; left:0; right:0; font-size:11px; color:var(--text-soft); padding:2px 6px 0 8px; box-sizing:border-box; border-top:1px solid var(--border); font-weight:600; }
   .agenda-hour:first-child { border-top:0; }
@@ -3878,6 +3877,8 @@ function populateColumnSelect(tableId, col, data) {
   .agenda-lg { padding:5px 11px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; user-select:none; transition:opacity 0.15s; color:#1F2933; }
   .agenda-lg.lg-off { opacity:0.3; text-decoration:line-through; }
   .agenda-legend-hint { color:var(--text-soft); font-size:11px; margin-left:auto; font-style:italic; }
+  .agenda-ics-btn { background:var(--primary); color:white; border:0; padding:7px 12px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600; }
+  .agenda-ics-btn:hover { background:var(--primary-light); }
 
   /* Planning page day filter */
   .planning-filter-bar { display:flex; flex-wrap:wrap; gap:8px; background:#F1F5F9; padding:14px 16px; border-radius:10px; margin:14px 0 24px; align-items:center; }
@@ -5194,7 +5195,8 @@ function populateColumnSelect(tableId, col, data) {
         '<span class="agenda-lg" data-color="#fce4d6" style="background:#FCE4D6">Repas</span>' +
         '<span class="agenda-lg" data-color="#e4dfec" style="background:#E4DFEC">Soirée / networking</span>' +
         '<span class="agenda-lg" data-color="#f2f2f2" style="background:#F2F2F2">Logistique</span>' +
-        '<span class="agenda-legend-hint">Cliquer une étiquette pour masquer ce type</span>';
+        '<span class="agenda-legend-hint">Cliquer une étiquette pour masquer ce type</span>' +
+        '<button type="button" class="agenda-ics-btn" title="Télécharger un fichier .ics pour importer dans Google/Apple Calendar">📅 Export .ics</button>';
       wrap.appendChild(legend);
       legend.querySelectorAll(".agenda-lg").forEach(lg => {
         lg.onclick = () => {
@@ -5205,6 +5207,7 @@ function populateColumnSelect(tableId, col, data) {
           });
         };
       });
+      legend.querySelector(".agenda-ics-btn").onclick = () => downloadICS(parsed.events);
     }
 
     const header = document.createElement("div");
@@ -5284,6 +5287,79 @@ function populateColumnSelect(tableId, col, data) {
     return wrap;
   }
 
+  // Convert event list to ICS file, anchored to Asia/Shanghai timezone
+  const ICS_DATE_MAP = {
+    sam20: "20260620", dim21: "20260621", lun22: "20260622",
+    mar23: "20260623", mer24: "20260624", jeu25: "20260625",
+  };
+  function escapeIcs(s) {
+    return String(s || "").replace(/\\/g, "\\\\").replace(/[,;]/g, c => "\\" + c).replace(/\r?\n/g, "\\n");
+  }
+  function generateICS(events) {
+    const lines = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Voyage Shenzhen 2026//FR",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
+      "X-WR-CALNAME:Voyage Shenzhen 2026",
+      "X-WR-TIMEZONE:Asia/Shanghai",
+      "BEGIN:VTIMEZONE",
+      "TZID:Asia/Shanghai",
+      "BEGIN:STANDARD",
+      "DTSTART:19700101T000000",
+      "TZOFFSETFROM:+0800",
+      "TZOFFSETTO:+0800",
+      "TZNAME:CST",
+      "END:STANDARD",
+      "END:VTIMEZONE",
+    ];
+    const stamp = new Date().toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    let written = 0;
+    events.forEach((e, idx) => {
+      if (!e.startTime || !e.endTime) return;
+      const date = ICS_DATE_MAP[e.day];
+      if (!date) return;
+      const dtStart = date + "T" + e.startTime.replace(":", "") + "00";
+      let dtEnd;
+      if (e.endTime === "00:00") {
+        // Next day midnight
+        const y = parseInt(date.substring(0, 4), 10);
+        const m = parseInt(date.substring(4, 6), 10) - 1;
+        const d = parseInt(date.substring(6, 8), 10);
+        const dt = new Date(Date.UTC(y, m, d + 1));
+        const yyyy = dt.getUTCFullYear();
+        const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+        const dd = String(dt.getUTCDate()).padStart(2, "0");
+        dtEnd = yyyy + mm + dd + "T000000";
+      } else {
+        dtEnd = date + "T" + e.endTime.replace(":", "") + "00";
+      }
+      lines.push("BEGIN:VEVENT");
+      lines.push("UID:shenzhen-" + idx + "@voyage.local");
+      lines.push("DTSTAMP:" + stamp);
+      lines.push("SUMMARY:" + escapeIcs(e.text || "(sans titre)"));
+      lines.push("DTSTART;TZID=Asia/Shanghai:" + dtStart);
+      lines.push("DTEND;TZID=Asia/Shanghai:" + dtEnd);
+      lines.push("END:VEVENT");
+      written++;
+    });
+    lines.push("END:VCALENDAR");
+    return { content: lines.join("\r\n"), count: written };
+  }
+  function downloadICS(events) {
+    const { content, count } = generateICS(events);
+    const blob = new Blob([content], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "voyage-shenzhen-2026.ics";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 1500);
+    if (typeof toast === "function") toast("✓ " + count + " événements exportés", true);
+  }
+
   function setupAgenda() {
     const planning = document.getElementById("page-planning");
     if (!planning || planning.dataset.agendaInit) return;
@@ -5295,25 +5371,32 @@ function populateColumnSelect(tableId, col, data) {
     if (!parsed) return;
     planning.dataset.agendaInit = "1";
 
-    // Replace the existing 6-day Gantt with the new agenda
+    // Replace the existing 6-day Gantt with the new agenda.
+    // IMPORTANT: identify hide-targets BEFORE we insert the new agenda,
+    // otherwise ganttWrap.previousElementSibling becomes the new agenda itself.
     const ganttWrap = ganttTable.closest(".gantt-wrap");
     if (ganttWrap) {
-      const newAgenda = renderAgenda(parsed, { mode: "6day" });
-      ganttWrap.parentNode.insertBefore(newAgenda, ganttWrap);
-      ganttWrap.style.display = "none";
-      // Hide the old legend-bar + the H3 "Planning Gantt" + the explanatory paragraph
+      const elementsToHide = [];
       let prev = ganttWrap.previousElementSibling;
       while (prev) {
         const nodeName = prev.tagName;
         const cls = prev.className || "";
         const txt = (prev.textContent || "").trim();
-        if (cls.includes("legend-bar") || (nodeName === "H3" && txt.startsWith("Planning Gantt")) || (nodeName === "P" && txt.startsWith("Vue visuelle"))) {
-          prev.style.display = "none";
+        if (cls.includes("legend-bar") ||
+            (nodeName === "H3" && txt.startsWith("Planning Gantt")) ||
+            (nodeName === "P" && txt.startsWith("Vue visuelle")) ||
+            (nodeName === "H2" && txt.startsWith("Vue Gantt"))) {
+          elementsToHide.push(prev);
           prev = prev.previousElementSibling;
         } else {
           break;
         }
       }
+      elementsToHide.forEach(el => el.style.display = "none");
+
+      const newAgenda = renderAgenda(parsed, { mode: "6day" });
+      ganttWrap.parentNode.insertBefore(newAgenda, ganttWrap);
+      ganttWrap.style.display = "none";
     }
 
     // Insert a single-day mini-agenda right after each day H2

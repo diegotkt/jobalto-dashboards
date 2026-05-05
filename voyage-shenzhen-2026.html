@@ -3854,9 +3854,12 @@ function populateColumnSelect(tableId, col, data) {
 </script>
 
 <!-- ============================================================
-     AIRTABLE LIVE BRIDGE
-     Adds read+write sync between the contacts table and the
+     AIRTABLE LIVE BRIDGE v2
+     Read+write sync between this page and the
      "Voyage Shenzhen 2026" Airtable base.
+     - Bridges 3 tables: Contacts, RDV (page → Contacts), TODO
+     - Editable fields: Statut + Owner on all 3 pages
+     - Each save bumps "Dernière modif" timestamp
      The Airtable token is stored in localStorage — never embedded
      in the public HTML. Each squad member pastes their own PAT once.
 ============================================================ -->
@@ -3870,7 +3873,8 @@ function populateColumnSelect(tableId, col, data) {
   .at-edit { padding:2px 6px; border:1px solid var(--border); border-radius:4px; font-size:11.5px; font-weight:600; background:white; cursor:pointer; }
   .at-edit:focus { outline:2px solid var(--primary-light); outline-offset:1px; }
   .at-edit-saving { opacity:0.5; }
-  .at-toast { position:fixed; bottom:20px; right:20px; padding:10px 16px; border-radius:8px; font-size:13px; z-index:1000; box-shadow:0 4px 12px rgba(0,0,0,0.15); animation:atSlide 0.2s ease; }
+  .at-edit-owner { background:white; border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-size:12px; }
+  .at-toast { position:fixed; bottom:20px; right:20px; padding:10px 16px; border-radius:8px; font-size:13px; z-index:1000; box-shadow:0 4px 12px rgba(0,0,0,0.15); animation:atSlide 0.2s ease; max-width:400px; }
   .at-toast-ok { background:#2F855A; color:white; }
   .at-toast-err { background:#C92A2A; color:white; }
   @keyframes atSlide { from{transform:translateY(20px);opacity:0;} to{transform:translateY(0);opacity:1;} }
@@ -3878,14 +3882,41 @@ function populateColumnSelect(tableId, col, data) {
 
 <script>
 (function() {
+  // ---- Config ----
   const BASE_ID = "appAa2GBfpF5ms7EA";
-  const TBL_CONTACTS = "tblvrw6JveZrprL1w";
+  const TBL = {
+    SQUAD:    "tblD3gGHRwSPagqQF",
+    CONTACTS: "tblvrw6JveZrprL1w",
+    RDV:      "tblyZFiKmTW9W8gGj",
+    TODO:     "tblJiwyiehKQ1BEgT",
+  };
   const STORAGE_KEY = "voyage_shenzhen_airtable_pat";
-  const STATUTS = ["Confirmé", "À confirmer", "Attente", "À contacter", "Reprogrammer", "Mort"];
+  const STATUTS_CONTACTS = ["Confirmé", "À confirmer", "Attente", "À contacter", "Reprogrammer", "Mort"];
+  const STATUTS_TODO     = ["À faire", "En cours", "Fait", "Bloqué"];
 
-  let recordIdBySociete = {};
+  // Map short owner names from static HTML data → full Squad names (for fallback rendering)
+  const OWNER_ALIAS = {
+    "mathieu": "Mathieu Deleval",
+    "arthur": "Arthur Deleval",
+    "diego": "Diego Louwers",
+    "william": "William Assenmacher",
+    "diego louwers": "Diego Louwers",
+    "diego ketels": "Diego Ketels",
+    "william assenmacher": "William Assenmacher",
+    "mathieu deleval": "Mathieu Deleval",
+    "arthur deleval": "Arthur Deleval",
+  };
+
   let pat = localStorage.getItem(STORAGE_KEY) || "";
+  let cache = { contacts: [], todo: [], squad: [] };
+  let mapping = {
+    contactsBySociete: {}, // société (lowercased) → recordId
+    todoByTache:       {}, // tâche → recordId
+    squadByName:       {}, // full personne name → recordId
+    squadList:         [], // full names list (for dropdowns)
+  };
 
+  // ---- Generic API helpers ----
   function api(method, path, body) {
     return fetch("https://api.airtable.com/v0" + path, {
       method,
@@ -3897,67 +3928,11 @@ function populateColumnSelect(tableId, col, data) {
     }).then(r => r.json().then(data => ({ ok: r.ok, status: r.status, data })));
   }
 
-  function toast(msg, ok) {
-    const el = document.createElement("div");
-    el.className = "at-toast " + (ok ? "at-toast-ok" : "at-toast-err");
-    el.textContent = msg;
-    document.body.appendChild(el);
-    setTimeout(() => el.remove(), 2400);
-  }
-
-  function statutPillClass(s) {
-    const m = { "Confirmé": "Confirme", "À confirmer": "Aconfirmer", "Attente": "Attente",
-                "À contacter": "Acontacter", "Reprogrammer": "Reprogrammer", "Mort": "Mort" };
-    return "statut-" + (m[s] || "Attente");
-  }
-
-  function buildBanner() {
-    const page = document.getElementById("page-contacts_db");
-    if (!page) return;
-    const existing = page.querySelector(".at-banner");
-    if (existing) existing.remove();
-
-    const div = document.createElement("div");
-    div.className = "at-banner " + (pat ? "at-banner-on" : "at-banner-off");
-    div.innerHTML = pat
-      ? "<span>🟢 Connecté à Airtable — éditer le statut sauvegarde automatiquement.</span>"
-        + "<button id='at-disconnect'>Déconnecter</button>"
-      : "<span>🔌 Mode lecture seule. Connecte-toi à Airtable pour éditer les statuts en live.</span>"
-        + "<button id='at-connect'>Connecter</button>";
-
-    const target = page.querySelector("h1");
-    if (target && target.nextSibling) target.parentNode.insertBefore(div, target.nextSibling);
-    else page.insertBefore(div, page.firstChild);
-
-    const c = document.getElementById("at-connect");
-    if (c) c.onclick = onConnect;
-    const d = document.getElementById("at-disconnect");
-    if (d) d.onclick = onDisconnect;
-  }
-
-  function onConnect() {
-    const input = prompt(
-      "Colle ton Airtable Personal Access Token ici.\n\n" +
-      "Format : pat... (créé sur airtable.com/create/tokens, scopes data.records:read+write sur la base 'Voyage Shenzhen 2026').\n\n" +
-      "Le token reste stocké dans le navigateur (localStorage), jamais transmis ailleurs."
-    );
-    if (!input) return;
-    pat = input.trim();
-    localStorage.setItem(STORAGE_KEY, pat);
-    init();
-  }
-
-  function onDisconnect() {
-    pat = "";
-    localStorage.removeItem(STORAGE_KEY);
-    location.reload();
-  }
-
-  async function fetchAllContacts() {
+  async function fetchAll(tableId) {
     let all = [];
     let offset = null;
     do {
-      const path = "/" + BASE_ID + "/" + TBL_CONTACTS + "?pageSize=100" + (offset ? "&offset=" + offset : "");
+      const path = "/" + BASE_ID + "/" + tableId + "?pageSize=100" + (offset ? "&offset=" + offset : "");
       const res = await api("GET", path);
       if (!res.ok) {
         const msg = (res.data && res.data.error && res.data.error.message) || ("HTTP " + res.status);
@@ -3969,125 +3944,374 @@ function populateColumnSelect(tableId, col, data) {
     return all;
   }
 
-  function airtableRecToCardData(rec) {
-    const f = rec.fields || {};
-    return {
-      societe: f["Société"] || "",
-      secteur: f["Secteur"] || "",
-      site: f["Site"] || "",
-      contact: f["Contact"] || "",
-      fonction: f["Fonction"] || "",
-      owner: "", // we don't render owner from links; keep empty here, filled below
-      rdv: f["RDV slot"] || "",
-      statut: f["Statut détail"] || "",
-      statut_court: f["Statut"] || "",
-      commentaire: f["Commentaire"] || "",
-      adresse_en: f["Adresse EN"] || "",
-      adresse_cn: f["Adresse CN"] || "",
-      _airtableId: rec.id
-    };
+  function patchRecord(tableId, recordId, fields) {
+    fields["Dernière modif"] = new Date().toISOString();
+    return api("PATCH", "/" + BASE_ID + "/" + tableId + "/" + recordId, { fields });
   }
 
-  function decorateStatutCells() {
-    document.querySelectorAll("#ct-table tbody tr").forEach(tr => {
-      const societe = tr.dataset.societe;
-      const recId = recordIdBySociete[societe];
-      if (!recId) return;
-      tr.dataset.airtableId = recId;
+  function toast(msg, ok) {
+    const el = document.createElement("div");
+    el.className = "at-toast " + (ok ? "at-toast-ok" : "at-toast-err");
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2800);
+  }
 
-      // Replace the 6th cell (statut pill) with an editable select
-      const cells = tr.children;
-      if (cells.length < 6) return;
-      const statutCell = cells[5];
-      const current = tr.dataset.statut_court || "Attente";
+  function statutPillClass(s) {
+    const m = { "Confirmé": "Confirme", "À confirmer": "Aconfirmer", "Attente": "Attente",
+                "À contacter": "Acontacter", "Reprogrammer": "Reprogrammer", "Mort": "Mort",
+                "À faire": "Acontacter", "En cours": "Aconfirmer", "Fait": "Confirme", "Bloqué": "Mort" };
+    return "statut-" + (m[s] || "Attente");
+  }
 
-      const sel = document.createElement("select");
-      sel.className = "at-edit statut-pill " + statutPillClass(current);
-      STATUTS.forEach(s => {
-        const o = document.createElement("option");
-        o.value = s; o.textContent = s;
-        if (s === current) o.selected = true;
-        sel.appendChild(o);
-      });
-      sel.onchange = () => onStatutChange(tr, sel);
-      statutCell.innerHTML = "";
-      statutCell.appendChild(sel);
+  function aliasOwner(short) {
+    return OWNER_ALIAS[(short || "").trim().toLowerCase()] || (short || "").trim();
+  }
+
+  // ---- Banner ----
+  function bannerOn(pageId, recordCount, tableLabel) {
+    const page = document.getElementById(pageId);
+    if (!page) return;
+    const existing = page.querySelector(".at-banner");
+    if (existing) existing.remove();
+
+    const div = document.createElement("div");
+    div.className = "at-banner " + (pat ? "at-banner-on" : "at-banner-off");
+    if (pat && recordCount != null) {
+      div.innerHTML = "<span>🟢 Connecté à Airtable (" + recordCount + " " + tableLabel + " en live) — éditer sauvegarde automatiquement.</span>"
+        + "<button data-at-disconnect>Déconnecter</button>";
+    } else if (pat) {
+      div.innerHTML = "<span>🟢 Connecté à Airtable — chargement…</span>"
+        + "<button data-at-disconnect>Déconnecter</button>";
+    } else {
+      div.innerHTML = "<span>🔌 Mode lecture seule. Connecte-toi à Airtable pour éditer en live.</span>"
+        + "<button data-at-connect>Connecter</button>";
+    }
+
+    const target = page.querySelector("h1");
+    if (target && target.nextSibling) target.parentNode.insertBefore(div, target.nextSibling);
+    else page.insertBefore(div, page.firstChild);
+
+    const c = div.querySelector("[data-at-connect]");
+    if (c) c.onclick = onConnect;
+    const d = div.querySelector("[data-at-disconnect]");
+    if (d) d.onclick = onDisconnect;
+  }
+
+  function bannerErr(pageId, msg) {
+    const page = document.getElementById(pageId);
+    if (!page) return;
+    const existing = page.querySelector(".at-banner");
+    if (existing) existing.remove();
+    const div = document.createElement("div");
+    div.className = "at-banner at-banner-err";
+    div.innerHTML = "<span>⚠ Erreur Airtable : " + msg + "</span><button data-at-reset>Reset token</button>";
+    const target = page.querySelector("h1");
+    if (target && target.nextSibling) target.parentNode.insertBefore(div, target.nextSibling);
+    else page.insertBefore(div, page.firstChild);
+    div.querySelector("[data-at-reset]").onclick = onDisconnect;
+  }
+
+  function onConnect() {
+    const input = prompt(
+      "Colle ton Airtable Personal Access Token ici.\n\n" +
+      "Format : pat... (créé sur airtable.com/create/tokens, scopes data.records:read+write sur la base 'Voyage Shenzhen 2026').\n\n" +
+      "Le token reste stocké dans le navigateur (localStorage), jamais transmis ailleurs."
+    );
+    if (!input) return;
+    pat = input.trim();
+    localStorage.setItem(STORAGE_KEY, pat);
+    location.reload();
+  }
+
+  function onDisconnect() {
+    pat = "";
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  }
+
+  // ---- Cell builders ----
+  function buildStatutSelect(currentValue, options) {
+    const sel = document.createElement("select");
+    sel.className = "at-edit statut-pill " + statutPillClass(currentValue);
+    options.forEach(s => {
+      const o = document.createElement("option");
+      o.value = s; o.textContent = s;
+      if (s === currentValue) o.selected = true;
+      sel.appendChild(o);
     });
+    return sel;
   }
 
-  async function onStatutChange(tr, sel) {
-    const recId = tr.dataset.airtableId;
-    const newVal = sel.value;
+  function buildOwnerSelect(currentRecordId, currentDisplayName) {
+    const sel = document.createElement("select");
+    sel.className = "at-edit at-edit-owner";
+    const empty = document.createElement("option");
+    empty.value = ""; empty.textContent = "—";
+    sel.appendChild(empty);
+    mapping.squadList.forEach(name => {
+      const o = document.createElement("option");
+      o.value = mapping.squadByName[name];
+      o.textContent = name;
+      if (currentRecordId && o.value === currentRecordId) o.selected = true;
+      else if (!currentRecordId && currentDisplayName === name) o.selected = true;
+      sel.appendChild(o);
+    });
+    return sel;
+  }
+
+  // ---- Save handlers ----
+  async function saveStatut(tableId, recordId, fieldName, value, sel, label) {
     sel.classList.add("at-edit-saving");
-    const res = await api("PATCH", "/" + BASE_ID + "/" + TBL_CONTACTS + "/" + recId, {
-      fields: { "Statut": newVal }
-    });
+    const res = await patchRecord(tableId, recordId, { [fieldName]: value });
     sel.classList.remove("at-edit-saving");
     if (!res.ok) {
       const msg = (res.data && res.data.error && res.data.error.message) || ("HTTP " + res.status);
-      toast("Erreur Airtable : " + msg, false);
-      return;
+      toast("Erreur : " + msg, false);
+      return false;
     }
-    // Update visual class + dataset
-    sel.className = "at-edit statut-pill " + statutPillClass(newVal);
-    tr.dataset.statut_court = newVal;
-    toast("Sauvegardé : " + tr.dataset.societe + " → " + newVal, true);
+    sel.className = "at-edit statut-pill " + statutPillClass(value);
+    toast("✓ " + label + " → " + value, true);
+    return true;
   }
 
-  async function syncFromAirtable() {
-    try {
-      const records = await fetchAllContacts();
-      // Build the recordId map
-      recordIdBySociete = {};
-      records.forEach(r => {
-        const name = (r.fields && r.fields["Société"]) || "";
-        if (name) recordIdBySociete[name] = r.id;
-      });
-      // Decorate the rendered cells
-      decorateStatutCells();
-      // Update banner with success state
-      const banner = document.querySelector(".at-banner");
-      if (banner) banner.querySelector("span").textContent =
-        "🟢 Connecté à Airtable (" + records.length + " contacts en live) — éditer le statut sauvegarde automatiquement.";
-    } catch (e) {
-      const banner = document.querySelector(".at-banner");
-      if (banner) {
-        banner.className = "at-banner at-banner-err";
-        banner.innerHTML = "<span>⚠ Erreur Airtable : " + e.message + "</span><button id='at-reset'>Reset token</button>";
-        document.getElementById("at-reset").onclick = onDisconnect;
+  async function saveOwner(tableId, recordId, ownerRecordId, label) {
+    const fields = { "Owner": ownerRecordId ? [ownerRecordId] : [] };
+    const res = await patchRecord(tableId, recordId, fields);
+    if (!res.ok) {
+      const msg = (res.data && res.data.error && res.data.error.message) || ("HTTP " + res.status);
+      toast("Erreur : " + msg, false);
+      return false;
+    }
+    const ownerName = ownerRecordId
+      ? (Object.keys(mapping.squadByName).find(n => mapping.squadByName[n] === ownerRecordId) || "")
+      : "(aucun)";
+    toast("✓ " + label + " owner → " + ownerName, true);
+    return true;
+  }
+
+  // ---- Per-page bridges ----
+  function bridgeContacts() {
+    const tbody = document.querySelector("#ct-table tbody");
+    if (!tbody) return 0;
+    let count = 0;
+    tbody.querySelectorAll("tr").forEach(tr => {
+      const societe = tr.dataset.societe;
+      const recId = mapping.contactsBySociete[(societe || "").toLowerCase()];
+      if (!recId) return;
+      tr.dataset.airtableId = recId;
+      count++;
+
+      const rec = cache.contacts.find(r => r.id === recId);
+      const f = (rec && rec.fields) || {};
+
+      // Cell 3 = Owner
+      const ownerCell = tr.children[3];
+      if (ownerCell) {
+        const linkedOwnerIds = f["Owner"] || [];
+        const ownerSel = buildOwnerSelect(linkedOwnerIds[0] || null, aliasOwner(tr.dataset.owner));
+        ownerSel.onchange = () => saveOwner(TBL.CONTACTS, recId, ownerSel.value || null, societe);
+        ownerCell.innerHTML = "";
+        ownerCell.appendChild(ownerSel);
       }
-      console.error("Airtable sync failed:", e);
+
+      // Cell 5 = Statut
+      const statutCell = tr.children[5];
+      if (statutCell) {
+        const current = f["Statut"] || tr.dataset.statut_court || "Attente";
+        const statutSel = buildStatutSelect(current, STATUTS_CONTACTS);
+        statutSel.onchange = () => saveStatut(TBL.CONTACTS, recId, "Statut", statutSel.value, statutSel, societe);
+        statutCell.innerHTML = "";
+        statutCell.appendChild(statutSel);
+        tr.dataset.statut_court = current;
+      }
+    });
+    return count;
+  }
+
+  function bridgeRDV() {
+    // RDV page = denormalized view of Contacts (statut + owner of each société)
+    // Match by société, write to Contacts table.
+    const tbody = document.querySelector("#rdv-table tbody");
+    if (!tbody) return 0;
+    let count = 0;
+    tbody.querySelectorAll("tr").forEach(tr => {
+      const societe = tr.dataset.societe;
+      const recId = mapping.contactsBySociete[(societe || "").toLowerCase()];
+      if (!recId) return;
+      tr.dataset.airtableId = recId;
+      count++;
+
+      const rec = cache.contacts.find(r => r.id === recId);
+      const f = (rec && rec.fields) || {};
+
+      // Cell 0 = Statut
+      const statutCell = tr.children[0];
+      if (statutCell) {
+        const current = f["Statut"] || tr.dataset.statut || "Attente";
+        const statutSel = buildStatutSelect(current, STATUTS_CONTACTS);
+        statutSel.onchange = () => saveStatut(TBL.CONTACTS, recId, "Statut", statutSel.value, statutSel, societe);
+        statutCell.innerHTML = "";
+        statutCell.appendChild(statutSel);
+        tr.dataset.statut = current;
+      }
+
+      // Cell 4 = Owner
+      const ownerCell = tr.children[4];
+      if (ownerCell) {
+        const linkedOwnerIds = f["Owner"] || [];
+        const ownerSel = buildOwnerSelect(linkedOwnerIds[0] || null, aliasOwner(tr.dataset.owner));
+        ownerSel.onchange = () => saveOwner(TBL.CONTACTS, recId, ownerSel.value || null, societe);
+        ownerCell.innerHTML = "";
+        ownerCell.appendChild(ownerSel);
+      }
+    });
+    return count;
+  }
+
+  function bridgeTODO() {
+    const tbody = document.querySelector("#todo-table tbody");
+    if (!tbody) return 0;
+    let count = 0;
+    tbody.querySelectorAll("tr").forEach(tr => {
+      const tache = tr.dataset.tache;
+      if (!tache) return;
+      // Match by tâche prefix (TODO tâches in static HTML may be slightly truncated vs Airtable)
+      const recId = mapping.todoByTache[tache] ||
+                    Object.keys(mapping.todoByTache).find(k => k.startsWith(tache.substring(0, 40))) &&
+                    mapping.todoByTache[Object.keys(mapping.todoByTache).find(k => k.startsWith(tache.substring(0, 40)))];
+      if (!recId) return;
+      tr.dataset.airtableId = recId;
+      count++;
+
+      const rec = cache.todo.find(r => r.id === recId);
+      const f = (rec && rec.fields) || {};
+
+      // Cell 0 = Owner (TODO row order: Owner | Tâche | Catégorie | Deadline | Statut)
+      const ownerCell = tr.children[0];
+      if (ownerCell) {
+        const linkedOwnerIds = f["Owner"] || [];
+        const ownerSel = buildOwnerSelect(linkedOwnerIds[0] || null, aliasOwner(tr.dataset.owner));
+        ownerSel.onchange = () => saveOwner(TBL.TODO, recId, ownerSel.value || null, tache.substring(0, 40));
+        ownerCell.innerHTML = "";
+        ownerCell.appendChild(ownerSel);
+      }
+
+      // Cell 4 = Statut
+      const statutCell = tr.children[4];
+      if (statutCell) {
+        const current = f["Statut TODO"] || "À faire";
+        const statutSel = buildStatutSelect(current, STATUTS_TODO);
+        statutSel.onchange = () => saveStatut(TBL.TODO, recId, "Statut TODO", statutSel.value, statutSel, tache.substring(0, 40));
+        statutCell.innerHTML = "";
+        statutCell.appendChild(statutSel);
+      }
+    });
+    return count;
+  }
+
+  // ---- Sync orchestrator ----
+  async function syncAll() {
+    try {
+      bannerOn("page-contacts_db");
+      bannerOn("page-rdv");
+      bannerOn("page-todo");
+
+      // Fetch all 3 tables in parallel
+      const [contactsRecs, todoRecs, squadRecs] = await Promise.all([
+        fetchAll(TBL.CONTACTS),
+        fetchAll(TBL.TODO),
+        fetchAll(TBL.SQUAD),
+      ]);
+
+      cache.contacts = contactsRecs;
+      cache.todo = todoRecs;
+      cache.squad = squadRecs;
+
+      // Build lookups
+      mapping.contactsBySociete = {};
+      contactsRecs.forEach(r => {
+        const name = (r.fields && r.fields["Société"]) || "";
+        if (name) mapping.contactsBySociete[name.toLowerCase()] = r.id;
+      });
+      mapping.todoByTache = {};
+      todoRecs.forEach(r => {
+        const t = (r.fields && r.fields["Tâche"]) || "";
+        if (t) mapping.todoByTache[t] = r.id;
+      });
+      mapping.squadByName = {};
+      mapping.squadList = [];
+      squadRecs.forEach(r => {
+        const n = (r.fields && r.fields["Personne"]) || "";
+        if (n) {
+          mapping.squadByName[n] = r.id;
+          mapping.squadList.push(n);
+        }
+      });
+      mapping.squadList.sort();
+
+      // Wait for the static tables to be rendered before decorating
+      const waitForRender = (selector) => new Promise(resolve => {
+        const check = () => {
+          const tbody = document.querySelector(selector);
+          if (tbody && tbody.dataset.init === "1" && tbody.children.length > 0) resolve();
+          else setTimeout(check, 200);
+        };
+        check();
+      });
+
+      await Promise.all([
+        waitForRender("#ct-table tbody"),
+        waitForRender("#rdv-table tbody"),
+        waitForRender("#todo-table tbody"),
+      ]);
+
+      const cn = bridgeContacts();
+      const rn = bridgeRDV();
+      const tn = bridgeTODO();
+
+      bannerOn("page-contacts_db", cn, "contacts");
+      bannerOn("page-rdv",         rn, "lignes");
+      bannerOn("page-todo",        tn, "tâches");
+
+      console.log("[airtable] synced:", { contacts: cn, rdv: rn, todo: tn, squad: squadRecs.length });
+    } catch (e) {
+      console.error("[airtable] sync failed:", e);
+      bannerErr("page-contacts_db", e.message);
+      bannerErr("page-rdv",         e.message);
+      bannerErr("page-todo",        e.message);
     }
   }
 
   function init() {
-    buildBanner();
-    if (pat) {
-      // Wait for the contacts table to be rendered (it uses the static CONTACTS_DATA),
-      // then layer the editable selects on top + sync record IDs from Airtable.
-      const wait = () => {
-        const tbody = document.querySelector("#ct-table tbody");
-        if (tbody && tbody.dataset.init === "1" && tbody.children.length > 0) {
-          syncFromAirtable();
-        } else {
-          setTimeout(wait, 200);
-        }
-      };
-      wait();
-    }
+    bannerOn("page-contacts_db");
+    bannerOn("page-rdv");
+    bannerOn("page-todo");
+    if (pat) syncAll();
   }
 
-  // Run once DOM is ready (after the original CONTACTS_DATA injection)
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {
     init();
   }
 
-  // Re-bind banner if user navigates to contacts page (the SPA hides/shows sections)
+  // Re-render banner when user navigates between pages (SPA-style)
   document.addEventListener("click", (e) => {
-    const a = e.target.closest("a[data-nav='contacts_db']");
-    if (a) setTimeout(buildBanner, 50);
+    const a = e.target.closest("a[data-nav]");
+    if (!a) return;
+    const slug = a.getAttribute("data-nav");
+    if (slug === "contacts_db" || slug === "rdv" || slug === "todo") {
+      setTimeout(() => {
+        const pageId = "page-" + slug;
+        const page = document.getElementById(pageId);
+        const banner = page && page.querySelector(".at-banner");
+        if (!banner) {
+          if (pat) syncAll();
+          else bannerOn(pageId);
+        }
+      }, 50);
+    }
   });
 })();
 </script>

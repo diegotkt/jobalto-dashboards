@@ -3488,6 +3488,7 @@ On behalf of the delegation
         <th data-col="tache">Tâche</th>
         <th data-col="categorie">Catégorie</th>
         <th data-col="deadline">Deadline</th>
+        <th data-col="priorite">Priorité</th>
         <th data-col="statut">Statut</th>
       </tr>
       <tr class="th-filters">
@@ -3495,6 +3496,7 @@ On behalf of the delegation
         <th><input type="text" data-col-filter="tache" class="col-filter" placeholder="filtre..."></th>
         <th><select data-col-filter="categorie" class="col-filter"><option value="">— tous —</option><option value="diffusion">Diffusion</option><option value="outreach">Outreach</option><option value="préparation rdv">Préparation RDV</option><option value="réservations">Réservations</option></select></th>
         <th><input type="text" data-col-filter="deadline" class="col-filter" placeholder="filtre..."></th>
+        <th><select data-col-filter="priorite" class="col-filter"><option value="">— toutes —</option><option value="critique">Critique</option><option value="haut">Haut</option><option value="moyen">Moyen</option><option value="bas">Bas</option></select></th>
         <th><select data-col-filter="statut" class="col-filter"><option value="">— tous —</option><option value="urgent">Urgent</option><option value="à faire">À faire</option><option value="fait">Fait</option><option value="conditionnel">Conditionnel</option></select></th>
       </tr>
     </thead>
@@ -3723,6 +3725,7 @@ function initTodoTable() {
       '<td>' + r.tache + '</td>' +
       '<td>' + r.categorie + '</td>' +
       '<td>' + r.deadline + '</td>' +
+      '<td></td>' +  // Priorité — filled by Airtable bridge
       '<td><span class="statut-pill ' + statutClass + '">' + r.statut + '</span></td>';
     tbody.appendChild(tr);
   });
@@ -4076,7 +4079,9 @@ function populateColumnSelect(tableId, col, data) {
   function statutPillClass(s) {
     const m = { "Confirmé": "Confirme", "À confirmer": "Aconfirmer", "Attente": "Attente",
                 "À contacter": "Acontacter", "Reprogrammer": "Reprogrammer", "Mort": "Mort",
-                "À faire": "Acontacter", "En cours": "Aconfirmer", "Fait": "Confirme", "Bloqué": "Mort" };
+                "À faire": "Acontacter", "En cours": "Aconfirmer", "Fait": "Confirme", "Bloqué": "Mort",
+                // Priorité TODO mappings:
+                "Critique": "Mort", "Haut": "Reprogrammer", "Moyen": "Aconfirmer", "Bas": "Attente" };
     return "statut-" + (m[s] || "Attente");
   }
 
@@ -4300,7 +4305,7 @@ function populateColumnSelect(tableId, col, data) {
       const rec = cache.todo.find(r => r.id === recId);
       const f = (rec && rec.fields) || {};
 
-      // Cell 0 = Owner (TODO row order: Owner | Tâche | Catégorie | Deadline | Statut)
+      // Cell 0 = Owner (TODO row order: Owner | Tâche | Catégorie | Deadline | Priorité | Statut)
       const ownerCell = tr.children[0];
       if (ownerCell) {
         const linkedOwnerIds = f["Owner"] || [];
@@ -4310,8 +4315,20 @@ function populateColumnSelect(tableId, col, data) {
         ownerCell.appendChild(ownerSel);
       }
 
-      // Cell 4 = Statut
-      const statutCell = tr.children[4];
+      // Cell 4 = Priorité
+      const prioCell = tr.children[4];
+      if (prioCell) {
+        const current = f["Priorité"] || "Moyen";
+        const prioSel = buildStatutSelect(current, ["Critique", "Haut", "Moyen", "Bas"]);
+        prioSel.classList.add("at-edit-prio");
+        prioSel.onchange = () => saveStatut(TBL.TODO, recId, "Priorité", prioSel.value, prioSel, tache.substring(0, 40));
+        prioCell.innerHTML = "";
+        prioCell.appendChild(prioSel);
+        tr.dataset.priorite = current;
+      }
+
+      // Cell 5 = Statut
+      const statutCell = tr.children[5];
       if (statutCell) {
         const current = f["Statut TODO"] || "À faire";
         const statutSel = buildStatutSelect(current, STATUTS_TODO);

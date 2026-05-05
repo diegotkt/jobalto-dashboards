@@ -3879,6 +3879,20 @@ function populateColumnSelect(tableId, col, data) {
   .at-toast-err { background:#C92A2A; color:white; }
   @keyframes atSlide { from{transform:translateY(20px);opacity:0;} to{transform:translateY(0);opacity:1;} }
 
+  /* Multi-select dropdown filter */
+  .at-multi-select { position:relative; display:inline-block; }
+  .at-multi-trigger { background:white; border:1px solid var(--border); padding:7px 14px; border-radius:8px; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; min-width:180px; text-align:left; font-weight:500; color:var(--text); }
+  .at-multi-trigger:hover { border-color:var(--primary-light); }
+  .at-multi-trigger.has-selection { border-color:var(--primary); background:#DDEBF7; color:var(--primary); }
+  .at-multi-trigger .at-multi-summary { flex:1; }
+  .at-multi-trigger .at-multi-caret { opacity:0.5; font-size:10px; }
+  .at-multi-popup { position:absolute; top:calc(100% + 6px); left:0; background:white; border:1px solid var(--border); border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,0.12); padding:6px 0; min-width:220px; z-index:100; max-height:320px; overflow-y:auto; }
+  .at-multi-popup label { display:flex; align-items:center; gap:10px; padding:7px 14px; font-size:13px; cursor:pointer; user-select:none; color:var(--text); }
+  .at-multi-popup label:hover { background:#F1F5F9; }
+  .at-multi-popup label input { margin:0; cursor:pointer; }
+  .at-multi-popup hr { margin:4px 10px; border:0; border-top:1px solid var(--border); }
+  .quick-chips.at-replaced { padding:14px 16px; }
+
   /* Add button + modal */
   .at-add-btn { background:var(--primary); color:white; border:0; padding:9px 14px; border-radius:8px; font-size:13px; cursor:pointer; font-weight:600; }
   .at-add-btn:hover:not(:disabled) { background:var(--primary-light); }
@@ -4782,6 +4796,216 @@ function populateColumnSelect(tableId, col, data) {
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeModal();
   });
+
+  // ============================================================
+  // MULTI-SELECT FILTER WIDGET (replaces .quick-chips on 3 pages)
+  // ============================================================
+
+  // Selected sets per page (empty = "Tous")
+  const atFilterSets = {
+    contactsStatuts: new Set(),
+    rdvStatuts:      new Set(),
+    todoOwners:      new Set(),
+  };
+
+  function buildMultiSelect(label, options, onChange) {
+    const root = document.createElement("div");
+    root.className = "at-multi-select";
+
+    const trigger = document.createElement("button");
+    trigger.className = "at-multi-trigger";
+    trigger.type = "button";
+    trigger.innerHTML =
+      '<span style="opacity:0.7">' + escapeHtml(label) + ' :</span>' +
+      '<span class="at-multi-summary">Tous</span>' +
+      '<span class="at-multi-caret">▾</span>';
+
+    const popup = document.createElement("div");
+    popup.className = "at-multi-popup";
+    popup.hidden = true;
+
+    const allLabel = document.createElement("label");
+    allLabel.innerHTML = '<input type="checkbox" value="*" checked> <strong>Tous</strong>';
+    popup.appendChild(allLabel);
+    popup.appendChild(document.createElement("hr"));
+
+    options.forEach(opt => {
+      const lbl = document.createElement("label");
+      lbl.innerHTML = '<input type="checkbox" value="' + escapeHtml(opt) + '"> ' + escapeHtml(opt);
+      popup.appendChild(lbl);
+    });
+
+    const summary = trigger.querySelector(".at-multi-summary");
+
+    function updateState() {
+      const allCb = popup.querySelector('input[value="*"]');
+      const selectedInputs = Array.from(popup.querySelectorAll('input[type=checkbox]:not([value="*"]):checked'));
+      const selected = selectedInputs.map(i => i.value);
+
+      if (selected.length === 0) {
+        allCb.checked = true;
+        summary.textContent = "Tous";
+        trigger.classList.remove("has-selection");
+      } else {
+        allCb.checked = false;
+        summary.textContent = selected.length === 1 ? selected[0]
+          : (selected.length + " sélectionnés");
+        trigger.classList.add("has-selection");
+      }
+      onChange(new Set(selected));
+    }
+
+    popup.querySelector('input[value="*"]').onchange = (e) => {
+      if (e.target.checked) {
+        popup.querySelectorAll('input[type=checkbox]:not([value="*"])').forEach(i => i.checked = false);
+      } else {
+        // Re-check it if user clicks "Tous" while it's already checked (no-op essentially)
+        e.target.checked = true;
+      }
+      updateState();
+    };
+    popup.querySelectorAll('input[type=checkbox]:not([value="*"])').forEach(input => {
+      input.onchange = updateState;
+    });
+
+    trigger.onclick = (e) => {
+      e.stopPropagation();
+      // Close any other open popup first
+      document.querySelectorAll(".at-multi-popup").forEach(p => { if (p !== popup) p.hidden = true; });
+      popup.hidden = !popup.hidden;
+    };
+    document.addEventListener("click", (e) => {
+      if (!root.contains(e.target)) popup.hidden = true;
+    });
+
+    root.appendChild(trigger);
+    root.appendChild(popup);
+    return root;
+  }
+
+  // Override the page's apply*Filter globals to also apply our multi-select on top.
+  // This runs once at startup; the original logic still handles search + column filters.
+  function installFilterOverrides() {
+    if (typeof window.applyContactsFilter === "function" && !window.applyContactsFilter._atOverridden) {
+      const orig = window.applyContactsFilter;
+      const wrapped = function() {
+        orig();
+        const sel = atFilterSets.contactsStatuts;
+        if (sel && sel.size > 0) {
+          document.querySelectorAll('#ct-table tbody tr').forEach(tr => {
+            if (tr.classList.contains('hidden')) return;
+            if (!sel.has(tr.dataset.statut_court || '')) tr.classList.add('hidden');
+          });
+          updateContactsCount();
+        }
+      };
+      wrapped._atOverridden = true;
+      window.applyContactsFilter = wrapped;
+    }
+    if (typeof window.applyRdvFilter === "function" && !window.applyRdvFilter._atOverridden) {
+      const orig = window.applyRdvFilter;
+      const wrapped = function() {
+        orig();
+        const sel = atFilterSets.rdvStatuts;
+        if (sel && sel.size > 0) {
+          document.querySelectorAll('#rdv-table tbody tr').forEach(tr => {
+            if (tr.classList.contains('hidden')) return;
+            if (!sel.has(tr.dataset.statut || '')) tr.classList.add('hidden');
+          });
+          updateRdvCount();
+        }
+      };
+      wrapped._atOverridden = true;
+      window.applyRdvFilter = wrapped;
+    }
+    if (typeof window.applyTodoFilter === "function" && !window.applyTodoFilter._atOverridden) {
+      const orig = window.applyTodoFilter;
+      const wrapped = function() {
+        orig();
+        const sel = atFilterSets.todoOwners;
+        if (sel && sel.size > 0) {
+          document.querySelectorAll('#todo-table tbody tr').forEach(tr => {
+            if (tr.classList.contains('hidden')) return;
+            // tr.dataset.owner may be short ("Mathieu") OR full ("Mathieu Deleval"); compare via aliasOwner
+            const ownerFull = aliasOwner(tr.dataset.owner || '');
+            if (!sel.has(ownerFull)) tr.classList.add('hidden');
+          });
+          updateTodoCount();
+        }
+      };
+      wrapped._atOverridden = true;
+      window.applyTodoFilter = wrapped;
+    }
+  }
+
+  function updateContactsCount() {
+    const visible = document.querySelectorAll('#ct-table tbody tr:not(.hidden)').length;
+    const c = document.getElementById('ct-count');
+    if (c) c.textContent = visible + ' société(s) affichée(s)';
+  }
+  function updateRdvCount() {
+    const visible = document.querySelectorAll('#rdv-table tbody tr:not(.hidden)').length;
+    const c = document.getElementById('rdv-count');
+    if (c) c.textContent = visible + ' ligne(s) affichée(s)';
+  }
+  function updateTodoCount() {
+    const visible = document.querySelectorAll('#todo-table tbody tr:not(.hidden)').length;
+    const c = document.getElementById('todo-count');
+    if (c) c.textContent = visible + ' tâche(s) affichée(s)';
+  }
+
+  function installMultiSelect(slug) {
+    const chipSelector = "#page-" + (slug === "contacts_db" ? "contacts_db" : slug) + " .quick-chips";
+    const chips = document.querySelector(chipSelector);
+    if (!chips || chips.classList.contains("at-replaced")) return;
+
+    let label, options, applyFn, setKey;
+    if (slug === "contacts_db") {
+      label = "Statut";
+      options = STATUTS_CONTACTS;
+      applyFn = () => window.applyContactsFilter && window.applyContactsFilter();
+      setKey = "contactsStatuts";
+    } else if (slug === "rdv") {
+      label = "Statut";
+      options = STATUTS_CONTACTS;
+      applyFn = () => window.applyRdvFilter && window.applyRdvFilter();
+      setKey = "rdvStatuts";
+    } else if (slug === "todo") {
+      label = "Owner";
+      options = mapping.squadList && mapping.squadList.length ? mapping.squadList.slice() : [];
+      if (options.length === 0) return; // wait until squad is loaded
+      applyFn = () => window.applyTodoFilter && window.applyTodoFilter();
+      setKey = "todoOwners";
+    } else {
+      return;
+    }
+
+    const widget = buildMultiSelect(label, options, (selected) => {
+      atFilterSets[setKey] = selected;
+      applyFn();
+    });
+
+    chips.classList.add("at-replaced");
+    chips.innerHTML = '';
+    chips.appendChild(widget);
+  }
+
+  function installAllMultiSelects() {
+    installMultiSelect("contacts_db");
+    installMultiSelect("rdv");
+    installMultiSelect("todo");
+  }
+
+  // Hook installAllMultiSelects after sync (when squad list is loaded for TODO)
+  const _origSyncAll2 = syncAll;
+  syncAll = async function() {
+    await _origSyncAll2.apply(this, arguments);
+    installFilterOverrides();
+    installAllMultiSelects();
+  };
+
+  // Also install at boot in case static data is enough
+  setTimeout(() => { installFilterOverrides(); installMultiSelect("contacts_db"); installMultiSelect("rdv"); }, 400);
 })();
 </script>
 

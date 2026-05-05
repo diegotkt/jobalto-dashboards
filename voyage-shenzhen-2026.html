@@ -3846,6 +3846,9 @@ function populateColumnSelect(tableId, col, data) {
   .at-toast-err { background:#C92A2A; color:white; }
   @keyframes atSlide { from{transform:translateY(20px);opacity:0;} to{transform:translateY(0);opacity:1;} }
 
+  /* Hide elements permanently regardless of the day filter's display reset */
+  .at-hide-perm { display:none !important; }
+
   /* Planning agenda (refonte) */
   .agenda { margin:18px 0 24px; border:1px solid var(--border); border-radius:10px; background:white; overflow:hidden; }
   .agenda-1day { max-width:480px; }
@@ -3974,7 +3977,7 @@ function populateColumnSelect(tableId, col, data) {
   };
 
   let pat = localStorage.getItem(STORAGE_KEY) || "";
-  let cache = { contacts: [], todo: [], squad: [] };
+  let cache = { contacts: [], todo: [], squad: [], rdv: [] };
   let mapping = {
     contactsBySociete: {}, // société (lowercased) → recordId — exact match
     contactsList:      [], // [{ key: "société lowercased", id: "rec..." }] — fuzzy fallback
@@ -4364,16 +4367,18 @@ function populateColumnSelect(tableId, col, data) {
       bannerOn("page-rdv");
       bannerOn("page-todo");
 
-      // Fetch all 3 tables in parallel
-      const [contactsRecs, todoRecs, squadRecs] = await Promise.all([
+      // Fetch all 4 tables in parallel
+      const [contactsRecs, todoRecs, squadRecs, agendaRecs] = await Promise.all([
         fetchAll(TBL.CONTACTS),
         fetchAll(TBL.TODO),
         fetchAll(TBL.SQUAD),
+        fetchAll(TBL.RDV),  // table renamed to "Agenda" in Airtable, ID unchanged
       ]);
 
       cache.contacts = contactsRecs;
       cache.todo = todoRecs;
       cache.squad = squadRecs;
+      cache.rdv = agendaRecs;
 
       // Build lookups
       mapping.contactsBySociete = {};
@@ -4418,7 +4423,7 @@ function populateColumnSelect(tableId, col, data) {
         }
       }, 200);
 
-      console.log("[airtable] data fetched:", { contacts: contactsRecs.length, todo: todoRecs.length, squad: squadRecs.length });
+      console.log("[airtable] data fetched:", { contacts: contactsRecs.length, todo: todoRecs.length, squad: squadRecs.length, agenda: agendaRecs.length });
     } catch (e) {
       console.error("[airtable] sync failed:", e);
       bannerErr("page-contacts_db", e.message);
@@ -5511,11 +5516,12 @@ function populateColumnSelect(tableId, col, data) {
           break;
         }
       }
-      elementsToHide.forEach(el => el.style.display = "none");
+      // Use !important class so the day filter's `display = ""` reset can't un-hide them
+      elementsToHide.forEach(el => el.classList.add("at-hide-perm"));
 
       const newAgenda = renderAgenda(parsed, { mode: "6day" });
       ganttWrap.parentNode.insertBefore(newAgenda, ganttWrap);
-      ganttWrap.style.display = "none";
+      ganttWrap.classList.add("at-hide-perm");
     }
 
     // Insert a single-day mini-agenda right after each day H2
@@ -5586,6 +5592,24 @@ function populateColumnSelect(tableId, col, data) {
     "aéroport":        { lat: 22.6403, lng: 113.8101, title: "Shenzhen Bao'an Airport (SZX)" },
     "futian":          { lat: 22.5466, lng: 114.0594, title: "Futian district" },
   };
+
+  function parseCoordsField(s) {
+    if (!s) return null;
+    const m = String(s).match(/(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
+    if (!m) return null;
+    return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+  }
+
+  function findCoordsForRecord(rec) {
+    // 1. Trust the Airtable "Coordonnées" field if present (manual override always wins)
+    const f = (rec && rec.fields) || {};
+    const fromField = parseCoordsField(f["Coordonnées"]);
+    if (fromField) {
+      return { ...fromField, title: f.Titre || f.Lieu || "Lieu" };
+    }
+    // 2. Fallback: keyword match against Lieu + Titre using the JS lookup table
+    return findCoords(f.Lieu || "", f.Titre || "");
+  }
 
   function findCoords(lieu, title) {
     const hay = ((lieu || "") + " " + (title || "")).toLowerCase();
@@ -5724,9 +5748,7 @@ function populateColumnSelect(tableId, col, data) {
       const seenCoords = new Set();
       seenCoords.add(HOTEL_COORDS.lat + "," + HOTEL_COORDS.lng);
       dayEvents.forEach(r => {
-        const lieu = r.fields.Lieu || "";
-        const title = r.fields.Titre || "";
-        const coords = findCoords(lieu, title);
+        const coords = findCoordsForRecord(r);
         if (!coords) return;
         const key = coords.lat + "," + coords.lng;
         if (seenCoords.has(key)) return; // avoid consecutive same-place markers
@@ -5734,7 +5756,7 @@ function populateColumnSelect(tableId, col, data) {
         points.push({
           lat: coords.lat, lng: coords.lng,
           label: String(label),
-          title: title || coords.title,
+          title: r.fields.Titre || coords.title || "Lieu",
         });
         label++;
       });

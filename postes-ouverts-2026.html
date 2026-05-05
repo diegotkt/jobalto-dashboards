@@ -335,7 +335,8 @@
     LIEN: 'fld2qB50smVNwCgDZ',
     CYCLE: 'fldF3f3YHjwZ7oOxj',
     DISCUSSIONS: 'fldK44SYKtdpEbwy0',
-    ATTACHMENTS: 'fldGOhX6lupzV1kV2'
+    ATTACHMENTS: 'fldGOhX6lupzV1kV2',
+    COMPTE_ATTENTE: 'fldy3avqATcMH6fhf'
   };
 
   const STATUTS = ['A traiter', 'En cours', 'Document trouve', 'Envoye compta', 'Question posee', 'Bloque', 'Clos'];
@@ -351,23 +352,26 @@
   const OWNER_LABEL = { 'Non assigne': 'Non assigné', 'Diego': 'Diego', 'Palof': 'Palof', 'Comptable': 'Comptable' };
   const OWNER_CLASS = { 'Non assigne': 'ow-none', 'Diego': 'ow-diego', 'Palof': 'ow-palof', 'Comptable': 'ow-compta' };
 
-  // 5 onglets
+  // 6 onglets
   const TABS = [
     { key: 'clients', label: 'Clients ouverts',
-      filter: r => r.type === 'Client',
+      filter: r => r.type === 'Client' && !r.compteAttente,
       groupBy: r => r.cat || 'Autres' },
     { key: 'fact_email', label: 'Fournisseurs — Factures email',
-      filter: r => r.cat === 'Fournisseur - Facture email (recurrent)',
+      filter: r => r.cat === 'Fournisseur - Facture email (recurrent)' && !r.compteAttente,
       groupBy: () => null },
     { key: 'tickets', label: 'Fournisseurs — Tickets/Scans',
-      filter: r => r.cat === 'Fournisseur - Ticket/Scan (ponctuel)',
+      filter: r => r.cat === 'Fournisseur - Ticket/Scan (ponctuel)' && !r.compteAttente,
       groupBy: () => null },
     { key: 'portails', label: 'Portails',
-      filter: r => r.cat === 'Fournisseur - Portail en ligne',
+      filter: r => r.cat === 'Fournisseur - Portail en ligne' && !r.compteAttente,
       groupBy: () => null },
     { key: 'litiges', label: 'Litiges & Discussions',
-      filter: r => r.cat === 'Fournisseur - Question/Litige' || (r.discussions && r.discussions.trim().length > 0),
-      groupBy: r => r.cat || 'Autres' }
+      filter: r => !r.compteAttente && (r.cat === 'Fournisseur - Question/Litige' || (r.discussions && r.discussions.trim().length > 0)),
+      groupBy: r => r.cat || 'Autres' },
+    { key: 'compte_attente', label: 'Compte d\'attente',
+      filter: r => r.compteAttente === true,
+      groupBy: r => r.nom || 'Autres' }
   ];
 
   const state = {
@@ -410,7 +414,8 @@
       maj: val(rec, F.MAJ),
       cycle: val(rec, F.CYCLE) || '2025',
       discussions: val(rec, F.DISCUSSIONS) || '',
-      attachments: val(rec, F.ATTACHMENTS) || []
+      attachments: val(rec, F.ATTACHMENTS) || [],
+      compteAttente: val(rec, F.COMPTE_ATTENTE) === true
     };
   }
 
@@ -498,9 +503,12 @@
     });
   }
 
-  function statsForType(records, type) {
+  function statsForType(records, type, includeCA) {
     const stats = { total: 0, attr: 0, cours: 0, bloque: 0, clos: 0 };
-    records.filter(r => r.type === type).forEach(r => {
+    records.filter(r => {
+      if (type === 'CompteAttente') return r.compteAttente === true;
+      return r.type === type && !r.compteAttente;
+    }).forEach(r => {
       stats.total++;
       if (r.statut === 'A traiter') stats.attr++;
       else if (r.statut === 'En cours' || r.statut === 'Document trouve' || r.statut === 'Envoye compta' || r.statut === 'Question posee') stats.cours++;
@@ -532,10 +540,12 @@
 
     const fournStats = statsForType(state.records, 'Fournisseur');
     const clientStats = statsForType(state.records, 'Client');
+    const caStats = statsForType(state.records, 'CompteAttente');
 
     let html = '';
     html += statsRowHtml('Fournisseurs', 'Fournisseur', fournStats);
     html += statsRowHtml('Clients', 'Client', clientStats);
+    if (caStats.total > 0) html += statsRowHtml('Compte d\'attente', 'CompteAttente', caStats);
 
     html += `<div class="toolbar">
       <input type="text" id="search" placeholder="Recherche (nom, problème, notes, discussions)…" value="${escape(state.search)}">

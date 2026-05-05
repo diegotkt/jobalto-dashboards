@@ -3879,6 +3879,13 @@ function populateColumnSelect(tableId, col, data) {
   .at-toast-err { background:#C92A2A; color:white; }
   @keyframes atSlide { from{transform:translateY(20px);opacity:0;} to{transform:translateY(0);opacity:1;} }
 
+  /* Planning page day filter */
+  .planning-filter-bar { display:flex; flex-wrap:wrap; gap:8px; background:#F1F5F9; padding:14px 16px; border-radius:10px; margin:14px 0 24px; align-items:center; }
+  .planning-filter-bar .pf-label { font-weight:600; font-size:13px; color:var(--text-soft); margin-right:6px; }
+  .pf-btn { background:white; border:1px solid var(--border); padding:7px 14px; border-radius:999px; font-size:13px; cursor:pointer; font-weight:500; color:var(--text); transition:background 0.15s, border-color 0.15s; }
+  .pf-btn:hover { background:#F8FAFC; border-color:var(--primary-light); }
+  .pf-btn.active { background:var(--primary); color:white; border-color:var(--primary); font-weight:600; }
+
   /* Multi-select dropdown filter */
   .at-multi-select { position:relative; display:inline-block; }
   .at-multi-trigger { background:white; border:1px solid var(--border); padding:7px 14px; border-radius:8px; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; min-width:180px; text-align:left; font-weight:500; color:var(--text); }
@@ -5006,6 +5013,78 @@ function populateColumnSelect(tableId, col, data) {
 
   // Also install at boot in case static data is enough
   setTimeout(() => { installFilterOverrides(); installMultiSelect("contacts_db"); installMultiSelect("rdv"); }, 400);
+
+  // ============================================================
+  // PLANNING PAGE — DAY FILTER BUTTONS
+  // ============================================================
+  function setupPlanningFilter() {
+    const page = document.getElementById("page-planning");
+    if (!page || page.dataset.pfInit) return;
+    page.dataset.pfInit = "1";
+
+    const days = [
+      { id: "sam20", label: "Sam 20", match: "Samedi 20" },
+      { id: "dim21", label: "Dim 21", match: "Dimanche 21" },
+      { id: "lun22", label: "Lun 22", match: "Lundi 22" },
+      { id: "mar23", label: "Mar 23", match: "Mardi 23" },
+      { id: "mer24", label: "Mer 24", match: "Mercredi 24" },
+      { id: "jeu25", label: "Jeu 25", match: "Jeudi 25" },
+    ];
+
+    // Tag each direct child of page-planning with a segment id based on the
+    // most recent H2 we walked past. Day H2s = "samXX" / "dimXX" / etc.
+    // Everything else = "ref" (Gantt, trajets, réservations, cartes, règles).
+    let currentSegment = "ref";
+    Array.from(page.children).forEach(c => {
+      if (c.tagName === "H2") {
+        const txt = (c.textContent || "").trim();
+        const day = days.find(d => txt.startsWith(d.match));
+        currentSegment = day ? day.id : "ref";
+      }
+      c.dataset.planningSegment = currentSegment;
+    });
+
+    // Build the filter bar
+    const bar = document.createElement("div");
+    bar.className = "planning-filter-bar";
+    bar.dataset.planningSegment = "always";
+    let html = '<span class="pf-label">Vue :</span>';
+    html += '<button class="pf-btn active" data-pf="all">Tout afficher</button>';
+    days.forEach(d => {
+      html += '<button class="pf-btn" data-pf="' + d.id + '">' + d.label + '</button>';
+    });
+    html += '<button class="pf-btn" data-pf="ref">Refs (Gantt, cartes, trajets)</button>';
+    bar.innerHTML = html;
+
+    const h1 = page.querySelector("h1");
+    if (h1 && h1.nextSibling) h1.parentNode.insertBefore(bar, h1.nextSibling);
+    else page.insertBefore(bar, page.firstChild);
+
+    bar.addEventListener("click", (e) => {
+      const btn = e.target.closest(".pf-btn");
+      if (!btn) return;
+      bar.querySelectorAll(".pf-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const filter = btn.getAttribute("data-pf");
+
+      Array.from(page.children).forEach(c => {
+        const seg = c.dataset.planningSegment;
+        if (seg === "always" || c.tagName === "H1") { c.style.display = ""; return; }
+        c.style.display = (filter === "all" || seg === filter) ? "" : "none";
+      });
+
+      // Smooth scroll back to the top of the planning page
+      const offset = bar.getBoundingClientRect().top + window.pageYOffset - 20;
+      window.scrollTo({ top: offset, behavior: "smooth" });
+    });
+  }
+
+  // Run at boot + on every nav to planning
+  setTimeout(setupPlanningFilter, 200);
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest('a[data-nav="planning"]');
+    if (a) setTimeout(setupPlanningFilter, 100);
+  });
 })();
 </script>
 

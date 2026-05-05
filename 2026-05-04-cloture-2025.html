@@ -374,14 +374,18 @@
       groupBy: r => r.nom || 'Autres' }
   ];
 
+  const IN_PROGRESS_STATUSES = ['En cours', 'Document trouve', 'Envoye compta', 'Question posee'];
+
   const state = {
     records: [],
     loading: true,
     error: null,
     activeTab: localStorage.getItem('cloture.tab.' + CYCLE) || 'clients',
     hideClosedRaw: localStorage.getItem('cloture.hideClosed.' + CYCLE),
-    statusFilter: '',  // peut être combiné: { type: 'Fournisseur', statut: 'En cours' }
-    typeFilter: '',     // 'Client' / 'Fournisseur' / ''
+    statusFilter: '',
+    typeFilter: '',
+    statusGroup: '',  // '_in_progress' pour grouper plusieurs statuts
+    crossTabActive: false,  // quand true, ignore le filtre onglet (vue cross-tab)
     ownerFilter: localStorage.getItem('cloture.ownerFilter.' + CYCLE) || '',
     search: '',
     expanded: new Set(),
@@ -489,10 +493,19 @@
 
   function applyFilters(records, tab) {
     return records.filter(r => {
-      if (!tab.filter(r)) return false;
+      // En mode cross-tab, ignorer le filtre onglet
+      if (!state.crossTabActive && !tab.filter(r)) return false;
+      // En mode cross-tab CompteAttente, on inclut les CA records
+      if (state.crossTabActive && state.typeFilter === 'CompteAttente') {
+        if (!r.compteAttente) return false;
+      } else if (state.crossTabActive) {
+        // Cross-tab pour Fournisseur/Client : exclure CA
+        if (r.compteAttente) return false;
+      }
       if (state.hideClosed && r.statut === 'Clos') return false;
-      if (state.typeFilter && r.type !== state.typeFilter) return false;
+      if (state.typeFilter && state.typeFilter !== 'CompteAttente' && r.type !== state.typeFilter) return false;
       if (state.statusFilter && r.statut !== state.statusFilter) return false;
+      if (state.statusGroup === '_in_progress' && !IN_PROGRESS_STATUSES.includes(r.statut)) return false;
       if (state.ownerFilter && r.owner !== state.ownerFilter) return false;
       if (state.search) {
         const q = state.search.toLowerCase();
@@ -520,14 +533,15 @@
 
   function statsRowHtml(label, type, stats) {
     function isActive(statut) {
-      return state.typeFilter === type && state.statusFilter === statut ? 'active' : '';
+      return state.crossTabActive && state.typeFilter === type && state.statusFilter === statut ? 'active' : '';
     }
-    const totalActive = state.typeFilter === type && state.statusFilter === '' ? 'active' : '';
+    const totalActive = state.crossTabActive && state.typeFilter === type && state.statusFilter === '' && state.statusGroup === '' ? 'active' : '';
+    const coursActive = state.crossTabActive && state.typeFilter === type && state.statusGroup === '_in_progress' ? 'active' : '';
     return `<div class="stats-row">
       <div class="stats-label">${label}</div>
       <div class="stat total ${totalActive}" data-type="${type}" data-statut=""><div class="label">Total</div><div class="value">${stats.total}</div></div>
       <div class="stat attr ${isActive('A traiter')}" data-type="${type}" data-statut="A traiter"><div class="label">À traiter</div><div class="value">${stats.attr}</div></div>
-      <div class="stat cours" data-type="${type}" data-statut="_in_progress"><div class="label">En cours</div><div class="value">${stats.cours}</div></div>
+      <div class="stat cours ${coursActive}" data-type="${type}" data-statut="_in_progress"><div class="label">En cours</div><div class="value">${stats.cours}</div></div>
       <div class="stat bloque ${isActive('Bloque')}" data-type="${type}" data-statut="Bloque"><div class="label">Bloqué</div><div class="value">${stats.bloque}</div></div>
       <div class="stat clos ${isActive('Clos')}" data-type="${type}" data-statut="Clos"><div class="label">Clos</div><div class="value">${stats.clos}</div></div>
     </div>`;
@@ -563,15 +577,43 @@
     html += `<div class="tabs">`;
     TABS.forEach(t => {
       const tabRecs = state.records.filter(r => t.filter(r) && (!state.hideClosed || r.statut !== 'Clos'));
-      html += `<button class="tab ${state.activeTab === t.key ? 'active' : ''}" data-tab="${t.key}">${t.label}<span class="count">${tabRecs.length}</span></button>`;
+      const tabActive = !state.crossTabActive && state.activeTab === t.key;
+      html += `<button class="tab ${tabActive ? 'active' : ''}" data-tab="${t.key}">${t.label}<span class="count">${tabRecs.length}</span></button>`;
     });
     html += `</div>`;
 
     const activeTabDef = TABS.find(t => t.key === state.activeTab) || TABS[0];
+
+    // Bannière cross-tab
+    if (state.crossTabActive) {
+      const typeLabel = state.typeFilter === 'CompteAttente' ? "Compte d'attente" : state.typeFilter === 'Fournisseur' ? "Fournisseurs" : "Clients";
+      let statusLabel = '';
+      if (state.statusGroup === '_in_progress') statusLabel = " — En cours (toutes étapes intermédiaires)";
+      else if (state.statusFilter) statusLabel = ` — ${STATUT_LABEL[state.statusFilter] || state.statusFilter}`;
+      else statusLabel = ' — tous statuts';
+      html += `<div style="background: var(--teal-light); border: 1px solid var(--teal); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <div><strong style="color: var(--teal-dark);">Vue cross-tab</strong> · ${typeLabel}${statusLabel}</div>
+        <button id="exit-cross-tab" style="padding: 5px 12px; background: var(--teal); color: white; border: 0; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 500;">↩ Retour à l'onglet ${activeTabDef.label.replace('Fournisseurs — ', '')}</button>
+      </div>`;
+    }
+
     const visible = applyFilters(state.records, activeTabDef);
 
     if (visible.length === 0) {
       html += `<div class="empty">Aucune ligne ne correspond aux filtres.</div>`;
+    } else if (state.crossTabActive) {
+      // En mode cross-tab : grouper par catégorie (cat ou Compte d'attente)
+      const groups = {};
+      visible.forEach(r => {
+        const g = r.compteAttente ? "Compte d'attente" : (r.cat || 'Autres');
+        (groups[g] = groups[g] || []).push(r);
+      });
+      Object.keys(groups).sort().forEach(g => {
+        html += `<div class="group">
+          <div class="group-header"><span>${escape(prettyCat(g))}</span><span class="group-count">${groups[g].length}</span></div>
+          ${groups[g].map(rowHtml).join('')}
+        </div>`;
+      });
     } else if (visible.length > 0 && activeTabDef.groupBy(visible[0])) {
       const groups = {};
       visible.forEach(r => { const g = activeTabDef.groupBy(r) || 'Autres'; (groups[g] = groups[g] || []).push(r); });
@@ -804,24 +846,49 @@
     root.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => {
       state.activeTab = b.getAttribute('data-tab');
       localStorage.setItem('cloture.tab.' + CYCLE, state.activeTab);
+      // Sortir du mode cross-tab quand on clique un onglet
+      state.crossTabActive = false;
+      state.typeFilter = '';
+      state.statusFilter = '';
+      state.statusGroup = '';
       render();
     }));
 
     root.querySelectorAll('.stat').forEach(s => s.addEventListener('click', () => {
       const t = s.getAttribute('data-type');
       const statut = s.getAttribute('data-statut');
-      if (statut === '_in_progress') {
-        state.typeFilter = state.typeFilter === t ? '' : t;
+      const isCurrentlyActive = state.crossTabActive && state.typeFilter === t &&
+        ((statut === '_in_progress' && state.statusGroup === '_in_progress') ||
+         (statut !== '_in_progress' && state.statusFilter === statut));
+      if (isCurrentlyActive) {
+        // Toggle off : revenir au mode tab normal
+        state.crossTabActive = false;
+        state.typeFilter = '';
         state.statusFilter = '';
+        state.statusGroup = '';
       } else {
-        if (state.typeFilter === t && state.statusFilter === statut) {
-          state.typeFilter = ''; state.statusFilter = '';
+        // Activer mode cross-tab avec ce filtre
+        state.crossTabActive = true;
+        state.typeFilter = t;
+        if (statut === '_in_progress') {
+          state.statusFilter = '';
+          state.statusGroup = '_in_progress';
         } else {
-          state.typeFilter = t; state.statusFilter = statut;
+          state.statusFilter = statut;
+          state.statusGroup = '';
         }
       }
       render();
     }));
+
+    const exitCrossTabBtn = root.querySelector('#exit-cross-tab');
+    if (exitCrossTabBtn) exitCrossTabBtn.addEventListener('click', () => {
+      state.crossTabActive = false;
+      state.typeFilter = '';
+      state.statusFilter = '';
+      state.statusGroup = '';
+      render();
+    });
 
     const sf = root.querySelector('#statusFilter');
     if (sf) sf.addEventListener('change', e => { state.statusFilter = e.target.value; render(); });

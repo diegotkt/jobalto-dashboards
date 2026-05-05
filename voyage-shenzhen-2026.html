@@ -1722,11 +1722,11 @@ On behalf of the delegation
             <th data-col="action">Action immédiate</th>
           </tr>
           <tr class="th-filters">
-            <th><select data-col-filter="statut" class="col-filter"><option value="">, tous,</option></select></th>
+            <th><select data-col-filter="statut" class="col-filter"><option value="">Tous</option></select></th>
             <th><input type="text" data-col-filter="societe" class="col-filter" placeholder="filtre..."></th>
-            <th><select data-col-filter="secteur" class="col-filter"><option value="">, tous,</option></select></th>
+            <th><select data-col-filter="secteur" class="col-filter"><option value="">Tous</option></select></th>
             <th><input type="text" data-col-filter="date" class="col-filter" placeholder="filtre..."></th>
-            <th><select data-col-filter="owner" class="col-filter"><option value="">, tous,</option></select></th>
+            <th><select data-col-filter="owner" class="col-filter"><option value="">Tous</option></select></th>
             <th><input type="text" data-col-filter="action" class="col-filter" placeholder="filtre..."></th>
           </tr>
         </thead>
@@ -2440,11 +2440,11 @@ On behalf of the delegation
           </tr>
           <tr class="th-filters">
             <th><input type="text" data-col-filter="societe" class="col-filter" placeholder="filtre..."></th>
-            <th><select data-col-filter="secteur" class="col-filter"><option value="">, tous,</option></select></th>
+            <th><select data-col-filter="secteur" class="col-filter"><option value="">Tous</option></select></th>
             <th><input type="text" data-col-filter="contact" class="col-filter" placeholder="filtre..."></th>
-            <th><select data-col-filter="owner" class="col-filter"><option value="">, tous,</option></select></th>
+            <th><select data-col-filter="owner" class="col-filter"><option value="">Tous</option></select></th>
             <th><input type="text" data-col-filter="rdv" class="col-filter" placeholder="filtre..."></th>
-            <th><select data-col-filter="statut_court" class="col-filter"><option value="">, tous,</option></select></th>
+            <th><select data-col-filter="statut_court" class="col-filter"><option value="">Tous</option></select></th>
             <th><input type="text" data-col-filter="commentaire" class="col-filter" placeholder="filtre..."></th>
           </tr>
         </thead>
@@ -4210,6 +4210,43 @@ function populateColumnSelect(tableId, col, data) {
     return count;
   }
 
+  // ---- Force-render the 3 dynamic tables (they only init on nav by default) ----
+  function ensureTablesRendered() {
+    try { if (typeof initContactsTable === "function") initContactsTable(); } catch (e) { console.warn("[airtable] initContactsTable:", e); }
+    try { if (typeof initRdvTable      === "function") initRdvTable();      } catch (e) { console.warn("[airtable] initRdvTable:", e); }
+    try { if (typeof initTodoTable     === "function") initTodoTable();     } catch (e) { console.warn("[airtable] initTodoTable:", e); }
+  }
+
+  // Track which tables we've already bridged (avoid double-decoration)
+  const bridged = { contacts: false, rdv: false, todo: false };
+
+  function tryBridgeAll() {
+    if (!bridged.contacts) {
+      const tbody = document.querySelector("#ct-table tbody");
+      if (tbody && tbody.children.length > 0) {
+        const n = bridgeContacts();
+        bannerOn("page-contacts_db", n, "contacts");
+        bridged.contacts = true;
+      }
+    }
+    if (!bridged.rdv) {
+      const tbody = document.querySelector("#rdv-table tbody");
+      if (tbody && tbody.children.length > 0) {
+        const n = bridgeRDV();
+        bannerOn("page-rdv", n, "lignes");
+        bridged.rdv = true;
+      }
+    }
+    if (!bridged.todo) {
+      const tbody = document.querySelector("#todo-table tbody");
+      if (tbody && tbody.children.length > 0) {
+        const n = bridgeTODO();
+        bannerOn("page-todo", n, "tâches");
+        bridged.todo = true;
+      }
+    }
+  }
+
   // ---- Sync orchestrator ----
   async function syncAll() {
     try {
@@ -4250,31 +4287,21 @@ function populateColumnSelect(tableId, col, data) {
       });
       mapping.squadList.sort();
 
-      // Wait for the static tables to be rendered before decorating
-      const waitForRender = (selector) => new Promise(resolve => {
-        const check = () => {
-          const tbody = document.querySelector(selector);
-          if (tbody && tbody.dataset.init === "1" && tbody.children.length > 0) resolve();
-          else setTimeout(check, 200);
-        };
-        check();
-      });
+      // Force-render all 3 tables (they only init on nav by default)
+      ensureTablesRendered();
 
-      await Promise.all([
-        waitForRender("#ct-table tbody"),
-        waitForRender("#rdv-table tbody"),
-        waitForRender("#todo-table tbody"),
-      ]);
+      // Bridge whatever's ready right now, then poll briefly for the rest
+      tryBridgeAll();
+      let attempts = 0;
+      const interval = setInterval(() => {
+        tryBridgeAll();
+        attempts++;
+        if ((bridged.contacts && bridged.rdv && bridged.todo) || attempts > 25) {
+          clearInterval(interval);
+        }
+      }, 200);
 
-      const cn = bridgeContacts();
-      const rn = bridgeRDV();
-      const tn = bridgeTODO();
-
-      bannerOn("page-contacts_db", cn, "contacts");
-      bannerOn("page-rdv",         rn, "lignes");
-      bannerOn("page-todo",        tn, "tâches");
-
-      console.log("[airtable] synced:", { contacts: cn, rdv: rn, todo: tn, squad: squadRecs.length });
+      console.log("[airtable] data fetched:", { contacts: contactsRecs.length, todo: todoRecs.length, squad: squadRecs.length });
     } catch (e) {
       console.error("[airtable] sync failed:", e);
       bannerErr("page-contacts_db", e.message);
@@ -4296,21 +4323,20 @@ function populateColumnSelect(tableId, col, data) {
     init();
   }
 
-  // Re-render banner when user navigates between pages (SPA-style)
+  // When user navigates to a bridged page, ensure decoration happens
+  // (in case the table was rendered AFTER our initial sync)
   document.addEventListener("click", (e) => {
     const a = e.target.closest("a[data-nav]");
     if (!a) return;
     const slug = a.getAttribute("data-nav");
     if (slug === "contacts_db" || slug === "rdv" || slug === "todo") {
       setTimeout(() => {
+        if (pat && cache.contacts.length > 0) tryBridgeAll();
         const pageId = "page-" + slug;
         const page = document.getElementById(pageId);
         const banner = page && page.querySelector(".at-banner");
-        if (!banner) {
-          if (pat) syncAll();
-          else bannerOn(pageId);
-        }
-      }, 50);
+        if (!banner) bannerOn(pageId);
+      }, 100);
     }
   });
 })();

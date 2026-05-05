@@ -2377,40 +2377,7 @@ On behalf of the delegation
 <li><strong>Pas d'alcool avant les RDV business</strong>, bière/baijiu uniquement le soir.</li>
 <li><strong>WeChat installé et test J0</strong>, toutes les coordinations chinoises passent par là.</li>
 <li><strong>Backup squad</strong> : si un membre tombe malade ou doit partir, le narratif et le pitch ne doivent pas dépendre d'une personne unique. Au moins 2 personnes maîtrisent le pitch EN.</li>
-</ol><h2>Cartes par jour — trajets visuels</h2><p class="note">Schémas approximatifs, pas géographiquement précis. À titre indicatif uniquement, pour visualiser les distances et districts.</p>
-<div class="maps-grid">
-  <div class="map-card">
-    <svg viewBox="0 0 100 70" class="day-map" xmlns="http://www.w3.org/2000/svg">
-      <!-- Background districts -->
-      <rect x="0" y="0" width="100" height="70" fill="#F8F9FA" stroke="#E4E7EB" stroke-width="0.2"/>
-      <!-- District labels -->
-      <text x="20" y="15" font-size="3" fill="#B0B0B0" font-style="italic">Bao'an</text>
-      <text x="48" y="10" font-size="3" fill="#B0B0B0" font-style="italic">Longhua</text>
-      <text x="78" y="14" font-size="3" fill="#B0B0B0" font-style="italic">Longgang</text>
-      <text x="50" y="60" font-size="3" fill="#B0B0B0" font-style="italic">Futian</text>
-      <text x="68" y="50" font-size="3" fill="#B0B0B0" font-style="italic">Luohu</text>
-      <text x="20" y="55" font-size="3" fill="#B0B0B0" font-style="italic">Nanshan</text>
-      <text x="50" y="68" font-size="2.5" fill="#B0B0B0" font-style="italic">Shenzhen Bay → HK</text>
-      <!-- Title -->
-      <text x="50" y="5" font-size="3.2" text-anchor="middle" font-weight="700" fill="#666666">Sam 20 — Arrivée + Huaqiangbei</text>
-      <!-- Trajectoires -->
-      <line x1="12" y1="48" x2="50" y2="38" stroke="#666666" stroke-width="0.4" stroke-dasharray="1.5 1" opacity="0.7"/><line x1="50" y1="38" x2="48" y2="38" stroke="#666666" stroke-width="0.4" stroke-dasharray="1.5 1" opacity="0.7"/>
-      <!-- Pins -->
-      
-        <circle cx="12" cy="48" r="1.6" fill="#666666" stroke="white" stroke-width="0.4"/>
-        <text x="12" y="51.5" font-size="2" text-anchor="middle" fill="#1F2933" font-weight="600">SZX Airport</text>
-        <text x="12" y="53.7" font-size="1.5" text-anchor="middle" fill="#52606D">5h00 atterrissage</text>
-        
-        <circle cx="50" cy="38" r="1.6" fill="#1F4E78" stroke="white" stroke-width="0.4"/>
-        <text x="50" y="41.5" font-size="2" text-anchor="middle" fill="#1F2933" font-weight="600">Fraser Suites</text>
-        <text x="50" y="43.7" font-size="1.5" text-anchor="middle" fill="#52606D">Check-in</text>
-        
-        <circle cx="48" cy="38" r="1.6" fill="#DDEBF7" stroke="white" stroke-width="0.4"/>
-        <text x="48" y="41.5" font-size="2" text-anchor="middle" fill="#1F2933" font-weight="600">Huaqiangbei</text>
-        <text x="48" y="43.7" font-size="1.5" text-anchor="middle" fill="#52606D">Marché électronique</text>
-        
-    </svg>
-    </div></section>
+</ol></section>
       <section class="page" id="page-contacts_db" data-slug="contacts_db">
     <h1>Base contacts, 33 sociétés</h1>
     <p>Toutes les cibles de l'outreach. Filtre rapide par statut en haut, ou filtre fin par colonne.</p>
@@ -3879,6 +3846,39 @@ function populateColumnSelect(tableId, col, data) {
   .at-toast-err { background:#C92A2A; color:white; }
   @keyframes atSlide { from{transform:translateY(20px);opacity:0;} to{transform:translateY(0);opacity:1;} }
 
+  /* Planning agenda (refonte) */
+  .agenda { margin:18px 0 24px; border:1px solid var(--border); border-radius:10px; background:white; overflow:hidden; }
+  .agenda-6day { overflow-x:auto; }
+  .agenda-1day .agenda-header { background:var(--primary-light); }
+  .agenda-header { display:grid; background:var(--primary); color:white; }
+  .agenda-6day .agenda-header { grid-template-columns:60px repeat(6, minmax(150px, 1fr)); min-width:960px; }
+  .agenda-1day .agenda-header { grid-template-columns:60px 1fr; }
+  .agenda-time-corner { padding:9px 8px; font-size:11px; opacity:0.6; text-align:center; font-weight:600; }
+  .agenda-day-header { padding:10px 12px; font-weight:600; font-size:13px; text-align:center; border-left:1px solid rgba(255,255,255,0.18); }
+
+  .agenda-body { display:grid; position:relative; }
+  .agenda-6day .agenda-body { grid-template-columns:60px repeat(6, minmax(150px, 1fr)); min-width:960px; }
+  .agenda-1day .agenda-body { grid-template-columns:60px 1fr; }
+  .agenda-time-col { background:#FAFBFC; border-right:1px solid var(--border); position:relative; }
+  .agenda-hour { position:absolute; left:0; right:0; font-size:11px; color:var(--text-soft); padding:2px 6px 0 8px; box-sizing:border-box; border-top:1px solid var(--border); font-weight:600; }
+  .agenda-hour:first-child { border-top:0; }
+
+  .agenda-day-col { position:relative; border-left:1px solid var(--border); }
+  .agenda-day-col:first-of-type { border-left:0; }
+  .agenda-grid-line { position:absolute; left:0; right:0; border-top:1px solid var(--border); pointer-events:none; }
+  .agenda-grid-line.half { border-top:1px dashed rgba(0,0,0,0.10); }
+
+  .agenda-event { position:absolute; left:4px; right:4px; border-radius:5px; padding:4px 8px; font-size:11px; line-height:1.3; overflow:hidden; box-shadow:0 1px 2px rgba(0,0,0,0.08); border-left:3px solid rgba(0,0,0,0.18); cursor:default; z-index:1; transition:box-shadow 0.15s; }
+  .agenda-event:hover { box-shadow:0 2px 8px rgba(0,0,0,0.18); z-index:2; }
+  .agenda-event.color-off { display:none; }
+  .agenda-event-time { font-size:10px; color:rgba(0,0,0,0.55); font-weight:600; }
+  .agenda-event-text { font-weight:500; color:rgba(0,0,0,0.85); margin-top:2px; }
+
+  .agenda-legend { display:flex; flex-wrap:wrap; gap:8px; padding:12px 16px; background:#F8FAFC; border-bottom:1px solid var(--border); align-items:center; }
+  .agenda-lg { padding:5px 11px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; user-select:none; transition:opacity 0.15s; color:#1F2933; }
+  .agenda-lg.lg-off { opacity:0.3; text-decoration:line-through; }
+  .agenda-legend-hint { color:var(--text-soft); font-size:11px; margin-left:auto; font-style:italic; }
+
   /* Planning page day filter */
   .planning-filter-bar { display:flex; flex-wrap:wrap; gap:8px; background:#F1F5F9; padding:14px 16px; border-radius:10px; margin:14px 0 24px; align-items:center; }
   .planning-filter-bar .pf-label { font-weight:600; font-size:13px; color:var(--text-soft); margin-right:6px; }
@@ -5083,8 +5083,263 @@ function populateColumnSelect(tableId, col, data) {
   setTimeout(setupPlanningFilter, 200);
   document.addEventListener("click", (e) => {
     const a = e.target.closest('a[data-nav="planning"]');
-    if (a) setTimeout(setupPlanningFilter, 100);
+    if (a) setTimeout(() => { setupPlanningFilter(); setupAgenda(); }, 100);
   });
+
+  // ============================================================
+  // PLANNING AGENDA (6-day grid + per-day mini-agenda)
+  // ============================================================
+  function normalizeColor(c) {
+    if (!c) return "";
+    c = String(c).trim();
+    if (c.startsWith("#")) return c.toLowerCase().substring(0, 7);
+    const m = c.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+    if (m) {
+      // Skip transparent
+      const rgba = c.match(/rgba\([^)]*?,\s*([0-9.]+)\s*\)/);
+      if (rgba && parseFloat(rgba[1]) === 0) return "";
+      return "#" + [m[1], m[2], m[3]].map(n => parseInt(n).toString(16).padStart(2, "0")).join("").toLowerCase();
+    }
+    return "";
+  }
+
+  function parseGanttData() {
+    const table = document.querySelector("#page-planning .gantt-table");
+    if (!table) return null;
+    const tbody = table.querySelector("tbody");
+    if (!tbody) return null;
+    const rows = Array.from(tbody.querySelectorAll("tr"));
+    if (!rows.length) return null;
+
+    const slots = rows.map(r => {
+      const t = r.querySelector(".time-col");
+      return t ? t.textContent.trim() : "";
+    });
+
+    const days = [
+      { id: "sam20", label: "Sam 20/06", col: 1 },
+      { id: "dim21", label: "Dim 21/06", col: 2 },
+      { id: "lun22", label: "Lun 22/06", col: 3 },
+      { id: "mar23", label: "Mar 23/06", col: 4 },
+      { id: "mer24", label: "Mer 24/06", col: 5 },
+      { id: "jeu25", label: "Jeu 25/06", col: 6 },
+    ];
+
+    const events = [];
+    days.forEach(day => {
+      const cells = rows.map(r => r.children[day.col]);
+      let i = 0;
+      while (i < cells.length) {
+        const cell = cells[i];
+        if (!cell) { i++; continue; }
+        const computedBg = window.getComputedStyle(cell).backgroundColor;
+        const color = normalizeColor(computedBg);
+        const text = (cell.textContent || "").trim();
+
+        if (!color && !text) { i++; continue; }
+
+        // Group consecutive cells with same color
+        let j = i + 1;
+        let combined = text;
+        while (j < cells.length) {
+          const c = cells[j];
+          const cColor = normalizeColor(window.getComputedStyle(c).backgroundColor);
+          if (cColor !== color) break;
+          const ct = (c.textContent || "").trim();
+          if (ct && combined.indexOf(ct) === -1) {
+            combined = (combined ? combined + " · " : "") + ct;
+          }
+          j++;
+        }
+
+        const startTime = (slots[i] || "").split("-")[0];
+        const endTimeRaw = (slots[j - 1] || "").split("-")[1];
+        events.push({ day: day.id, startTime, endTime: endTimeRaw, color, text: combined });
+        i = j;
+      }
+    });
+
+    return { days, events };
+  }
+
+  function renderAgenda(parsed, opts) {
+    const HOUR_PX = 48;
+    const startHour = 6;   // covers 06:30 events
+    const endHour   = 24;
+    const totalPx   = (endHour - startHour) * HOUR_PX;
+
+    function timeToPx(t) {
+      if (!t) return 0;
+      if (t === "00:00") return totalPx;
+      const parts = t.split(":");
+      const h = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) || 0;
+      return Math.max(0, Math.min(totalPx, ((h + m / 60) - startHour) * HOUR_PX));
+    }
+
+    const wrap = document.createElement("div");
+    wrap.className = "agenda agenda-" + opts.mode;
+
+    const days = opts.dayFilter
+      ? parsed.days.filter(d => d.id === opts.dayFilter)
+      : parsed.days;
+
+    if (opts.mode === "6day") {
+      const legend = document.createElement("div");
+      legend.className = "agenda-legend";
+      legend.innerHTML =
+        '<span class="agenda-lg" data-color="#c6efce" style="background:#C6EFCE">RDV confirmé</span>' +
+        '<span class="agenda-lg" data-color="#fff2cc" style="background:#FFF2CC">À confirmer / reprogrammer</span>' +
+        '<span class="agenda-lg" data-color="#ddebf7" style="background:#DDEBF7">Exploration tech</span>' +
+        '<span class="agenda-lg" data-color="#fce4d6" style="background:#FCE4D6">Repas</span>' +
+        '<span class="agenda-lg" data-color="#e4dfec" style="background:#E4DFEC">Soirée / networking</span>' +
+        '<span class="agenda-lg" data-color="#f2f2f2" style="background:#F2F2F2">Logistique</span>' +
+        '<span class="agenda-legend-hint">Cliquer une étiquette pour masquer ce type</span>';
+      wrap.appendChild(legend);
+      legend.querySelectorAll(".agenda-lg").forEach(lg => {
+        lg.onclick = () => {
+          const off = lg.classList.toggle("lg-off");
+          const target = lg.dataset.color;
+          wrap.querySelectorAll(".agenda-event").forEach(ev => {
+            if (ev.dataset.color === target) ev.classList.toggle("color-off", off);
+          });
+        };
+      });
+    }
+
+    const header = document.createElement("div");
+    header.className = "agenda-header";
+    let headerHtml = '<div class="agenda-time-corner">heure</div>';
+    days.forEach(d => { headerHtml += '<div class="agenda-day-header">' + d.label + '</div>'; });
+    header.innerHTML = headerHtml;
+    wrap.appendChild(header);
+
+    const body = document.createElement("div");
+    body.className = "agenda-body";
+    body.style.height = totalPx + "px";
+
+    const timeCol = document.createElement("div");
+    timeCol.className = "agenda-time-col";
+    timeCol.style.height = totalPx + "px";
+    for (let h = startHour; h < endHour; h++) {
+      const t = document.createElement("div");
+      t.className = "agenda-hour";
+      t.textContent = String(h).padStart(2, "0") + ":00";
+      t.style.top = ((h - startHour) * HOUR_PX) + "px";
+      t.style.height = HOUR_PX + "px";
+      timeCol.appendChild(t);
+    }
+    body.appendChild(timeCol);
+
+    days.forEach(d => {
+      const col = document.createElement("div");
+      col.className = "agenda-day-col";
+      col.dataset.day = d.id;
+
+      // Grid lines (full hours + half-hour dashed)
+      for (let h = startHour; h <= endHour; h++) {
+        const line = document.createElement("div");
+        line.className = "agenda-grid-line";
+        line.style.top = ((h - startHour) * HOUR_PX) + "px";
+        col.appendChild(line);
+        if (h < endHour) {
+          const half = document.createElement("div");
+          half.className = "agenda-grid-line half";
+          half.style.top = ((h - startHour) * HOUR_PX + HOUR_PX / 2) + "px";
+          col.appendChild(half);
+        }
+      }
+
+      const dayEvents = parsed.events.filter(e => e.day === d.id);
+      dayEvents.forEach(e => {
+        const top = timeToPx(e.startTime);
+        const bottom = timeToPx(e.endTime || "24:00");
+        const height = Math.max(18, bottom - top);
+
+        const ev = document.createElement("div");
+        ev.className = "agenda-event";
+        ev.dataset.color = e.color;
+        ev.style.top = top + "px";
+        ev.style.height = height + "px";
+        if (e.color) ev.style.background = e.color;
+        ev.title = e.startTime + " – " + (e.endTime || "?") + (e.text ? "\n" + e.text : "");
+
+        const time = document.createElement("div");
+        time.className = "agenda-event-time";
+        time.textContent = e.startTime + "–" + (e.endTime || "?");
+        ev.appendChild(time);
+
+        if (e.text) {
+          const txt = document.createElement("div");
+          txt.className = "agenda-event-text";
+          txt.textContent = e.text;
+          ev.appendChild(txt);
+        }
+        col.appendChild(ev);
+      });
+      body.appendChild(col);
+    });
+
+    wrap.appendChild(body);
+    return wrap;
+  }
+
+  function setupAgenda() {
+    const planning = document.getElementById("page-planning");
+    if (!planning || planning.dataset.agendaInit) return;
+
+    const ganttTable = planning.querySelector(".gantt-table");
+    if (!ganttTable) return;
+
+    const parsed = parseGanttData();
+    if (!parsed) return;
+    planning.dataset.agendaInit = "1";
+
+    // Replace the existing 6-day Gantt with the new agenda
+    const ganttWrap = ganttTable.closest(".gantt-wrap");
+    if (ganttWrap) {
+      const newAgenda = renderAgenda(parsed, { mode: "6day" });
+      ganttWrap.parentNode.insertBefore(newAgenda, ganttWrap);
+      ganttWrap.style.display = "none";
+      // Hide the old legend-bar + the H3 "Planning Gantt" + the explanatory paragraph
+      let prev = ganttWrap.previousElementSibling;
+      while (prev) {
+        const nodeName = prev.tagName;
+        const cls = prev.className || "";
+        const txt = (prev.textContent || "").trim();
+        if (cls.includes("legend-bar") || (nodeName === "H3" && txt.startsWith("Planning Gantt")) || (nodeName === "P" && txt.startsWith("Vue visuelle"))) {
+          prev.style.display = "none";
+          prev = prev.previousElementSibling;
+        } else {
+          break;
+        }
+      }
+    }
+
+    // Insert a single-day mini-agenda right after each day H2
+    const dayMatches = [
+      { id: "sam20", match: "Samedi 20" },
+      { id: "dim21", match: "Dimanche 21" },
+      { id: "lun22", match: "Lundi 22" },
+      { id: "mar23", match: "Mardi 23" },
+      { id: "mer24", match: "Mercredi 24" },
+      { id: "jeu25", match: "Jeudi 25" },
+    ];
+    planning.querySelectorAll("h2").forEach(h2 => {
+      if (h2.dataset.miniInserted) return;
+      const txt = (h2.textContent || "").trim();
+      const day = dayMatches.find(d => txt.startsWith(d.match));
+      if (!day) return;
+      h2.dataset.miniInserted = "1";
+      const mini = renderAgenda(parsed, { mode: "1day", dayFilter: day.id });
+      // Tag the mini-agenda with the same planning segment as the parent so the
+      // day filter buttons keep treating it as part of the day.
+      mini.dataset.planningSegment = h2.dataset.planningSegment || day.id;
+      h2.parentNode.insertBefore(mini, h2.nextSibling);
+    });
+  }
+
+  setTimeout(setupAgenda, 250);
 })();
 </script>
 

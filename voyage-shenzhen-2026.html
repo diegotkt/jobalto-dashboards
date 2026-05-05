@@ -3910,11 +3910,58 @@ function populateColumnSelect(tableId, col, data) {
   let pat = localStorage.getItem(STORAGE_KEY) || "";
   let cache = { contacts: [], todo: [], squad: [] };
   let mapping = {
-    contactsBySociete: {}, // société (lowercased) → recordId
+    contactsBySociete: {}, // société (lowercased) → recordId — exact match
+    contactsList:      [], // [{ key: "société lowercased", id: "rec..." }] — fuzzy fallback
     todoByTache:       {}, // tâche → recordId
     squadByName:       {}, // full personne name → recordId
     squadList:         [], // full names list (for dropdowns)
   };
+
+  // Fuzzy match a société name from the static HTML to an Airtable Contacts record.
+  // 1. Exact lowercase match
+  // 2. Airtable name starts with the page name (e.g. "Zuowei" → "zuowei technology")
+  // 3. Page name starts with the Airtable name (e.g. "BYD Europe" → "BYD")
+  // 4. Word-overlap (rare cases like "EngineAI" vs "engine AI robotics")
+  function findContactRecord(pageSociete) {
+    if (!pageSociete) return null;
+    const key = pageSociete.toLowerCase().trim();
+    if (mapping.contactsBySociete[key]) return mapping.contactsBySociete[key];
+
+    // Strip punctuation/spaces for word-overlap comparison
+    const normalize = s => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const pn = normalize(pageSociete);
+
+    // startsWith both directions
+    for (const c of mapping.contactsList) {
+      if (c.key.startsWith(key) || key.startsWith(c.key)) return c.id;
+    }
+    // Word-overlap (handles "EngineAI" vs "engine AI robotics", "Fourier" vs "Fourier Intelligence")
+    for (const c of mapping.contactsList) {
+      const cn = normalize(c.key);
+      if (cn.startsWith(pn) || pn.startsWith(cn)) return c.id;
+    }
+    // Last resort: match on first significant word (handles "XPeng EU" → "XPeng AeroHT")
+    const firstWord = key.split(/\s+/)[0];
+    if (firstWord && firstWord.length >= 3) {
+      for (const c of mapping.contactsList) {
+        if (c.key.split(/\s+/)[0] === firstWord) return c.id;
+      }
+    }
+    return null;
+  }
+
+  // Fuzzy match for TODO tâches (static HTML may truncate the tâche text)
+  function findTodoRecord(pageTache) {
+    if (!pageTache) return null;
+    if (mapping.todoByTache[pageTache]) return mapping.todoByTache[pageTache];
+    const prefix = pageTache.substring(0, 40);
+    for (const t of Object.keys(mapping.todoByTache)) {
+      if (t.startsWith(prefix) || pageTache.startsWith(t.substring(0, 40))) {
+        return mapping.todoByTache[t];
+      }
+    }
+    return null;
+  }
 
   // ---- Generic API helpers ----
   function api(method, path, body) {
@@ -4097,7 +4144,7 @@ function populateColumnSelect(tableId, col, data) {
     let count = 0;
     tbody.querySelectorAll("tr").forEach(tr => {
       const societe = tr.dataset.societe;
-      const recId = mapping.contactsBySociete[(societe || "").toLowerCase()];
+      const recId = findContactRecord(societe);
       if (!recId) return;
       tr.dataset.airtableId = recId;
       count++;
@@ -4137,7 +4184,7 @@ function populateColumnSelect(tableId, col, data) {
     let count = 0;
     tbody.querySelectorAll("tr").forEach(tr => {
       const societe = tr.dataset.societe;
-      const recId = mapping.contactsBySociete[(societe || "").toLowerCase()];
+      const recId = findContactRecord(societe);
       if (!recId) return;
       tr.dataset.airtableId = recId;
       count++;
@@ -4176,10 +4223,7 @@ function populateColumnSelect(tableId, col, data) {
     tbody.querySelectorAll("tr").forEach(tr => {
       const tache = tr.dataset.tache;
       if (!tache) return;
-      // Match by tâche prefix (TODO tâches in static HTML may be slightly truncated vs Airtable)
-      const recId = mapping.todoByTache[tache] ||
-                    Object.keys(mapping.todoByTache).find(k => k.startsWith(tache.substring(0, 40))) &&
-                    mapping.todoByTache[Object.keys(mapping.todoByTache).find(k => k.startsWith(tache.substring(0, 40)))];
+      const recId = findTodoRecord(tache);
       if (!recId) return;
       tr.dataset.airtableId = recId;
       count++;
@@ -4267,10 +4311,17 @@ function populateColumnSelect(tableId, col, data) {
 
       // Build lookups
       mapping.contactsBySociete = {};
+      mapping.contactsList = [];
       contactsRecs.forEach(r => {
         const name = (r.fields && r.fields["Société"]) || "";
-        if (name) mapping.contactsBySociete[name.toLowerCase()] = r.id;
+        if (name) {
+          const key = name.toLowerCase().trim();
+          mapping.contactsBySociete[key] = r.id;
+          mapping.contactsList.push({ key, id: r.id });
+        }
       });
+      // Sort longest-first so "BYD Europe" matches "BYD" predictably (longer key wins on prefix-match)
+      mapping.contactsList.sort((a, b) => b.key.length - a.key.length);
       mapping.todoByTache = {};
       todoRecs.forEach(r => {
         const t = (r.fields && r.fields["Tâche"]) || "";

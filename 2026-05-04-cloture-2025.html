@@ -374,7 +374,8 @@
       groupBy: r => r.nom || 'Autres' }
   ];
 
-  const IN_PROGRESS_STATUSES = ['En cours', 'Document trouve', 'Envoye compta', 'Question posee'];
+  const IN_PROGRESS_STATUSES = ['En cours', 'Document trouve', 'Question posee'];
+  const CLOS_STATUSES = ['Clos', 'Envoye compta'];
 
   const state = {
     records: [],
@@ -502,7 +503,7 @@
         // Cross-tab pour Fournisseur/Client : exclure CA
         if (r.compteAttente) return false;
       }
-      if (state.hideClosed && r.statut === 'Clos') return false;
+      if (state.hideClosed && CLOS_STATUSES.includes(r.statut)) return false;
       if (state.typeFilter && state.typeFilter !== 'CompteAttente' && r.type !== state.typeFilter) return false;
       if (state.statusFilter && r.statut !== state.statusFilter) return false;
       if (state.statusGroup === '_in_progress' && !IN_PROGRESS_STATUSES.includes(r.statut)) return false;
@@ -524,9 +525,9 @@
     }).forEach(r => {
       stats.total++;
       if (r.statut === 'A traiter') stats.attr++;
-      else if (r.statut === 'En cours' || r.statut === 'Document trouve' || r.statut === 'Envoye compta' || r.statut === 'Question posee') stats.cours++;
+      else if (IN_PROGRESS_STATUSES.includes(r.statut)) stats.cours++;
       else if (r.statut === 'Bloque') stats.bloque++;
-      else if (r.statut === 'Clos') stats.clos++;
+      else if (CLOS_STATUSES.includes(r.statut)) stats.clos++;
     });
     return stats;
   }

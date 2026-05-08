@@ -4500,12 +4500,25 @@ function populateColumnSelect(tableId, col, data) {
         ownerSel.onchange = () => saveOwner(TBL.CONTACTS, recId, ownerSel.value || null, societe);
         ownerCell.innerHTML = "";
         ownerCell.appendChild(ownerSel);
+        // Sync dataset.owner to full Squad name so column-filter matches correctly
+        if (linkedOwnerIds[0]) {
+          const ownerRec = cache.squad.find(s => s.id === linkedOwnerIds[0]);
+          if (ownerRec && ownerRec.fields && ownerRec.fields.Personne) {
+            tr.dataset.owner = ownerRec.fields.Personne;
+          }
+        } else {
+          // No Owner linked → expand short alias to full Squad name (e.g. "Mathieu" → "Mathieu Deleval")
+          const full = aliasOwner(tr.dataset.owner);
+          if (full && full !== tr.dataset.owner) tr.dataset.owner = full;
+        }
       }
 
       // Cell 5 = Action immédiate (free-text, save to Contacts.Action immédiate)
       const actionCell = tr.children[5];
       if (actionCell) {
         const current = f["Action immédiate"] || (tr.dataset.action || "");
+        // Sync dataset.action so column-filter and search match the displayed value
+        tr.dataset.action = current;
         const editor = buildTextEditor(current, TBL.CONTACTS, recId, "Action immédiate", societe + " · action");
         actionCell.innerHTML = "";
         actionCell.appendChild(editor);

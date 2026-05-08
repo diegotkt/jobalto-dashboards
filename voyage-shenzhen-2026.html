@@ -3844,9 +3844,14 @@ function populateColumnSelect(tableId, col, data) {
   .at-edit:focus { outline:2px solid var(--primary-light); outline-offset:1px; }
   .at-edit-saving { opacity:0.5; }
   .at-edit-owner { background:white; border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-size:12px; }
-  .at-edit-text { width:100%; box-sizing:border-box; padding:3px 6px; font-size:12.5px; font-family:inherit; border:1px solid transparent; border-radius:4px; background:transparent; color:inherit; }
+  .at-edit-text { width:100%; box-sizing:border-box; padding:3px 6px; font-size:12.5px; font-family:inherit; border:1px solid transparent; border-radius:4px; background:transparent; color:inherit; resize:none; overflow:hidden; line-height:1.35; min-height:22px; display:block; }
   .at-edit-text:hover { border-color:var(--border); background:white; }
   .at-edit-text:focus { outline:none; border-color:var(--primary-light); background:white; }
+  /* Synthèse RDV : compact date editor (stacked) + tighter columns */
+  #rdv-table td { vertical-align:middle; padding:8px 10px; }
+  #rdv-table .at-edit-rdv-date { display:flex; flex-direction:column; gap:3px; }
+  #rdv-table .at-edit-rdv-date input[type="datetime-local"] { width:100%; max-width:150px; font-size:11px; padding:2px 4px; }
+  #rdv-table .at-edit-rdv-date input[type="text"] { width:60px; font-size:11px; padding:2px 4px; }
   .at-toast { position:fixed; bottom:20px; right:20px; padding:10px 16px; border-radius:8px; font-size:13px; z-index:1000; box-shadow:0 4px 12px rgba(0,0,0,0.15); animation:atSlide 0.2s ease; max-width:400px; }
   .at-toast-ok { background:#2F855A; color:white; }
   .at-toast-err { background:#C92A2A; color:white; }
@@ -4306,61 +4311,61 @@ function populateColumnSelect(tableId, col, data) {
     return count;
   }
 
-  // Inline text editor that saves to Airtable on blur (or Enter).
-  // Looks like plain text until hovered/focused.
+  // Inline text editor (textarea so it wraps long text). Looks like plain text
+  // until hovered/focused. Saves on blur or Enter (Shift+Enter for newline).
   function buildTextEditor(initialValue, tableId, recordId, fieldName, label) {
-    const input = document.createElement("input");
-    input.type = "text";
-    input.className = "at-edit at-edit-text";
-    input.value = initialValue || "";
-    input.placeholder = "(cliquer pour éditer)";
+    const ta = document.createElement("textarea");
+    ta.rows = 1;
+    ta.className = "at-edit at-edit-text";
+    ta.value = initialValue || "";
+    ta.placeholder = "(cliquer pour éditer)";
 
-    let lastSaved = input.value;
+    function autosize() {
+      ta.style.height = "auto";
+      ta.style.height = (ta.scrollHeight) + "px";
+    }
+    // Initial resize once attached to DOM
+    requestAnimationFrame(autosize);
+    ta.addEventListener("input", autosize);
+
+    let lastSaved = ta.value;
     const save = async () => {
-      if (input.value === lastSaved) return; // no change
-      input.classList.add("at-edit-saving");
-      const res = await patchRecord(tableId, recordId, { [fieldName]: input.value });
-      input.classList.remove("at-edit-saving");
+      if (ta.value === lastSaved) return;
+      ta.classList.add("at-edit-saving");
+      const res = await patchRecord(tableId, recordId, { [fieldName]: ta.value });
+      ta.classList.remove("at-edit-saving");
       if (!res.ok) {
         const msg = (res.data && res.data.error && res.data.error.message) || ("HTTP " + res.status);
         toast("Erreur : " + msg, false);
-        input.value = lastSaved;
+        ta.value = lastSaved;
+        autosize();
         return;
       }
-      lastSaved = input.value;
+      lastSaved = ta.value;
       toast("✓ " + (label || fieldName) + " sauvegardé", true);
     };
 
-    input.onblur = save;
-    input.onkeydown = (e) => {
-      if (e.key === "Enter") { e.preventDefault(); input.blur(); }
-      if (e.key === "Escape") { input.value = lastSaved; input.blur(); }
+    ta.onblur = save;
+    ta.onkeydown = (e) => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ta.blur(); }
+      if (e.key === "Escape") { ta.value = lastSaved; autosize(); ta.blur(); }
     };
-    return input;
+    return ta;
   }
 
   function buildAgendaDateEditor(agendaRec) {
     const wrap = document.createElement("div");
-    wrap.style.display = "flex";
-    wrap.style.gap = "4px";
-    wrap.style.alignItems = "center";
-    wrap.style.flexWrap = "wrap";
+    wrap.className = "at-edit-rdv-date";
 
     const dateInput = document.createElement("input");
     dateInput.type = "datetime-local";
     dateInput.className = "at-edit";
-    dateInput.style.fontSize = "11px";
-    dateInput.style.padding = "2px 4px";
-    dateInput.style.minWidth = "0";
     dateInput.value = isoToLocalInput((agendaRec.fields || {}).Date);
     dateInput.title = "Début (heure locale Shenzhen)";
 
     const dureeInput = document.createElement("input");
     dureeInput.type = "text";
     dureeInput.className = "at-edit";
-    dureeInput.style.fontSize = "11px";
-    dureeInput.style.padding = "2px 4px";
-    dureeInput.style.width = "55px";
     dureeInput.placeholder = "h:mm";
     dureeInput.title = "Durée (ex: 2:30)";
     dureeInput.value = dureeSecondsToHm((agendaRec.fields || {})["Durée"]);

@@ -4549,6 +4549,9 @@ function populateColumnSelect(tableId, col, data) {
       if (linkedSocId && existingContactIds.has(linkedSocId)) return;
       // Already appended → skip
       if (existingAgendaIds.has(ag.id)) return;
+      // Only append "RDV business" events to the Synthèse RDV page — the rest
+      // (lunches, briefings, logistique, etc.) belong on the Planning page.
+      if (f.Type && f.Type !== "RDV business") return;
 
       // Build a synthetic row
       let socName = "(événement)";

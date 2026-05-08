@@ -4511,14 +4511,104 @@ function populateColumnSelect(tableId, col, data) {
         actionCell.appendChild(editor);
       }
     });
+    // Append rows for Agenda events that aren't already represented by a société row.
+    // This catches events the user added via "+ Ajouter événement" that link to
+    // a Contact not in the static RDV_DATA, OR are standalone events without a link.
+    appendMissingAgendaRowsToRdv(tbody);
+
     // Add Notes column at end (linked to Société/Contact)
     ensureNotesColumn("rdv-table");
     tbody.querySelectorAll("tr").forEach(tr => {
       const recId = tr.dataset.airtableId;
       if (!recId) return;
-      addNotesCellToRow(tr, recId, "Société liée", tr.dataset.societe || "Société");
+      // Notes link to Société for contact-rows, fallback RDV-link for standalone events
+      const linkField = tr.dataset.atSyntheticAgenda === "1" ? "RDV lié" : "Société liée";
+      addNotesCellToRow(tr, recId, linkField, tr.dataset.societe || "Événement");
     });
     return count;
+  }
+
+  function appendMissingAgendaRowsToRdv(tbody) {
+    if (!cache.rdv || !cache.rdv.length) return;
+
+    // Existing recIds in the table (Contacts ids)
+    const existingContactIds = new Set();
+    tbody.querySelectorAll("tr[data-airtable-id]").forEach(tr => {
+      if (tr.dataset.atSyntheticAgenda !== "1") existingContactIds.add(tr.dataset.airtableId);
+    });
+
+    // Existing synthetic Agenda ids (so we don't double-append on re-renders)
+    const existingAgendaIds = new Set();
+    tbody.querySelectorAll('tr[data-at-synthetic-agenda="1"]').forEach(tr => existingAgendaIds.add(tr.dataset.airtableId));
+
+    cache.rdv.forEach(ag => {
+      const f = ag.fields || {};
+      const linkedSocId = (f["Société"] || [])[0];
+
+      // Already shown via société row → skip
+      if (linkedSocId && existingContactIds.has(linkedSocId)) return;
+      // Already appended → skip
+      if (existingAgendaIds.has(ag.id)) return;
+
+      // Build a synthetic row
+      let socName = "(événement)";
+      let secteur = "—";
+      let statut = "Attente";
+      let ownerName = "";
+      let action = f.Lieu || (f.Type ? "[" + f.Type + "]" : "");
+      let dateText = f.Date ? (isoToLocalInput(f.Date).replace("T", " ")) : "—";
+      let recIdForRow = ag.id;
+      let isSyntheticAgenda = true;
+
+      if (linkedSocId) {
+        // Linked to a Contact we have but that wasn't in static RDV_DATA → use Contact info
+        const contact = cache.contacts.find(c => c.id === linkedSocId);
+        if (contact) {
+          const cf = contact.fields || {};
+          socName = cf.Société || socName;
+          secteur = cf.Secteur || "—";
+          statut = cf.Statut || "Attente";
+          const ownerId = (cf.Owner || [])[0];
+          if (ownerId) {
+            const o = cache.squad.find(s => s.id === ownerId);
+            if (o) ownerName = o.fields.Personne || "";
+          }
+          action = cf["Action immédiate"] || action;
+          recIdForRow = contact.id;
+          isSyntheticAgenda = false; // Real société row, just missing from static data
+        }
+      } else {
+        // Standalone event — use Titre as the "société" label
+        socName = (f.Titre || "(événement)").substring(0, 60);
+        secteur = "[Événement Agenda]";
+        if (f["Statut RDV"]) statut = f["Statut RDV"] === "Confirmé" ? "Confirmé" : (f["Statut RDV"] === "Reprogrammer" ? "Reprogrammer" : "À confirmer");
+        const partIds = f.Participants || [];
+        if (partIds.length) {
+          const o = cache.squad.find(s => s.id === partIds[0]);
+          if (o) ownerName = o.fields.Personne || "";
+        }
+      }
+
+      const tr = document.createElement("tr");
+      tr.dataset.societe = socName;
+      tr.dataset.secteur = secteur;
+      tr.dataset.date = dateText;
+      tr.dataset.owner = ownerName;
+      tr.dataset.statut = statut;
+      tr.dataset.action = action;
+      tr.dataset.airtableId = recIdForRow;
+      if (isSyntheticAgenda) tr.dataset.atSyntheticAgenda = "1";
+
+      const statutCls = statutPillClass(statut);
+      tr.innerHTML =
+        '<td><span class="statut-pill ' + statutCls + '">' + escapeHtml(statut) + '</span></td>' +
+        '<td><strong>' + escapeHtml(socName) + '</strong>' + (isSyntheticAgenda ? ' <small style="color:var(--text-soft);font-weight:normal;">·  événement</small>' : '') + '</td>' +
+        '<td>' + escapeHtml(secteur) + '</td>' +
+        '<td>' + escapeHtml(dateText) + '</td>' +
+        '<td>' + escapeHtml(ownerName) + '</td>' +
+        '<td>' + escapeHtml(action) + '</td>';
+      tbody.appendChild(tr);
+    });
   }
 
   function bridgeTODO() {
@@ -5082,8 +5172,14 @@ function populateColumnSelect(tableId, col, data) {
   const _origSync = syncAll;
   syncAll = async function() {
     await _origSync.apply(this, arguments);
-    // Force-refresh buttons (in case they were disabled before squad loaded)
-    document.querySelectorAll(".at-add-btn").forEach(b => b.remove());
+    // Force-refresh buttons (in case they were disabled before squad loaded).
+    // Restrict to the 3 known table-page filter bars — DON'T remove the
+    // "+ Nouvelle note" button on the Notes page (also class .at-add-btn).
+    document.querySelectorAll(
+      "#page-contacts_db .filter-bar .at-add-btn, " +
+      "#page-rdv .filter-bar .at-add-btn, " +
+      "#page-todo .filter-bar .at-add-btn"
+    ).forEach(b => b.remove());
     addAllEntryButtons();
   };
 
@@ -5291,6 +5387,47 @@ function populateColumnSelect(tableId, col, data) {
     installMultiSelect("todo");
   }
 
+  // Repopulate column-filter dropdowns with values from Airtable rather than
+  // the static RDV_DATA / CONTACTS_DATA. Without this the dropdowns show stale
+  // options like short owner names "Mathieu" while the rows now display
+  // "Mathieu Deleval" — filter mismatch.
+  function repopulateFilterDropdowns() {
+    const fillSelect = (sel, values) => {
+      if (!sel) return;
+      const wasValue = sel.value;
+      sel.innerHTML = '<option value="">Tous</option>';
+      const unique = Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b, "fr"));
+      unique.forEach(v => {
+        const o = document.createElement("option");
+        o.value = v.toLowerCase();
+        o.textContent = v;
+        sel.appendChild(o);
+      });
+      if (wasValue) sel.value = wasValue;
+    };
+
+    if (cache.contacts && cache.contacts.length) {
+      // Contacts page filters
+      fillSelect(document.querySelector('#ct-table select[data-col-filter="secteur"]'),
+                 cache.contacts.map(c => (c.fields || {}).Secteur));
+      fillSelect(document.querySelector('#ct-table select[data-col-filter="statut_court"]'),
+                 cache.contacts.map(c => (c.fields || {}).Statut));
+
+      // RDV page filters (uses Contacts data)
+      fillSelect(document.querySelector('#rdv-table select[data-col-filter="secteur"]'),
+                 cache.contacts.map(c => (c.fields || {}).Secteur));
+      fillSelect(document.querySelector('#rdv-table select[data-col-filter="statut"]'),
+                 cache.contacts.map(c => (c.fields || {}).Statut));
+    }
+
+    if (cache.squad && cache.squad.length) {
+      const squadNames = cache.squad.map(s => (s.fields || {}).Personne);
+      fillSelect(document.querySelector('#ct-table select[data-col-filter="owner"]'), squadNames);
+      fillSelect(document.querySelector('#rdv-table select[data-col-filter="owner"]'), squadNames);
+      fillSelect(document.querySelector('#todo-table select[data-col-filter="owner"]'), squadNames);
+    }
+  }
+
   // Patch reset buttons: the original handlers crash trying to access removed
   // chip elements. We wrap them to also reset our multi-select widgets and
   // tolerate the missing DOM nodes.
@@ -5350,6 +5487,7 @@ function populateColumnSelect(tableId, col, data) {
     installFilterOverrides();
     installAllMultiSelects();
     patchResetButtons();
+    repopulateFilterDropdowns();
     // Re-render the planning agenda using the freshly-fetched Airtable data
     if (typeof setupAgenda === "function") setupAgenda();
   };
@@ -6578,16 +6716,19 @@ function populateColumnSelect(tableId, col, data) {
   }
 
   function setupNotesPage() {
-    if (notesPageInit) { renderNotesPage(); return; }
     const search = document.getElementById("notes-search");
     const reset = document.getElementById("notes-reset");
     const addBtn = document.getElementById("notes-add");
     if (!search || !addBtn) return;
-    search.oninput = e => { notesPageFilter = e.target.value; renderNotesPage(); };
-    if (reset) reset.onclick = () => { notesPageFilter = ""; search.value = ""; renderNotesPage(); };
-    addBtn.onclick = () => openSinglNoteEdit(null);
-    notesPageInit = true;
-    renderNotesPage();
+    if (!notesPageInit) {
+      search.oninput = e => { notesPageFilter = e.target.value; renderNotesPage(); };
+      if (reset) reset.onclick = () => { notesPageFilter = ""; search.value = ""; renderNotesPage(); };
+      addBtn.onclick = () => openSinglNoteEdit(null);
+      notesPageInit = true;
+    }
+    // Eagerly load marked + EasyMDE so markdown renders correctly on the page
+    // (otherwise notes show as raw markdown until first modal opens)
+    loadEditorAssets().then(() => renderNotesPage()).catch(() => renderNotesPage());
   }
 
   // Run setup on initial load + every nav to #notes

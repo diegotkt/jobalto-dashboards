@@ -5302,8 +5302,9 @@ function populateColumnSelect(tableId, col, data) {
     ];
     resets.forEach(cfg => {
       const btn = document.getElementById(cfg.btn);
-      if (!btn || btn.dataset.atResetPatched) return;
-      btn.dataset.atResetPatched = "1";
+      if (!btn) return;
+      // Always re-overwrite — initRdvTable etc. will reinstall the buggy onclick
+      // every time the user navigates to that page.
       btn.onclick = () => {
         // Clear column filters
         document.querySelectorAll("#" + cfg.tableId + " .col-filter").forEach(el => el.value = "");

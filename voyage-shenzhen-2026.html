@@ -5306,14 +5306,25 @@ function populateColumnSelect(tableId, col, data) {
       // Always re-overwrite — initRdvTable etc. will reinstall the buggy onclick
       // every time the user navigates to that page.
       btn.onclick = () => {
-        // Clear column filters
-        document.querySelectorAll("#" + cfg.tableId + " .col-filter").forEach(el => el.value = "");
+        // Clear each column filter input AND dispatch 'input' so the original
+        // handlers update their (script-scoped) filter state. Clearing the
+        // value alone wouldn't propagate to script-scoped vars like `rdvFilters`.
+        document.querySelectorAll("#" + cfg.tableId + " .col-filter").forEach(el => {
+          el.value = "";
+          el.dispatchEvent(new Event("input",  { bubbles: true }));
+          el.dispatchEvent(new Event("change", { bubbles: true }));
+        });
         // Clear search
         const s = document.getElementById(cfg.search);
-        if (s) s.value = "";
-        // Reset multi-select
+        if (s) {
+          s.value = "";
+          s.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        // Reset our multi-select widget visually + selection set
         atFilterSets[cfg.setKey] = new Set();
-        const popup = document.querySelector('#page-' + (cfg.tableId === "ct-table" ? "contacts_db" : (cfg.tableId === "rdv-table" ? "rdv" : "todo")) + ' .at-multi-popup');
+        const pageSlug = cfg.tableId === "ct-table" ? "contacts_db"
+                       : cfg.tableId === "rdv-table" ? "rdv" : "todo";
+        const popup = document.querySelector("#page-" + pageSlug + " .at-multi-popup");
         if (popup) {
           popup.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = (cb.value === "*"));
           const trigger = popup.parentNode.querySelector(".at-multi-trigger");
@@ -5323,17 +5334,7 @@ function populateColumnSelect(tableId, col, data) {
             trigger.classList.remove("has-selection");
           }
         }
-        // Reset internal filter state
-        if (cfg.tableId === "ct-table" && typeof window.ctFilters === "object") {
-          window.ctFilters = { quickStatut: "*", search: "", col: {} };
-        }
-        if (cfg.tableId === "rdv-table" && typeof window.rdvFilters === "object") {
-          window.rdvFilters = { quickStatut: "*", search: "", col: {} };
-        }
-        if (cfg.tableId === "todo-table" && typeof window.todoFilters === "object") {
-          window.todoFilters = { quickOwner: "*", search: "", col: {} };
-        }
-        // Re-apply
+        // Final re-apply (handles the multi-select reset which doesn't dispatch)
         const fn = cfg.tableId === "ct-table" ? window.applyContactsFilter
                  : cfg.tableId === "rdv-table" ? window.applyRdvFilter
                  : window.applyTodoFilter;

@@ -204,12 +204,12 @@ details[open] .pratique-summary { background: #DDEBF7; border-bottom-left-radius
       <a href="#narrative" data-nav="narrative"><span class="ic">🎯</span><span class="lbl">Mission narrative</span></a>
       <a href="#outreach" data-nav="outreach"><span class="ic">📧</span><span class="lbl">Outreach & emails</span></a>
       <a href="#planning" data-nav="planning"><span class="ic">📅</span><span class="lbl">Planning</span></a>
+      <a href="#notes" data-nav="notes"><span class="ic">📝</span><span class="lbl">Notes</span></a>
       <a href="#rdv" data-nav="rdv"><span class="ic">✅</span><span class="lbl">Synthèse RDV</span></a>
       <a href="#contacts_db" data-nav="contacts_db"><span class="ic">📇</span><span class="lbl">Base contacts (33)</span></a>
       <a href="#squad" data-nav="squad"><span class="ic">👥</span><span class="lbl">Squad & équipe</span></a>
       <a href="#pratique" data-nav="pratique"><span class="ic">🧰</span><span class="lbl">Infos pratiques</span></a>
       <a href="#todo" data-nav="todo"><span class="ic">✓</span><span class="lbl">TODO par personne</span></a>
-      <a href="#notes" data-nav="notes"><span class="ic">📝</span><span class="lbl">Notes</span></a>
     </nav>
     <div class="footer">
       Construit le 4 mai 2026 · J-47<br>
@@ -3523,7 +3523,7 @@ On behalf of the delegation
   </main>
 </div>
 <script>
-const SECTIONS = ["home", "synthese", "narrative", "outreach", "planning", "rdv", "contacts_db", "squad", "pratique", "todo"];
+const SECTIONS = ["home", "synthese", "narrative", "outreach", "planning", "notes", "rdv", "contacts_db", "squad", "pratique", "todo"];
 
 function showPage(slug) {
   if (!SECTIONS.includes(slug)) slug = 'home';

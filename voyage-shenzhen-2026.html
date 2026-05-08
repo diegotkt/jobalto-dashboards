@@ -4089,6 +4089,59 @@ function populateColumnSelect(tableId, col, data) {
     return OWNER_ALIAS[(short || "").trim().toLowerCase()] || (short || "").trim();
   }
 
+  // ---- Datetime helpers (Brussels = trip-display tz; UTC stored in Airtable) ----
+  function isoToLocalInput(iso) {
+    // Convert UTC "2026-06-22T07:30:00.000Z" → datetime-local "2026-06-22T09:30" (Brussels +2)
+    if (!iso) return "";
+    const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    if (!m) return "";
+    let year = parseInt(m[1], 10), month = parseInt(m[2], 10), day = parseInt(m[3], 10);
+    let hour = parseInt(m[4], 10) + 2, minute = parseInt(m[5], 10);
+    if (hour >= 24) {
+      hour -= 24;
+      const dt = new Date(Date.UTC(year, month - 1, day + 1));
+      year = dt.getUTCFullYear(); month = dt.getUTCMonth() + 1; day = dt.getUTCDate();
+    }
+    return year + "-" + String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0")
+         + "T" + String(hour).padStart(2, "0") + ":" + String(minute).padStart(2, "0");
+  }
+  function localInputToIso(local) {
+    // datetime-local "2026-06-22T09:30" (Brussels) → ISO with explicit +02:00 offset
+    if (!local) return null;
+    return local + ":00.000+02:00";
+  }
+  function dureeSecondsToHm(sec) {
+    if (!sec || sec < 0) return "";
+    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+    return h + ":" + String(m).padStart(2, "0");
+  }
+  function hmToDureeSeconds(hm) {
+    const m = String(hm || "").match(/^(\d+):([0-5]\d)$/);
+    return m ? parseInt(m[1], 10) * 3600 + parseInt(m[2], 10) * 60 : null;
+  }
+
+  // Find the Agenda record that best represents a given Contact.
+  // Order: Société-linked (1 match wins) → fuzzy title match on company name first word.
+  function findAgendaForContact(contactId, contactName) {
+    if (!cache.rdv || !cache.rdv.length) return null;
+    const linked = cache.rdv.filter(r => (r.fields && r.fields["Société"] || []).indexOf(contactId) !== -1);
+    if (linked.length === 1) return linked[0];
+    if (linked.length > 1) {
+      // Multiple linked: prefer the first RDV business
+      const biz = linked.find(r => (r.fields || {}).Type === "RDV business");
+      return biz || linked[0];
+    }
+    // Fuzzy title match (e.g. Contact "BYD" → Agenda "RDV BYD Pingshan...")
+    if (!contactName || contactName.length < 3) return null;
+    const firstWord = contactName.toLowerCase().split(/[\s\-(]/)[0];
+    if (firstWord.length < 3) return null;
+    const matches = cache.rdv.filter(r => {
+      const t = ((r.fields || {}).Titre || "").toLowerCase();
+      return t.indexOf(firstWord) !== -1;
+    });
+    return matches[0] || null;
+  }
+
   // ---- Banner ----
   function bannerOn(pageId, recordCount, tableLabel) {
     const page = document.getElementById(pageId);
@@ -4250,6 +4303,68 @@ function populateColumnSelect(tableId, col, data) {
     return count;
   }
 
+  function buildAgendaDateEditor(agendaRec) {
+    const wrap = document.createElement("div");
+    wrap.style.display = "flex";
+    wrap.style.gap = "4px";
+    wrap.style.alignItems = "center";
+    wrap.style.flexWrap = "wrap";
+
+    const dateInput = document.createElement("input");
+    dateInput.type = "datetime-local";
+    dateInput.className = "at-edit";
+    dateInput.style.fontSize = "11px";
+    dateInput.style.padding = "2px 4px";
+    dateInput.style.minWidth = "0";
+    dateInput.value = isoToLocalInput((agendaRec.fields || {}).Date);
+    dateInput.title = "Début (heure locale Shenzhen)";
+
+    const dureeInput = document.createElement("input");
+    dureeInput.type = "text";
+    dureeInput.className = "at-edit";
+    dureeInput.style.fontSize = "11px";
+    dureeInput.style.padding = "2px 4px";
+    dureeInput.style.width = "55px";
+    dureeInput.placeholder = "h:mm";
+    dureeInput.title = "Durée (ex: 2:30)";
+    dureeInput.value = dureeSecondsToHm((agendaRec.fields || {})["Durée"]);
+
+    const save = async (dateInputEl, dureeInputEl) => {
+      const fields = {};
+      const newIso = localInputToIso(dateInputEl.value);
+      if (newIso) fields.Date = newIso;
+      const newDuree = hmToDureeSeconds(dureeInputEl.value);
+      if (newDuree !== null) fields["Durée"] = newDuree;
+      if (Object.keys(fields).length === 0) return;
+
+      dateInputEl.classList.add("at-edit-saving");
+      dureeInputEl.classList.add("at-edit-saving");
+      const res = await patchRecord(TBL.RDV, agendaRec.id, fields);
+      dateInputEl.classList.remove("at-edit-saving");
+      dureeInputEl.classList.remove("at-edit-saving");
+
+      if (!res.ok) {
+        const msg = (res.data && res.data.error && res.data.error.message) || ("HTTP " + res.status);
+        toast("Erreur : " + msg, false);
+        return;
+      }
+      // Update local cache
+      agendaRec.fields = { ...agendaRec.fields, ...fields };
+      toast("✓ " + ((agendaRec.fields || {}).Titre || "RDV") + " mis à jour", true);
+      // Re-render the agenda views (and the day maps) so changes show up
+      if (typeof setupAgenda === "function") setupAgenda();
+      if (typeof setupDayMaps === "function") setupDayMaps();
+    };
+
+    dateInput.onchange  = () => save(dateInput, dureeInput);
+    dureeInput.onchange = () => save(dateInput, dureeInput);
+    dureeInput.onblur   = () => save(dateInput, dureeInput);
+
+    wrap.appendChild(dateInput);
+    wrap.appendChild(dureeInput);
+    return wrap;
+  }
+
   function bridgeRDV() {
     // RDV page = denormalized view of Contacts (statut + owner of each société)
     // Match by société, write to Contacts table.
@@ -4275,6 +4390,18 @@ function populateColumnSelect(tableId, col, data) {
         statutCell.innerHTML = "";
         statutCell.appendChild(statutSel);
         tr.dataset.statut = current;
+      }
+
+      // Cell 3 = Date / Heure → editable datetime+durée if there's a linked Agenda record
+      const dateCell = tr.children[3];
+      if (dateCell) {
+        const ag = findAgendaForContact(recId, societe);
+        if (ag) {
+          const editor = buildAgendaDateEditor(ag);
+          dateCell.innerHTML = "";
+          dateCell.appendChild(editor);
+        }
+        // else: keep the existing static text (e.g. "Date à fixer", or contact's RDV slot)
       }
 
       // Cell 4 = Owner

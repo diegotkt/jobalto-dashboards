@@ -5291,18 +5291,74 @@ function populateColumnSelect(tableId, col, data) {
     installMultiSelect("todo");
   }
 
+  // Patch reset buttons: the original handlers crash trying to access removed
+  // chip elements. We wrap them to also reset our multi-select widgets and
+  // tolerate the missing DOM nodes.
+  function patchResetButtons() {
+    const resets = [
+      { btn: "ct-reset",   tableId: "ct-table",   setKey: "contactsStatuts", search: "ct-search" },
+      { btn: "rdv-reset",  tableId: "rdv-table",  setKey: "rdvStatuts",      search: "rdv-search" },
+      { btn: "todo-reset", tableId: "todo-table", setKey: "todoOwners",      search: "todo-search" },
+    ];
+    resets.forEach(cfg => {
+      const btn = document.getElementById(cfg.btn);
+      if (!btn || btn.dataset.atResetPatched) return;
+      btn.dataset.atResetPatched = "1";
+      btn.onclick = () => {
+        // Clear column filters
+        document.querySelectorAll("#" + cfg.tableId + " .col-filter").forEach(el => el.value = "");
+        // Clear search
+        const s = document.getElementById(cfg.search);
+        if (s) s.value = "";
+        // Reset multi-select
+        atFilterSets[cfg.setKey] = new Set();
+        const popup = document.querySelector('#page-' + (cfg.tableId === "ct-table" ? "contacts_db" : (cfg.tableId === "rdv-table" ? "rdv" : "todo")) + ' .at-multi-popup');
+        if (popup) {
+          popup.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = (cb.value === "*"));
+          const trigger = popup.parentNode.querySelector(".at-multi-trigger");
+          if (trigger) {
+            const summary = trigger.querySelector(".at-multi-summary");
+            if (summary) summary.textContent = "Tous";
+            trigger.classList.remove("has-selection");
+          }
+        }
+        // Reset internal filter state
+        if (cfg.tableId === "ct-table" && typeof window.ctFilters === "object") {
+          window.ctFilters = { quickStatut: "*", search: "", col: {} };
+        }
+        if (cfg.tableId === "rdv-table" && typeof window.rdvFilters === "object") {
+          window.rdvFilters = { quickStatut: "*", search: "", col: {} };
+        }
+        if (cfg.tableId === "todo-table" && typeof window.todoFilters === "object") {
+          window.todoFilters = { quickOwner: "*", search: "", col: {} };
+        }
+        // Re-apply
+        const fn = cfg.tableId === "ct-table" ? window.applyContactsFilter
+                 : cfg.tableId === "rdv-table" ? window.applyRdvFilter
+                 : window.applyTodoFilter;
+        if (typeof fn === "function") fn();
+      };
+    });
+  }
+
   // Hook installAllMultiSelects after sync (when squad list is loaded for TODO)
   const _origSyncAll2 = syncAll;
   syncAll = async function() {
     await _origSyncAll2.apply(this, arguments);
     installFilterOverrides();
     installAllMultiSelects();
+    patchResetButtons();
     // Re-render the planning agenda using the freshly-fetched Airtable data
     if (typeof setupAgenda === "function") setupAgenda();
   };
 
   // Also install at boot in case static data is enough
-  setTimeout(() => { installFilterOverrides(); installMultiSelect("contacts_db"); installMultiSelect("rdv"); }, 400);
+  setTimeout(() => { installFilterOverrides(); installMultiSelect("contacts_db"); installMultiSelect("rdv"); patchResetButtons(); }, 400);
+  // Re-patch on nav (init functions register their own onclick handlers each time)
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest("a[data-nav]");
+    if (a) setTimeout(patchResetButtons, 200);
+  });
 
   // ============================================================
   // PLANNING PAGE — DAY FILTER BUTTONS

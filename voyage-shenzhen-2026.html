@@ -3844,6 +3844,9 @@ function populateColumnSelect(tableId, col, data) {
   .at-edit:focus { outline:2px solid var(--primary-light); outline-offset:1px; }
   .at-edit-saving { opacity:0.5; }
   .at-edit-owner { background:white; border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-size:12px; }
+  .at-edit-text { width:100%; box-sizing:border-box; padding:3px 6px; font-size:12.5px; font-family:inherit; border:1px solid transparent; border-radius:4px; background:transparent; color:inherit; }
+  .at-edit-text:hover { border-color:var(--border); background:white; }
+  .at-edit-text:focus { outline:none; border-color:var(--primary-light); background:white; }
   .at-toast { position:fixed; bottom:20px; right:20px; padding:10px 16px; border-radius:8px; font-size:13px; z-index:1000; box-shadow:0 4px 12px rgba(0,0,0,0.15); animation:atSlide 0.2s ease; max-width:400px; }
   .at-toast-ok { background:#2F855A; color:white; }
   .at-toast-err { background:#C92A2A; color:white; }
@@ -4303,6 +4306,39 @@ function populateColumnSelect(tableId, col, data) {
     return count;
   }
 
+  // Inline text editor that saves to Airtable on blur (or Enter).
+  // Looks like plain text until hovered/focused.
+  function buildTextEditor(initialValue, tableId, recordId, fieldName, label) {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "at-edit at-edit-text";
+    input.value = initialValue || "";
+    input.placeholder = "(cliquer pour éditer)";
+
+    let lastSaved = input.value;
+    const save = async () => {
+      if (input.value === lastSaved) return; // no change
+      input.classList.add("at-edit-saving");
+      const res = await patchRecord(tableId, recordId, { [fieldName]: input.value });
+      input.classList.remove("at-edit-saving");
+      if (!res.ok) {
+        const msg = (res.data && res.data.error && res.data.error.message) || ("HTTP " + res.status);
+        toast("Erreur : " + msg, false);
+        input.value = lastSaved;
+        return;
+      }
+      lastSaved = input.value;
+      toast("✓ " + (label || fieldName) + " sauvegardé", true);
+    };
+
+    input.onblur = save;
+    input.onkeydown = (e) => {
+      if (e.key === "Enter") { e.preventDefault(); input.blur(); }
+      if (e.key === "Escape") { input.value = lastSaved; input.blur(); }
+    };
+    return input;
+  }
+
   function buildAgendaDateEditor(agendaRec) {
     const wrap = document.createElement("div");
     wrap.style.display = "flex";
@@ -4412,6 +4448,15 @@ function populateColumnSelect(tableId, col, data) {
         ownerSel.onchange = () => saveOwner(TBL.CONTACTS, recId, ownerSel.value || null, societe);
         ownerCell.innerHTML = "";
         ownerCell.appendChild(ownerSel);
+      }
+
+      // Cell 5 = Action immédiate (free-text, save to Contacts.Action immédiate)
+      const actionCell = tr.children[5];
+      if (actionCell) {
+        const current = f["Action immédiate"] || (tr.dataset.action || "");
+        const editor = buildTextEditor(current, TBL.CONTACTS, recId, "Action immédiate", societe + " · action");
+        actionCell.innerHTML = "";
+        actionCell.appendChild(editor);
       }
     });
     return count;

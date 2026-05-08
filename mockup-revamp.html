@@ -140,6 +140,43 @@ input, select { font-family: inherit; }
 .opt-c .pill.repro { background: #fbe3df; color: #a93116; }
 
 
+/* =============================================================
+   OPTION D — HYBRID (A sidebar + C content)
+   Black sidebar + signal teal accent (from A).
+   Soft 6px corners + sentence case + calm spacing (from C).
+   Best of both: confident frame, comfortable content surface.
+   ============================================================= */
+.opt-d { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, sans-serif; color: #1a1a1a; }
+.opt-d aside { background: #0a0a0b; color: #e8e8e8; padding: 24px 0; }
+.opt-d aside .brand { padding: 0 22px 20px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 14px; }
+.opt-d aside .brand h1 { font-size: 16px; font-weight: 700; margin: 0; letter-spacing: -0.2px; color: #fff; }
+.opt-d aside .brand .sub { font-size: 11.5px; color: #888; margin-top: 4px; }
+.opt-d aside nav a { display: flex; align-items: center; gap: 11px; padding: 8px 22px; color: #aaaaaa; text-decoration: none; font-size: 13.5px; transition: 0.12s; border-left: 2px solid transparent; }
+.opt-d aside nav a:hover { color: #fff; background: rgba(255,255,255,0.04); }
+.opt-d aside nav a.active { color: #fff; background: rgba(0,212,160,0.10); border-left-color: #00d4a0; font-weight: 500; }
+.opt-d aside nav a .ic { font-size: 13px; opacity: 0.6; width: 16px; }
+.opt-d main { background: #fafafa; padding: 36px 44px; }
+.opt-d main h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.5px; margin: 0 0 6px; color: #0a0a0b; }
+.opt-d main .lead { color: #666; font-size: 14px; margin: 0 0 26px; line-height: 1.5; }
+.opt-d .filter-bar { display: flex; gap: 10px; margin: 0 0 18px; align-items: center; }
+.opt-d .multi-trigger { background: white; border: 1px solid #d8d8d8; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; }
+.opt-d .multi-trigger.active { background: #0a0a0b; color: white; border-color: #0a0a0b; }
+.opt-d .search { flex: 1; padding: 9px 14px; border: 1px solid #d8d8d8; border-radius: 6px; font-size: 13px; background: white; }
+.opt-d .search:focus { outline: none; border-color: #00d4a0; box-shadow: 0 0 0 3px rgba(0,212,160,0.15); }
+.opt-d .add-btn { background: #00d4a0; color: #0a0a0b; border: none; padding: 9px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; }
+.opt-d .add-btn:hover { background: #00b78a; }
+.opt-d table { width: 100%; border-collapse: collapse; font-size: 13px; background: white; border-radius: 6px; overflow: hidden; border: 1px solid #ececec; }
+.opt-d thead th { background: #f8f8f8; padding: 11px 14px; font-weight: 600; font-size: 12px; color: #666; text-align: left; border-bottom: 1px solid #ececec; letter-spacing: 0.2px; }
+.opt-d tbody td { padding: 13px 14px; border-bottom: 1px solid #f0f0f0; }
+.opt-d tbody tr:hover { background: #fafafa; }
+.opt-d tbody tr:last-child td { border-bottom: none; }
+.opt-d .pill { font-size: 11.5px; padding: 3px 9px; font-weight: 600; border-radius: 4px; }
+.opt-d .pill.confirm { background: #0a0a0b; color: #00d4a0; }
+.opt-d .pill.confirmer { background: #fff8e1; color: #7a5a00; border: 1px solid #f0d878; }
+.opt-d .pill.attente { background: #f1f1f1; color: #666; }
+.opt-d .pill.repro { background: #ffe4dc; color: #aa3520; border: 1px solid #f4a08c; }
+
+
 /* Shared sample widget structure */
 .sample-table-wrap { overflow-x: auto; }
 .cell-strong { font-weight: 600; }
@@ -295,19 +332,66 @@ input, select { font-family: inherit; }
   </div>
 </div>
 
+<div class="option-divider">
+  <span class="option-tag" style="background:#00d4a0; color:#0a0a0b;">Option D · Hybrid (A + C) ⭐ NEW</span>
+  <h2>Sidebar noire + accent teal · contenu doux et calme</h2>
+  <p>Le mix demandé : sidebar noire avec accent vert signal (force et identité de A), contenu blanc cassé avec coins 6px doux et sentence case (lisibilité de C). Le bouton primaire reste vert signal pour rester punchy. Status pill "Confirmé" en noir avec texte teal — c'est la signature visuelle qui rappelle coprod.co. Reste cool 8h par jour, pop-pop pour les actions.</p>
+</div>
+<div class="mockup opt-d">
+  <div class="mock-app">
+    <aside>
+      <div class="brand"><h1>Shenzhen 2026</h1><div class="sub">Délégation · 20-25 juin</div></div>
+      <nav>
+        <a href="#"><span class="ic">⌂</span>Accueil</a>
+        <a href="#"><span class="ic">∷</span>Synthèse & plan</a>
+        <a href="#"><span class="ic">◎</span>Mission narrative</a>
+        <a href="#"><span class="ic">→</span>Outreach & emails</a>
+        <a href="#"><span class="ic">▤</span>Planning</a>
+        <a href="#"><span class="ic">≡</span>Notes</a>
+        <a href="#" class="active"><span class="ic">✓</span>Synthèse RDV</a>
+        <a href="#"><span class="ic">⌥</span>Base contacts</a>
+        <a href="#"><span class="ic">◐</span>Squad & équipe</a>
+        <a href="#"><span class="ic">i</span>Infos pratiques</a>
+        <a href="#"><span class="ic">⊙</span>TODO</a>
+      </nav>
+    </aside>
+    <main>
+      <h1>Synthèse RDV</h1>
+      <p class="lead">30 sociétés ciblées dont 5 RDV confirmés et 3 à booker. Filtre par statut ou recherche full-text.</p>
+      <div class="filter-bar">
+        <button class="multi-trigger">Statut · Tous</button>
+        <input class="search" type="text" placeholder="Rechercher société, secteur, action…">
+        <button class="add-btn">+ Ajouter événement</button>
+      </div>
+      <div class="sample-table-wrap"><table>
+        <thead><tr><th>Statut</th><th>Société</th><th>Secteur</th><th>Date</th><th>Owner</th><th>Action immédiate</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill confirm">Confirmé</span></td><td class="cell-strong">Pudu</td><td>Service & livraison</td><td>Lun 22 — 9h30</td><td>Mathieu Deleval</td><td>Préparer brief 1-pager</td></tr>
+          <tr><td><span class="pill confirm">Confirmé</span></td><td class="cell-strong">Allybot</td><td>Cleaning</td><td>Lun 22 — 14h00</td><td>Mathieu Deleval</td><td>Préparer brief 1-pager</td></tr>
+          <tr><td><span class="pill confirm">Confirmé</span></td><td class="cell-strong">Zuowei</td><td>Exosquelettes</td><td>Mar 23 — 15h00</td><td>Mathieu Deleval</td><td>Préparer brief 1-pager</td></tr>
+          <tr><td><span class="pill repro">Reprogrammer</span></td><td class="cell-strong">Ubtech</td><td>Healthcare humanoïde</td><td>Mar 23 matin</td><td>Mathieu Deleval</td><td>URGENT recaler</td></tr>
+          <tr><td><span class="pill confirmer">À confirmer</span></td><td class="cell-strong">Legend Robot</td><td>Construction</td><td>Date à fixer</td><td>Mathieu Deleval</td><td>Proposer un créneau</td></tr>
+          <tr><td><span class="pill attente">Attente</span></td><td class="cell-strong">Reeman</td><td>Catering/cleaning</td><td class="cell-muted">—</td><td>Mathieu Deleval</td><td>Relancer</td></tr>
+          <tr><td><span class="pill attente">Attente</span></td><td class="cell-strong">Segway</td><td>Outdoor delivery</td><td class="cell-muted">—</td><td>Mathieu Deleval</td><td>Relancer</td></tr>
+        </tbody>
+      </table></div>
+    </main>
+  </div>
+</div>
+
 <div class="intro" style="margin-top: 60px; margin-bottom: 60px;">
   <h2 style="font-size: 18px; margin: 0 0 10px;">Comparatif rapide</h2>
   <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-    <thead><tr style="background: #f4f4f4;"><th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Critère</th><th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">A · Editorial Black</th><th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">B · Brutalist Tech</th><th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">C · Apple Modern</th></tr></thead>
+    <thead><tr style="background: #f4f4f4;"><th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Critère</th><th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">A · Editorial Black</th><th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">B · Brutalist Tech</th><th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">C · Apple Modern</th><th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd; background: rgba(0,212,160,0.10);">D · Hybrid ⭐</th></tr></thead>
     <tbody>
-      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Contraste</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Maximum</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Maximum</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Élevé</td></tr>
-      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Coins</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">0px (sharp)</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">0px (sharp)</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">6-8px (subtil)</td></tr>
-      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Accent couleur</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Vert signal #00d4a0</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Chartreuse #d4f000</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Aucun (noir pur)</td></tr>
-      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Typographie</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Sans, headers UPPER</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Sans + Mono mix, ALL CAPS</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Sans, sentence case</td></tr>
-      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Sidebar</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Noire</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Noire avec accent</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Gris très clair</td></tr>
-      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Effort de revamp</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">~45 min</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">~45 min</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">~30 min</td></tr>
-      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Risque ergonomie</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Faible</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Moyen (CAPS fatigue)</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Faible</td></tr>
-      <tr><td style="padding: 8px 10px;">Meilleur pour</td><td style="padding: 8px 10px;">Crédibilité tech / hardware</td><td style="padding: 8px 10px;">Statement audacieux</td><td style="padding: 8px 10px;">Pro B2B classique</td></tr>
+      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Contraste</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Maximum</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Maximum</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Élevé</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee; background: rgba(0,212,160,0.05);">Élevé</td></tr>
+      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Coins</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">0px (sharp)</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">0px (sharp)</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">6-8px (subtil)</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee; background: rgba(0,212,160,0.05);">4-6px (intermédiaire)</td></tr>
+      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Accent couleur</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Vert signal #00d4a0</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Chartreuse #d4f000</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Aucun (noir pur)</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee; background: rgba(0,212,160,0.05);">Vert signal #00d4a0</td></tr>
+      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Typographie</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Sans, headers UPPER</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Sans + Mono mix, ALL CAPS</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Sans, sentence case</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee; background: rgba(0,212,160,0.05);">Sans, sentence case</td></tr>
+      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Sidebar</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Noire</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Noire avec accent</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Gris très clair</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee; background: rgba(0,212,160,0.05);">Noire avec accent teal</td></tr>
+      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Effort de revamp</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">~45 min</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">~45 min</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">~30 min</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee; background: rgba(0,212,160,0.05);">~40 min</td></tr>
+      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Risque ergonomie</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Faible</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Moyen (CAPS fatigue)</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Faible</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee; background: rgba(0,212,160,0.05);">Très faible</td></tr>
+      <tr><td style="padding: 8px 10px;">Meilleur pour</td><td style="padding: 8px 10px;">Crédibilité tech / hardware</td><td style="padding: 8px 10px;">Statement audacieux</td><td style="padding: 8px 10px;">Pro B2B classique</td><td style="padding: 8px 10px; background: rgba(0,212,160,0.05);">Tech moderne lisible</td></tr>
     </tbody>
   </table>
   <p style="margin-top: 20px; font-size: 13px; color: #666;">Dis-moi laquelle (A, B, C ou un mix genre "A pour le sidebar + C pour les tables") et je revamp tout l'HTML.</p>

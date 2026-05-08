@@ -209,6 +209,7 @@ details[open] .pratique-summary { background: #DDEBF7; border-bottom-left-radius
       <a href="#squad" data-nav="squad"><span class="ic">👥</span><span class="lbl">Squad & équipe</span></a>
       <a href="#pratique" data-nav="pratique"><span class="ic">🧰</span><span class="lbl">Infos pratiques</span></a>
       <a href="#todo" data-nav="todo"><span class="ic">✓</span><span class="lbl">TODO par personne</span></a>
+      <a href="#notes" data-nav="notes"><span class="ic">📝</span><span class="lbl">Notes</span></a>
     </nav>
     <div class="footer">
       Construit le 4 mai 2026 · J-47<br>
@@ -3507,6 +3508,17 @@ On behalf of the delegation
 
 <script>window.TODO_DATA = [{"owner": "Diego Louwers", "tache": "Envoyer mail à Mattias Debroyer (HUB Brussels) [draft prêt]", "categorie": "Outreach", "deadline": "Cette semaine", "statut": "Urgent"}, {"owner": "Diego Louwers", "tache": "Envoyer mail relance Unitree [draft prêt]", "categorie": "Outreach", "deadline": "Cette semaine", "statut": "Urgent"}, {"owner": "Diego Louwers", "tache": "Booker yacht baie de Shenzhen (dim 21 soir, 4h, 5 pers)", "categorie": "Réservations", "deadline": "J-30", "statut": "À faire"}, {"owner": "Diego Louwers", "tache": "Booker restos premium (Da Dong, hotpot, teppanyaki, seafood)", "categorie": "Réservations", "deadline": "J-15", "statut": "À faire"}, {"owner": "Diego Louwers", "tache": "Booker Oil Club, speakeasy Nanshan, rooftop Futian", "categorie": "Réservations", "deadline": "J-15", "statut": "À faire"}, {"owner": "Diego Louwers", "tache": "Booker transferts VIP aéroport (arrivée + retour)", "categorie": "Réservations", "deadline": "J-15", "statut": "À faire"}, {"owner": "Diego Louwers", "tache": "Acheter 10 cadeaux d'affaires belges premium", "categorie": "Réservations", "deadline": "J-15", "statut": "À faire"}, {"owner": "Mathieu", "tache": "Envoyer mail Mammotion (Qingbin Liu) [draft prêt]", "categorie": "Outreach", "deadline": "J-30", "statut": "À faire"}, {"owner": "Mathieu", "tache": "Recaler RDV Ubtech (vendredi 26 → mardi 23 matin) avec Claude", "categorie": "Outreach", "deadline": "Cette semaine", "statut": "Urgent"}, {"owner": "Mathieu", "tache": "Envoyer 5 mails de confirmation J-3 (Pudu, Allybot, Zuowei, Youibot, UBTech) [drafts prêts]", "categorie": "Outreach", "deadline": "J-3 (vendredi 19 juin)", "statut": "À faire"}, {"owner": "Mathieu", "tache": "Recruter Hardware Ecosystem Connector local (réseau perso ou via HUB Brussels)", "categorie": "Réservations", "deadline": "J-15", "statut": "À faire"}, {"owner": "Mathieu", "tache": "Booker HSR Shenzhen-Guangzhou si Victoria Xiang confirme Guangzhou", "categorie": "Réservations", "deadline": "J-7", "statut": "Conditionnel"}, {"owner": "Arthur", "tache": "Envoyer mail Victoria Xiang (EHang COO Europe) [draft prêt]", "categorie": "Outreach", "deadline": "Cette semaine", "statut": "Urgent"}, {"owner": "Arthur", "tache": "Envoyer cold mail Michael Perry (DJI drone) [draft prêt]", "categorie": "Outreach", "deadline": "Cette semaine", "statut": "À faire"}, {"owner": "Arthur", "tache": "Envoyer cold mail Tony Ho (Segway-Ninebot Robotics) [draft prêt]", "categorie": "Outreach", "deadline": "J-30", "statut": "À faire"}, {"owner": "Arthur", "tache": "Setup Cloudflare Pages + Access (URL stable shenzhen.arthurdeleval.com avec password partagé pour le squad), gratuit, ~30 min de setup", "categorie": "Diffusion", "deadline": "Cette semaine", "statut": "À faire"}, {"owner": "William", "tache": "Envoyer mail Michael Shu (BYD Europe MD) [draft prêt]", "categorie": "Outreach", "deadline": "J-30", "statut": "À faire"}, {"owner": "William", "tache": "Envoyer mail Ning Ning (XPeng B2B Sales) [draft prêt]", "categorie": "Outreach", "deadline": "J-30", "statut": "À faire"}, {"owner": "William", "tache": "Recontacter Didier Denayer (AWEX) pour Visionera + intro Chambre Commerce", "categorie": "Outreach", "deadline": "Cette semaine", "statut": "À faire"}, {"owner": "William", "tache": "Faire valider NDA template par juriste habituel [template prêt]", "categorie": "Préparation RDV", "deadline": "J-15", "statut": "À faire"}, {"owner": "Diego Ketels", "tache": "Booker chambre Fraser Suites (samedi 20 → jeudi 25)", "categorie": "Réservations", "deadline": "Cette semaine", "statut": "Urgent"}, {"owner": "Diego Ketels", "tache": "Fournir liste 3-5 plus gros clients industriels du staffing platform (info privée nécessaire pour illustration RDV)", "categorie": "Préparation RDV", "deadline": "J-30", "statut": "À faire"}];</script>
 </section>
+      <section class="page" id="page-notes" data-slug="notes">
+        <h1>📝 Notes</h1>
+        <p><em>Toutes les notes prises pour le voyage. Une note peut être attachée à une société, un RDV, une tâche, un membre du squad, ou être autonome.</em></p>
+        <div class="filter-bar">
+          <input type="text" id="notes-search" placeholder="🔍 Rechercher dans les notes (titre + contenu)..." class="search-input">
+          <button class="btn-reset" id="notes-reset">↺ Réinitialiser</button>
+          <button type="button" class="at-add-btn" id="notes-add">+ Nouvelle note</button>
+        </div>
+        <div id="notes-page-list" class="at-notes-list" style="max-height:none;"></div>
+        <p class="note" id="notes-page-count"></p>
+      </section>
       </div>
   </main>
 </div>
@@ -6028,6 +6040,9 @@ function populateColumnSelect(tableId, col, data) {
   syncAll = async function() {
     await _origSyncAll3.apply(this, arguments);
     if (typeof setupDayMaps === "function") setupDayMaps();
+    if (typeof renderNotesPage === "function" && document.getElementById("notes-page-list")) {
+      renderNotesPage();
+    }
   };
 
   // ============================================================
@@ -6323,6 +6338,206 @@ function populateColumnSelect(tableId, col, data) {
 
     renderList();
   }
+
+  // ============================================================
+  // NOTES PAGE — central notes browser with filters
+  // ============================================================
+  let notesPageInit = false;
+  let notesPageFilter = "";
+
+  function renderNotesPage() {
+    const listEl = document.getElementById("notes-page-list");
+    const countEl = document.getElementById("notes-page-count");
+    if (!listEl) return;
+    listEl.innerHTML = "";
+
+    if (!cache.notes || !cache.notes.length) {
+      listEl.innerHTML = '<div class="at-note-empty">' +
+        (pat ? "Aucune note pour le moment. Cliquer \"+ Nouvelle note\" pour commencer." :
+               "Connecte-toi à Airtable pour voir tes notes.") +
+        '</div>';
+      if (countEl) countEl.textContent = "";
+      return;
+    }
+
+    // Build per-note context (which record it's linked to, for label)
+    const linkLabels = (note) => {
+      const f = note.fields || {};
+      const labels = [];
+      const rdvIds = f["RDV lié"] || [];
+      rdvIds.forEach(id => {
+        const r = (cache.rdv || []).find(x => x.id === id);
+        if (r) labels.push("📅 " + (r.fields.Titre || "RDV"));
+      });
+      const todoIds = f["TODO lié"] || [];
+      todoIds.forEach(id => {
+        const r = (cache.todo || []).find(x => x.id === id);
+        if (r) labels.push("✓ " + (r.fields["Tâche"] || "TODO").substring(0, 50));
+      });
+      const socIds = f["Société liée"] || [];
+      socIds.forEach(id => {
+        const r = (cache.contacts || []).find(x => x.id === id);
+        if (r) labels.push("🏢 " + (r.fields["Société"] || "Société"));
+      });
+      return labels;
+    };
+
+    // Sort newest first, apply search filter
+    const q = (notesPageFilter || "").toLowerCase().trim();
+    const filtered = cache.notes.filter(n => {
+      if (!q) return true;
+      const f = n.fields || {};
+      const blob = ((f.Titre || "") + " " + (f.Contenu || "") + " " + linkLabels(n).join(" ")).toLowerCase();
+      return blob.indexOf(q) !== -1;
+    }).sort((a, b) => ((b.fields["Dernière modif"] || b.createdTime || "")
+      .localeCompare(a.fields["Dernière modif"] || a.createdTime || "")));
+
+    if (!filtered.length) {
+      listEl.innerHTML = '<div class="at-note-empty">Aucun résultat pour cette recherche.</div>';
+      if (countEl) countEl.textContent = "";
+      return;
+    }
+
+    filtered.forEach(noteRec => {
+      const f = noteRec.fields || {};
+      const card = document.createElement("div");
+      card.className = "at-note-card";
+      card.dataset.noteId = noteRec.id;
+
+      const header = document.createElement("div");
+      header.className = "at-note-card-header";
+      const ttl = document.createElement("div");
+      ttl.className = "at-note-card-title";
+      ttl.textContent = f.Titre || "(sans titre)";
+      const meta = document.createElement("div");
+      meta.className = "at-note-card-meta";
+      const labels = linkLabels(noteRec);
+      meta.textContent = (labels.length ? labels.join(" · ") + " · " : "") + fmtDate(f["Dernière modif"] || noteRec.createdTime);
+      const actions = document.createElement("div");
+      actions.className = "at-note-card-actions";
+      const editBtn = document.createElement("button");
+      editBtn.textContent = "Éditer";
+      editBtn.onclick = () => openSinglNoteEdit(noteRec);
+      const delBtn = document.createElement("button");
+      delBtn.className = "del";
+      delBtn.textContent = "Suppr";
+      delBtn.onclick = async () => {
+        if (!confirm("Supprimer la note \"" + (f.Titre || "(sans titre)") + "\" ?")) return;
+        const res = await api("DELETE", "/" + BASE_ID + "/" + TBL.NOTES + "/" + noteRec.id);
+        if (!res.ok) { toast("Erreur suppression", false); return; }
+        cache.notes = cache.notes.filter(x => x.id !== noteRec.id);
+        toast("✓ Note supprimée", true);
+        renderNotesPage();
+        refreshNotesButtons();
+      };
+      actions.appendChild(editBtn);
+      actions.appendChild(delBtn);
+      header.appendChild(ttl);
+      header.appendChild(meta);
+      header.appendChild(actions);
+      card.appendChild(header);
+
+      const content = document.createElement("div");
+      content.className = "at-note-card-content";
+      content.innerHTML = renderMarkdown(f.Contenu);
+      card.appendChild(content);
+
+      listEl.appendChild(card);
+    });
+    if (countEl) countEl.textContent = filtered.length + " note(s) affichée(s)";
+  }
+
+  // Edit a single note (used from the Notes page where there's no specific
+  // record context — we just patch the existing record without changing links)
+  async function openSinglNoteEdit(noteRec) {
+    if (!pat) { toast("Connecte-toi à Airtable d'abord", false); return; }
+    closeModal();
+    try { await loadEditorAssets(); }
+    catch (e) { toast("Échec chargement éditeur : " + e.message, false); return; }
+
+    const f = noteRec ? (noteRec.fields || {}) : {};
+    const overlay = document.createElement("div");
+    overlay.className = "at-modal-overlay";
+    overlay.id = "at-modal-overlay";
+    overlay.innerHTML =
+      '<div class="at-modal at-notes-modal">' +
+        '<h3>' + (noteRec ? "Éditer la note" : "Nouvelle note") + '</h3>' +
+        '<input type="text" class="at-note-edit-title" id="at-note-edit-title" placeholder="Titre" value="' + escapeHtml(f.Titre || "") + '">' +
+        '<div class="at-note-editor-wrap"><textarea id="at-note-edit-ta">' + escapeHtml(f.Contenu || "") + '</textarea></div>' +
+        '<div class="at-modal-actions">' +
+          '<button type="button" id="at-note-edit-cancel">Annuler</button>' +
+          '<button type="button" class="primary" id="at-note-edit-save">' + (noteRec ? "Sauvegarder" : "Créer") + '</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", e => { if (e.target === overlay) closeModal(); });
+
+    const ta = document.getElementById("at-note-edit-ta");
+    const easyMDE = new window.EasyMDE({
+      element: ta,
+      spellChecker: false,
+      status: false,
+      minHeight: "180px",
+      autofocus: true,
+      toolbar: ["bold", "italic", "heading", "|", "unordered-list", "ordered-list", "|", "link", "code", "|", "preview"],
+      renderingConfig: { singleLineBreaks: true },
+    });
+
+    document.getElementById("at-note-edit-cancel").onclick = closeModal;
+    document.getElementById("at-note-edit-save").onclick = async () => {
+      const titleEl = document.getElementById("at-note-edit-title");
+      const title = (titleEl.value.trim() || "Note du " + new Date().toLocaleDateString("fr-BE"));
+      const content = easyMDE.value();
+      const fields = {
+        "Titre": title,
+        "Contenu": content,
+        "Type": (f.Type || "Libre"),
+        "Dernière modif": new Date().toISOString(),
+      };
+      let res;
+      if (noteRec) {
+        res = await api("PATCH", "/" + BASE_ID + "/" + TBL.NOTES + "/" + noteRec.id, { fields });
+      } else {
+        res = await api("POST", "/" + BASE_ID + "/" + TBL.NOTES, { records: [{ fields }] });
+      }
+      if (!res.ok) {
+        const msg = (res.data && res.data.error && res.data.error.message) || ("HTTP " + res.status);
+        toast("Erreur : " + msg, false);
+        return;
+      }
+      const saved = noteRec ? res.data : res.data.records[0];
+      if (noteRec) {
+        const idx = cache.notes.findIndex(x => x.id === noteRec.id);
+        if (idx >= 0) cache.notes[idx] = saved;
+      } else {
+        cache.notes.push(saved);
+      }
+      toast(noteRec ? "✓ Note sauvegardée" : "✓ Note créée", true);
+      closeModal();
+      renderNotesPage();
+      refreshNotesButtons();
+    };
+  }
+
+  function setupNotesPage() {
+    if (notesPageInit) { renderNotesPage(); return; }
+    const search = document.getElementById("notes-search");
+    const reset = document.getElementById("notes-reset");
+    const addBtn = document.getElementById("notes-add");
+    if (!search || !addBtn) return;
+    search.oninput = e => { notesPageFilter = e.target.value; renderNotesPage(); };
+    if (reset) reset.onclick = () => { notesPageFilter = ""; search.value = ""; renderNotesPage(); };
+    addBtn.onclick = () => openSinglNoteEdit(null);
+    notesPageInit = true;
+    renderNotesPage();
+  }
+
+  // Run setup on initial load + every nav to #notes
+  setTimeout(setupNotesPage, 600);
+  document.addEventListener("click", e => {
+    const a = e.target.closest('a[data-nav="notes"]');
+    if (a) setTimeout(setupNotesPage, 80);
+  });
 })();
 </script>
 

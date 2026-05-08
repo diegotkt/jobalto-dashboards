@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voyage Shenzhen — Revamp Visuel · 3 propositions</title>
+<style>
+* { box-sizing: border-box; }
+html, body { margin:0; padding:0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", sans-serif; }
+body { background: #fafafa; color: #111; }
+
+.intro { max-width: 920px; margin: 40px auto 24px; padding: 0 24px; }
+.intro h1 { font-size: 28px; font-weight: 600; margin: 0 0 8px; letter-spacing: -0.4px; }
+.intro p { color: #555; font-size: 15px; line-height: 1.55; margin: 6px 0; }
+.intro a { color: inherit; }
+
+.option-divider { max-width: 920px; margin: 56px auto 0; padding: 0 24px; }
+.option-tag { display: inline-block; background: #111; color: #fff; padding: 4px 10px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+.option-tag.alt { background: #FFD400; color: #111; }
+.option-tag.modern { background: #2563eb; color: #fff; }
+.option-divider h2 { font-size: 22px; font-weight: 600; margin: 0 0 6px; letter-spacing: -0.3px; }
+.option-divider p { color: #555; font-size: 14px; line-height: 1.6; margin: 4px 0 18px; max-width: 720px; }
+
+.mockup { max-width: 1240px; margin: 0 auto; background: white; border: 1px solid #e0e0e0; border-radius: 0; overflow: hidden; box-shadow: 0 12px 48px rgba(0,0,0,0.08); }
+
+.mock-app { display: grid; grid-template-columns: 240px 1fr; min-height: 720px; }
+
+.mock-pill { display: inline-flex; align-items: center; padding: 3px 10px; font-size: 11px; font-weight: 500; }
+
+.row { display: flex; align-items: center; gap: 8px; }
+
+button { font-family: inherit; cursor: pointer; }
+input, select { font-family: inherit; }
+
+.note { font-size: 12px; color: #888; margin-top: 8px; font-style: italic; }
+
+
+/* =============================================================
+   OPTION A — EDITORIAL BLACK
+   Coprod-inspired. Pure b&w. Sharp 2px corners.
+   Single accent: signal teal. Heavy display type.
+   ============================================================= */
+.opt-a { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, sans-serif; color: #0a0a0b; }
+.opt-a aside { background: #0a0a0b; color: #f4f4f4; padding: 24px 0; }
+.opt-a aside .brand { padding: 0 22px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 16px; }
+.opt-a aside .brand h1 { font-size: 16px; font-weight: 700; margin: 0; letter-spacing: -0.2px; }
+.opt-a aside .brand .sub { font-size: 11px; opacity: 0.5; margin-top: 4px; letter-spacing: 0.4px; text-transform: uppercase; }
+.opt-a aside nav a { display: block; padding: 9px 22px; color: #cccccc; text-decoration: none; font-size: 13px; border-left: 2px solid transparent; transition: 0.1s; }
+.opt-a aside nav a:hover { color: #fff; background: rgba(255,255,255,0.04); }
+.opt-a aside nav a.active { color: #fff; background: rgba(0,212,160,0.08); border-left-color: #00d4a0; font-weight: 500; }
+.opt-a main { background: #fff; padding: 36px 44px; }
+.opt-a main h1 { font-size: 36px; font-weight: 700; letter-spacing: -1px; margin: 0 0 6px; }
+.opt-a main .lead { color: #555; font-size: 14px; margin: 0 0 28px; }
+.opt-a .filter-bar { display: flex; gap: 10px; margin: 0 0 18px; align-items: center; }
+.opt-a .multi-trigger { background: #fff; border: 1.5px solid #0a0a0b; padding: 7px 14px; font-size: 13px; font-weight: 500; cursor: pointer; }
+.opt-a .multi-trigger.active { background: #0a0a0b; color: #fff; }
+.opt-a .search { flex: 1; padding: 8px 12px; border: 1.5px solid #0a0a0b; font-size: 13px; background: white; }
+.opt-a .add-btn { background: #00d4a0; color: #0a0a0b; border: none; padding: 8px 16px; font-size: 13px; font-weight: 600; letter-spacing: 0.2px; }
+.opt-a .add-btn:hover { background: #00b78a; }
+.opt-a table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.opt-a thead th { background: transparent; border-bottom: 2px solid #0a0a0b; padding: 10px 8px; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; text-align: left; color: #0a0a0b; }
+.opt-a tbody td { padding: 12px 8px; border-bottom: 1px solid #e8e8e8; }
+.opt-a tbody tr:hover { background: #f9f9f9; }
+.opt-a .pill { font-size: 11px; padding: 3px 9px; font-weight: 500; }
+.opt-a .pill.confirm { background: #0a0a0b; color: #00d4a0; }
+.opt-a .pill.confirmer { background: transparent; color: #0a0a0b; border: 1px solid #0a0a0b; }
+.opt-a .pill.attente { background: transparent; color: #888; border: 1px solid #ccc; }
+.opt-a .pill.repro { background: #ff5a3c; color: white; }
+
+
+/* =============================================================
+   OPTION B — BRUTALIST TECH
+   0px corners. 2px borders. Warm paper bg.
+   Bold accent: chartreuse. Mono for IDs.
+   ============================================================= */
+.opt-b { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, sans-serif; color: #1a1a1a; }
+.opt-b aside { background: #1a1a1a; color: #f4f4f4; padding: 0; border-right: 2px solid #1a1a1a; }
+.opt-b aside .brand { padding: 22px 22px 18px; border-bottom: 2px solid #d4f000; }
+.opt-b aside .brand h1 { font-size: 14px; font-weight: 700; margin: 0; text-transform: uppercase; letter-spacing: 1px; color: #d4f000; }
+.opt-b aside .brand .sub { font-size: 10px; opacity: 0.5; margin-top: 6px; font-family: ui-monospace, "SF Mono", monospace; letter-spacing: 0.3px; }
+.opt-b aside nav a { display: block; padding: 11px 22px; color: #aaa; text-decoration: none; font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; font-weight: 500; border-bottom: 1px solid #2a2a2a; }
+.opt-b aside nav a:hover { color: #d4f000; background: #2a2a2a; }
+.opt-b aside nav a.active { color: #1a1a1a; background: #d4f000; font-weight: 700; }
+.opt-b main { background: #f4f3ed; padding: 32px 40px; }
+.opt-b main h1 { font-size: 32px; font-weight: 800; margin: 0 0 4px; letter-spacing: -0.5px; text-transform: uppercase; }
+.opt-b main .lead { color: #555; font-size: 13px; margin: 0 0 26px; font-family: ui-monospace, "SF Mono", monospace; }
+.opt-b .filter-bar { display: flex; gap: 8px; margin: 0 0 18px; align-items: center; }
+.opt-b .multi-trigger { background: #fff; border: 2px solid #1a1a1a; padding: 7px 14px; font-size: 12px; font-weight: 700; text-transform: uppercase; cursor: pointer; }
+.opt-b .multi-trigger.active { background: #d4f000; }
+.opt-b .search { flex: 1; padding: 8px 12px; border: 2px solid #1a1a1a; font-size: 13px; background: white; }
+.opt-b .add-btn { background: #1a1a1a; color: #d4f000; border: 2px solid #1a1a1a; padding: 8px 16px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+.opt-b .add-btn:hover { background: #d4f000; color: #1a1a1a; }
+.opt-b table { width: 100%; border-collapse: collapse; font-size: 13px; background: #fff; border: 2px solid #1a1a1a; }
+.opt-b thead th { background: #1a1a1a; color: #d4f000; padding: 10px 10px; font-weight: 700; font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; text-align: left; }
+.opt-b tbody td { padding: 11px 10px; border-bottom: 1px solid #e0ddd0; }
+.opt-b tbody tr:hover { background: #fffae8; }
+.opt-b .pill { font-size: 10px; padding: 3px 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; font-family: ui-monospace, "SF Mono", monospace; border: 1.5px solid; }
+.opt-b .pill.confirm { background: #1a1a1a; color: #d4f000; border-color: #1a1a1a; }
+.opt-b .pill.confirmer { background: #fffae8; color: #1a1a1a; border-color: #1a1a1a; }
+.opt-b .pill.attente { background: #fff; color: #888; border-color: #ccc; }
+.opt-b .pill.repro { background: #ff3939; color: #fff; border-color: #ff3939; }
+.opt-b .mono { font-family: ui-monospace, "SF Mono", monospace; font-size: 12px; }
+
+
+/* =============================================================
+   OPTION C — APPLE / NOTION MODERN
+   Subtle shadows. 6-8px corners. True black text.
+   Calm palette, single deep accent. Spacious.
+   ============================================================= */
+.opt-c { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, sans-serif; color: #1a1a1a; }
+.opt-c aside { background: #fafafa; color: #1a1a1a; padding: 24px 0; border-right: 1px solid #ececec; }
+.opt-c aside .brand { padding: 0 22px 20px; border-bottom: 1px solid #ececec; margin-bottom: 16px; }
+.opt-c aside .brand h1 { font-size: 17px; font-weight: 700; margin: 0; letter-spacing: -0.3px; }
+.opt-c aside .brand .sub { font-size: 12px; color: #888; margin-top: 4px; }
+.opt-c aside nav a { display: flex; align-items: center; gap: 10px; padding: 8px 22px; color: #555; text-decoration: none; font-size: 13.5px; transition: 0.12s; }
+.opt-c aside nav a:hover { background: #f1f1f1; color: #1a1a1a; }
+.opt-c aside nav a.active { background: #1a1a1a; color: white; margin: 0 12px; padding: 8px 14px; border-radius: 6px; font-weight: 600; }
+.opt-c aside nav a .ic { font-size: 13px; opacity: 0.7; width: 16px; }
+.opt-c main { background: white; padding: 40px 48px; }
+.opt-c main h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.6px; margin: 0 0 8px; }
+.opt-c main .lead { color: #666; font-size: 14.5px; margin: 0 0 28px; line-height: 1.5; }
+.opt-c .filter-bar { display: flex; gap: 10px; margin: 0 0 20px; align-items: center; }
+.opt-c .multi-trigger { background: white; border: 1px solid #d8d8d8; padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; }
+.opt-c .multi-trigger.active { background: #1a1a1a; color: white; border-color: #1a1a1a; }
+.opt-c .search { flex: 1; padding: 9px 14px; border: 1px solid #d8d8d8; border-radius: 8px; font-size: 13px; background: white; }
+.opt-c .search:focus { outline: none; border-color: #1a1a1a; box-shadow: 0 0 0 3px rgba(0,0,0,0.06); }
+.opt-c .add-btn { background: #1a1a1a; color: white; border: none; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; }
+.opt-c .add-btn:hover { background: #000; }
+.opt-c table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.opt-c thead th { background: #fafafa; padding: 12px 14px; font-weight: 600; font-size: 11.5px; color: #888; text-transform: uppercase; letter-spacing: 0.4px; text-align: left; border-bottom: 1px solid #ececec; }
+.opt-c thead th:first-child { border-top-left-radius: 8px; }
+.opt-c thead th:last-child { border-top-right-radius: 8px; }
+.opt-c tbody td { padding: 14px; border-bottom: 1px solid #f0f0f0; }
+.opt-c tbody tr:hover { background: #fafafa; }
+.opt-c tbody tr:last-child td { border-bottom: none; }
+.opt-c .pill { font-size: 11.5px; padding: 3px 10px; font-weight: 600; border-radius: 6px; }
+.opt-c .pill.confirm { background: #1a1a1a; color: white; }
+.opt-c .pill.confirmer { background: #f4f0e1; color: #6b5c00; }
+.opt-c .pill.attente { background: #f1f1f1; color: #555; }
+.opt-c .pill.repro { background: #fbe3df; color: #a93116; }
+
+
+/* Shared sample widget structure */
+.sample-table-wrap { overflow-x: auto; }
+.cell-strong { font-weight: 600; }
+.cell-muted { color: #888; }
+</style>
+</head>
+<body>
+
+<div class="intro">
+  <h1>Revamp visuel — 3 propositions</h1>
+  <p>Tu peux choisir une direction (ou mixer). Inspiration : <a href="https://coprod.co/" target="_blank">coprod.co</a> (Option A est la plus proche). Toutes utilisent les mêmes données et la même structure de page que la Synthèse RDV actuelle, juste habillage différent.</p>
+  <p>Une fois validé, je revamp le HTML complet (sidebar, toutes les pages, tables, modals) selon l'option choisie. Comptez 30-45 min de revamp + tests Playwright.</p>
+</div>
+
+<div class="option-divider">
+  <span class="option-tag">Option A · Editorial Black</span>
+  <h2>Pure black & white, accent vert signal</h2>
+  <p>La plus proche de coprod.co. Sidebar quasi-noire, contenu blanc cassé, typographie forte avec headers serrés. Un seul accent : vert signal (#00d4a0) pour les RDV confirmés et le bouton primaire. Bordures fines, coins 0px. Texte uppercase petit pour les headers de table.</p>
+</div>
+<div class="mockup opt-a">
+  <div class="mock-app">
+    <aside>
+      <div class="brand"><h1>Shenzhen 2026</h1><div class="sub">DÉLÉGATION · 20-25 JUIN</div></div>
+      <nav>
+        <a href="#">Accueil</a>
+        <a href="#">Synthèse & plan</a>
+        <a href="#">Mission narrative</a>
+        <a href="#">Outreach & emails</a>
+        <a href="#">Planning</a>
+        <a href="#">Notes</a>
+        <a href="#" class="active">Synthèse RDV</a>
+        <a href="#">Base contacts</a>
+        <a href="#">Squad & équipe</a>
+        <a href="#">Infos pratiques</a>
+        <a href="#">TODO</a>
+      </nav>
+    </aside>
+    <main>
+      <h1>Synthèse RDV.</h1>
+      <p class="lead">30 sociétés ciblées · 5 RDV confirmés · 3 à booker</p>
+      <div class="filter-bar">
+        <button class="multi-trigger active">Statut : Tous</button>
+        <input class="search" type="text" placeholder="Rechercher société, secteur, action…">
+        <button class="add-btn">+ Ajouter événement</button>
+      </div>
+      <div class="sample-table-wrap"><table>
+        <thead><tr><th>Statut</th><th>Société</th><th>Secteur</th><th>Date</th><th>Owner</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill confirm">CONFIRMÉ</span></td><td class="cell-strong">Pudu</td><td>Service & livraison</td><td>22/06 · 09:30</td><td>Mathieu Deleval</td><td>Préparer brief 1-pager</td></tr>
+          <tr><td><span class="pill confirm">CONFIRMÉ</span></td><td class="cell-strong">Allybot</td><td>Cleaning</td><td>22/06 · 14:00</td><td>Mathieu Deleval</td><td>Préparer brief 1-pager</td></tr>
+          <tr><td><span class="pill confirm">CONFIRMÉ</span></td><td class="cell-strong">Zuowei</td><td>Exosquelettes</td><td>23/06 · 15:00</td><td>Mathieu Deleval</td><td>Préparer brief 1-pager</td></tr>
+          <tr><td><span class="pill repro">REPROGRAMMER</span></td><td class="cell-strong">Ubtech</td><td>Healthcare humanoïde</td><td>23/06 · à recaler</td><td>Mathieu Deleval</td><td>URGENT recaler</td></tr>
+          <tr><td><span class="pill confirmer">À CONFIRMER</span></td><td class="cell-strong">Legend Robot</td><td>Construction</td><td>Date à fixer</td><td>Mathieu Deleval</td><td>Proposer un créneau</td></tr>
+          <tr><td><span class="pill attente">ATTENTE</span></td><td class="cell-strong">Reeman</td><td>Catering/cleaning</td><td class="cell-muted">—</td><td>Mathieu Deleval</td><td>Relancer</td></tr>
+          <tr><td><span class="pill attente">ATTENTE</span></td><td class="cell-strong">Segway</td><td>Outdoor delivery</td><td class="cell-muted">—</td><td>Mathieu Deleval</td><td>Relancer</td></tr>
+        </tbody>
+      </table></div>
+    </main>
+  </div>
+</div>
+
+<div class="option-divider">
+  <span class="option-tag alt">Option B · Brutalist Tech</span>
+  <h2>Bordures épaisses, ALL CAPS, accent chartreuse</h2>
+  <p>Plus radical. Coins 0px partout, bordures 2px très visibles, typographie compressée + uppercase pour les headers. Fond papier crème (#f4f3ed) qui réduit la fatigue oculaire. Accent unique : jaune chartreuse (#d4f000) qui pop fort sur fond noir/blanc. Du Mono pour les IDs et dates. C'est le style "hacker artisanal".</p>
+</div>
+<div class="mockup opt-b">
+  <div class="mock-app">
+    <aside>
+      <div class="brand"><h1>Shenzhen 2026</h1><div class="sub">// Délégation 20.06 → 25.06</div></div>
+      <nav>
+        <a href="#">Accueil</a>
+        <a href="#">Synthèse</a>
+        <a href="#">Mission</a>
+        <a href="#">Outreach</a>
+        <a href="#">Planning</a>
+        <a href="#">Notes</a>
+        <a href="#" class="active">RDV</a>
+        <a href="#">Contacts</a>
+        <a href="#">Squad</a>
+        <a href="#">Pratique</a>
+        <a href="#">TODO</a>
+      </nav>
+    </aside>
+    <main>
+      <h1>Synthèse RDV</h1>
+      <p class="lead">// 30 sociétés // 5 confirmés // 3 à booker</p>
+      <div class="filter-bar">
+        <button class="multi-trigger active">STATUT · TOUS</button>
+        <input class="search" type="text" placeholder="rechercher…">
+        <button class="add-btn">+ ajouter</button>
+      </div>
+      <div class="sample-table-wrap"><table>
+        <thead><tr><th>Statut</th><th>Société</th><th>Secteur</th><th>Date</th><th>Owner</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill confirm">CONFIRM</span></td><td class="cell-strong">Pudu</td><td>Service & livraison</td><td class="mono">22.06 09:30</td><td>Mathieu Deleval</td><td>Préparer brief 1-pager</td></tr>
+          <tr><td><span class="pill confirm">CONFIRM</span></td><td class="cell-strong">Allybot</td><td>Cleaning</td><td class="mono">22.06 14:00</td><td>Mathieu Deleval</td><td>Préparer brief 1-pager</td></tr>
+          <tr><td><span class="pill confirm">CONFIRM</span></td><td class="cell-strong">Zuowei</td><td>Exosquelettes</td><td class="mono">23.06 15:00</td><td>Mathieu Deleval</td><td>Préparer brief 1-pager</td></tr>
+          <tr><td><span class="pill repro">REPROG</span></td><td class="cell-strong">Ubtech</td><td>Healthcare humanoïde</td><td class="mono">23.06 ??:??</td><td>Mathieu Deleval</td><td>URGENT recaler</td></tr>
+          <tr><td><span class="pill confirmer">CONFIRMER</span></td><td class="cell-strong">Legend Robot</td><td>Construction</td><td class="mono">à fixer</td><td>Mathieu Deleval</td><td>Proposer créneau</td></tr>
+          <tr><td><span class="pill attente">ATTENTE</span></td><td class="cell-strong">Reeman</td><td>Catering/cleaning</td><td class="mono cell-muted">—</td><td>Mathieu Deleval</td><td>Relancer</td></tr>
+          <tr><td><span class="pill attente">ATTENTE</span></td><td class="cell-strong">Segway</td><td>Outdoor delivery</td><td class="mono cell-muted">—</td><td>Mathieu Deleval</td><td>Relancer</td></tr>
+        </tbody>
+      </table></div>
+    </main>
+  </div>
+</div>
+
+<div class="option-divider">
+  <span class="option-tag modern">Option C · Apple/Notion Modern</span>
+  <h2>Soft, moderne, calme — accent dark uniquement</h2>
+  <p>Style "Notion" : sidebar gris très clair (pas dark blue), bordures très fines, coins 6-8px (vs 8-12px actuels), typographie noire pure, accent unique = vrai noir #1a1a1a (au lieu du bleu Jobalto). Status pills repensés : "Confirmé" devient un petit pill noir foncé avec texte blanc ; nuancier de gris pour le reste. Très pro, très "B2B SaaS 2026". Le moins disruptif vs design actuel.</p>
+</div>
+<div class="mockup opt-c">
+  <div class="mock-app">
+    <aside>
+      <div class="brand"><h1>Shenzhen 2026</h1><div class="sub">Délégation · 20-25 juin</div></div>
+      <nav>
+        <a href="#"><span class="ic">⌂</span>Accueil</a>
+        <a href="#"><span class="ic">∷</span>Synthèse & plan</a>
+        <a href="#"><span class="ic">◎</span>Mission narrative</a>
+        <a href="#"><span class="ic">→</span>Outreach & emails</a>
+        <a href="#"><span class="ic">▤</span>Planning</a>
+        <a href="#"><span class="ic">≡</span>Notes</a>
+        <a href="#" class="active"><span class="ic">✓</span>Synthèse RDV</a>
+        <a href="#"><span class="ic">⌥</span>Base contacts</a>
+        <a href="#"><span class="ic">◐</span>Squad & équipe</a>
+        <a href="#"><span class="ic">i</span>Infos pratiques</a>
+        <a href="#"><span class="ic">⊙</span>TODO</a>
+      </nav>
+    </aside>
+    <main>
+      <h1>Synthèse RDV</h1>
+      <p class="lead">30 sociétés ciblées dont 5 RDV confirmés et 3 à booker. Filtre par statut ou recherche full-text.</p>
+      <div class="filter-bar">
+        <button class="multi-trigger">Statut · Tous</button>
+        <input class="search" type="text" placeholder="Rechercher société, secteur, action…">
+        <button class="add-btn">+ Ajouter</button>
+      </div>
+      <div class="sample-table-wrap"><table>
+        <thead><tr><th>Statut</th><th>Société</th><th>Secteur</th><th>Date</th><th>Owner</th><th>Action immédiate</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill confirm">Confirmé</span></td><td class="cell-strong">Pudu</td><td>Service & livraison</td><td>Lun 22 — 9h30</td><td>Mathieu Deleval</td><td>Préparer brief 1-pager</td></tr>
+          <tr><td><span class="pill confirm">Confirmé</span></td><td class="cell-strong">Allybot</td><td>Cleaning</td><td>Lun 22 — 14h00</td><td>Mathieu Deleval</td><td>Préparer brief 1-pager</td></tr>
+          <tr><td><span class="pill confirm">Confirmé</span></td><td class="cell-strong">Zuowei</td><td>Exosquelettes</td><td>Mar 23 — 15h00</td><td>Mathieu Deleval</td><td>Préparer brief 1-pager</td></tr>
+          <tr><td><span class="pill repro">Reprogrammer</span></td><td class="cell-strong">Ubtech</td><td>Healthcare humanoïde</td><td>Mar 23 matin</td><td>Mathieu Deleval</td><td>URGENT recaler</td></tr>
+          <tr><td><span class="pill confirmer">À confirmer</span></td><td class="cell-strong">Legend Robot</td><td>Construction</td><td>Date à fixer</td><td>Mathieu Deleval</td><td>Proposer un créneau</td></tr>
+          <tr><td><span class="pill attente">Attente</span></td><td class="cell-strong">Reeman</td><td>Catering/cleaning</td><td class="cell-muted">—</td><td>Mathieu Deleval</td><td>Relancer</td></tr>
+          <tr><td><span class="pill attente">Attente</span></td><td class="cell-strong">Segway</td><td>Outdoor delivery</td><td class="cell-muted">—</td><td>Mathieu Deleval</td><td>Relancer</td></tr>
+        </tbody>
+      </table></div>
+    </main>
+  </div>
+</div>
+
+<div class="intro" style="margin-top: 60px; margin-bottom: 60px;">
+  <h2 style="font-size: 18px; margin: 0 0 10px;">Comparatif rapide</h2>
+  <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+    <thead><tr style="background: #f4f4f4;"><th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">Critère</th><th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">A · Editorial Black</th><th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">B · Brutalist Tech</th><th style="text-align: left; padding: 10px; border-bottom: 1px solid #ddd;">C · Apple Modern</th></tr></thead>
+    <tbody>
+      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Contraste</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Maximum</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Maximum</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Élevé</td></tr>
+      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Coins</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">0px (sharp)</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">0px (sharp)</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">6-8px (subtil)</td></tr>
+      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Accent couleur</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Vert signal #00d4a0</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Chartreuse #d4f000</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Aucun (noir pur)</td></tr>
+      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Typographie</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Sans, headers UPPER</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Sans + Mono mix, ALL CAPS</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Sans, sentence case</td></tr>
+      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Sidebar</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Noire</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Noire avec accent</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Gris très clair</td></tr>
+      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Effort de revamp</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">~45 min</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">~45 min</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">~30 min</td></tr>
+      <tr><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Risque ergonomie</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Faible</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Moyen (CAPS fatigue)</td><td style="padding: 8px 10px; border-bottom: 1px solid #eee;">Faible</td></tr>
+      <tr><td style="padding: 8px 10px;">Meilleur pour</td><td style="padding: 8px 10px;">Crédibilité tech / hardware</td><td style="padding: 8px 10px;">Statement audacieux</td><td style="padding: 8px 10px;">Pro B2B classique</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top: 20px; font-size: 13px; color: #666;">Dis-moi laquelle (A, B, C ou un mix genre "A pour le sidebar + C pour les tables") et je revamp tout l'HTML.</p>
+</div>
+
+</body>
+</html>

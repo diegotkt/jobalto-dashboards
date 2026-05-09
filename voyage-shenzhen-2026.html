@@ -4548,6 +4548,8 @@ function populateColumnSelect(tableId, col, data) {
     // This catches events the user added via "+ Ajouter événement" that link to
     // a Contact not in the static RDV_DATA, OR are standalone events without a link.
     appendMissingAgendaRowsToRdv(tbody);
+    // Decorate the synthetic Agenda rows with editable controls (statut, date, owner)
+    decorateSyntheticAgendaRows(tbody);
 
     // Add Notes column at end (linked to Société/Contact)
     ensureNotesColumn("rdv-table");
@@ -4558,11 +4560,86 @@ function populateColumnSelect(tableId, col, data) {
       const linkField = tr.dataset.atSyntheticAgenda === "1" ? "RDV lié" : "Société liée";
       addNotesCellToRow(tr, recId, linkField, tr.dataset.societe || "Événement");
     });
-    // Re-apply current filter to honour any user-set filter on the new rows
-    if (typeof window.applyRdvFilter === "function") {
-      try { window.applyRdvFilter(); } catch (e) { /* swallow */ }
-    }
+    // Re-apply the filter to honour any user-set filter on the newly added rows
+    applyBridgeFilter("rdv-table");
     return count;
+  }
+
+  // Decorate synthetic Agenda rows (standalone events with no Contact link)
+  // with editable controls that PATCH the Agenda record directly.
+  function decorateSyntheticAgendaRows(tbody) {
+    const STATUTS_AGENDA = ["Confirmé", "À confirmer", "Reprogrammer", "Annulé"];
+    tbody.querySelectorAll('tr[data-at-synthetic-agenda="1"]').forEach(tr => {
+      if (tr.dataset.atDecorated === "1") return;
+      const agendaId = tr.dataset.airtableId;
+      const agendaRec = (cache.rdv || []).find(r => r.id === agendaId);
+      if (!agendaRec) return;
+      tr.dataset.atDecorated = "1";
+
+      const f = agendaRec.fields || {};
+
+      // Cell 0 = Statut RDV (editable dropdown)
+      const statutCell = tr.children[0];
+      if (statutCell) {
+        const current = f["Statut RDV"] || "À confirmer";
+        const sel = buildStatutSelect(current, STATUTS_AGENDA);
+        sel.onchange = async () => {
+          await saveStatut(TBL.RDV, agendaId, "Statut RDV", sel.value, sel, agendaRec.fields.Titre || "événement");
+          agendaRec.fields["Statut RDV"] = sel.value;
+          tr.dataset.statut = sel.value;
+        };
+        statutCell.innerHTML = "";
+        statutCell.appendChild(sel);
+        tr.dataset.statut = current;
+      }
+
+      // Cell 3 = Date + Durée (editable, PATCHes Agenda.Date + Durée)
+      const dateCell = tr.children[3];
+      if (dateCell) {
+        const editor = buildAgendaDateEditor(agendaRec);
+        dateCell.innerHTML = "";
+        dateCell.appendChild(editor);
+      }
+
+      // Cell 4 = Owner / Participants (1st participant if any)
+      const ownerCell = tr.children[4];
+      if (ownerCell) {
+        const linkedIds = f["Participants"] || [];
+        const ownerSel = buildOwnerSelect(linkedIds[0] || null, "");
+        ownerSel.onchange = async () => {
+          const newIds = ownerSel.value ? [ownerSel.value] : [];
+          const res = await patchRecord(TBL.RDV, agendaId, { "Participants": newIds });
+          if (!res.ok) {
+            const msg = (res.data && res.data.error && res.data.error.message) || ("HTTP " + res.status);
+            toast("Erreur : " + msg, false);
+            return;
+          }
+          agendaRec.fields["Participants"] = newIds;
+          const ownerName = ownerSel.value
+            ? (Object.keys(mapping.squadByName).find(n => mapping.squadByName[n] === ownerSel.value) || "")
+            : "";
+          tr.dataset.owner = ownerName;
+          toast("✓ Participant mis à jour", true);
+        };
+        ownerCell.innerHTML = "";
+        ownerCell.appendChild(ownerSel);
+        if (linkedIds[0]) {
+          const ownerName = Object.keys(mapping.squadByName).find(n => mapping.squadByName[n] === linkedIds[0]) || "";
+          if (ownerName) tr.dataset.owner = ownerName;
+        }
+      }
+
+      // Cell 5 = Action (free-text, save to Agenda.Notes)
+      const actionCell = tr.children[5];
+      if (actionCell) {
+        const current = f.Notes || "";
+        tr.dataset.action = current;
+        const editor = buildTextEditor(current, TBL.RDV, agendaId, "Notes", (f.Titre || "événement") + " · notes");
+        editor.placeholder = "(notes / action)";
+        actionCell.innerHTML = "";
+        actionCell.appendChild(editor);
+      }
+    });
   }
 
   function appendMissingAgendaRowsToRdv(tbody) {

@@ -5394,19 +5394,19 @@ function populateColumnSelect(tableId, col, data) {
     if (slug === "contacts_db") {
       label = "Statut";
       options = STATUTS_CONTACTS;
-      applyFn = () => window.applyContactsFilter && window.applyContactsFilter();
       setKey = "contactsStatuts";
+      applyFn = () => applyFromMultiSelect(setKey);
     } else if (slug === "rdv") {
       label = "Statut";
       options = STATUTS_CONTACTS;
-      applyFn = () => window.applyRdvFilter && window.applyRdvFilter();
       setKey = "rdvStatuts";
+      applyFn = () => applyFromMultiSelect(setKey);
     } else if (slug === "todo") {
       label = "Owner";
       options = mapping.squadList && mapping.squadList.length ? mapping.squadList.slice() : [];
-      if (options.length === 0) return; // wait until squad is loaded
-      applyFn = () => window.applyTodoFilter && window.applyTodoFilter();
+      if (options.length === 0) return;
       setKey = "todoOwners";
+      applyFn = () => applyFromMultiSelect(setKey);
     } else {
       return;
     }
@@ -5425,6 +5425,109 @@ function populateColumnSelect(tableId, col, data) {
     installMultiSelect("contacts_db");
     installMultiSelect("rdv");
     installMultiSelect("todo");
+  }
+
+  // ------------------------------------------------------------
+  // ROBUST FILTER SYSTEM — replaces the original handlers entirely
+  // ------------------------------------------------------------
+  // The original code's `let rdvFilters` etc. are script-scoped and unreachable
+  // from this IIFE. Their handlers also reference applyRdvFilter via lexical
+  // scope (not via window) so wrapping window.applyRdvFilter doesn't intercept.
+  // To make filters reliable, we clone-replace the inputs (wiping their broken
+  // listeners) and attach our own handlers that read state directly from the DOM.
+  const BRIDGE_FILTER_TABLES = [
+    { tableId: "rdv-table",  pageId: "page-rdv",         searchId: "rdv-search",  countId: "rdv-count",  setKey: "rdvStatuts",     multiCol: "statut", filterKind: "value" },
+    { tableId: "ct-table",   pageId: "page-contacts_db", searchId: "ct-search",   countId: "ct-count",   setKey: "contactsStatuts", multiCol: "statut_court", filterKind: "value" },
+    { tableId: "todo-table", pageId: "page-todo",        searchId: "todo-search", countId: "todo-count", setKey: "todoOwners",     multiCol: "owner",  filterKind: "owner-alias" },
+  ];
+
+  function applyBridgeFilter(tableId) {
+    const cfg = BRIDGE_FILTER_TABLES.find(c => c.tableId === tableId);
+    if (!cfg) return;
+    const table = document.getElementById(tableId);
+    if (!table) return;
+
+    const colFilters = {};
+    table.querySelectorAll(".col-filter").forEach(el => {
+      const col = el.getAttribute("data-col-filter");
+      const v = (el.value || "").trim().toLowerCase();
+      if (v) colFilters[col] = v;
+    });
+    const search = document.getElementById(cfg.searchId);
+    const searchV = search ? (search.value || "").trim().toLowerCase() : "";
+    const multiSet = atFilterSets[cfg.setKey] || new Set();
+
+    let visible = 0, total = 0;
+    table.querySelectorAll("tbody tr").forEach(tr => {
+      total++;
+      let show = true;
+
+      // Multi-select dropdown filter (top of page)
+      if (multiSet.size > 0) {
+        let val;
+        if (cfg.filterKind === "owner-alias") {
+          val = aliasOwner(tr.dataset.owner || "");
+        } else {
+          val = tr.dataset[cfg.multiCol] || "";
+        }
+        if (!multiSet.has(val)) show = false;
+      }
+
+      // Column filters (per-column inputs)
+      if (show) {
+        for (const col in colFilters) {
+          const filterV = colFilters[col];
+          const cellV = (tr.dataset[col] || "").toLowerCase();
+          if (!cellV.includes(filterV)) { show = false; break; }
+        }
+      }
+
+      // Search input (full-text on all dataset values)
+      if (show && searchV) {
+        const blob = Object.values(tr.dataset).join(" ").toLowerCase();
+        if (!blob.includes(searchV)) show = false;
+      }
+
+      tr.classList.toggle("hidden", !show);
+      if (show) visible++;
+    });
+
+    const c = document.getElementById(cfg.countId);
+    if (c) c.textContent = visible + " sur " + total + " affichée(s)";
+  }
+
+  function installBridgeFilters() {
+    BRIDGE_FILTER_TABLES.forEach(cfg => {
+      const table = document.getElementById(cfg.tableId);
+      if (!table) return;
+      // Clone-replace each col-filter to wipe the original listeners
+      table.querySelectorAll(".col-filter").forEach(el => {
+        if (el.dataset.atRebound === "1") return;
+        const clone = el.cloneNode(true);
+        clone.dataset.atRebound = "1";
+        el.parentNode.replaceChild(clone, el);
+        const fn = () => applyBridgeFilter(cfg.tableId);
+        clone.addEventListener("input", fn);
+        clone.addEventListener("change", fn);
+      });
+      // Same for search
+      const search = document.getElementById(cfg.searchId);
+      if (search && search.dataset.atRebound !== "1") {
+        const clone = search.cloneNode(true);
+        clone.dataset.atRebound = "1";
+        search.parentNode.replaceChild(clone, search);
+        clone.addEventListener("input", () => applyBridgeFilter(cfg.tableId));
+      }
+    });
+    // Apply once to honour any pre-set filter values
+    BRIDGE_FILTER_TABLES.forEach(cfg => applyBridgeFilter(cfg.tableId));
+  }
+
+  // Re-route my multi-select widget to use the bridge filter (instead of the
+  // monkey-patched window.applyXxxFilter that doesn't reliably fire).
+  function applyFromMultiSelect(setKey) {
+    const cfg = BRIDGE_FILTER_TABLES.find(c => c.setKey === setKey);
+    if (cfg) applyBridgeFilter(cfg.tableId);
   }
 
   // Repopulate column-filter dropdowns with values from Airtable rather than
@@ -5511,11 +5614,8 @@ function populateColumnSelect(tableId, col, data) {
             trigger.classList.remove("has-selection");
           }
         }
-        // Final re-apply (handles the multi-select reset which doesn't dispatch)
-        const fn = cfg.tableId === "ct-table" ? window.applyContactsFilter
-                 : cfg.tableId === "rdv-table" ? window.applyRdvFilter
-                 : window.applyTodoFilter;
-        if (typeof fn === "function") fn();
+        // Final re-apply via the robust bridge filter
+        applyBridgeFilter(cfg.tableId);
       };
     });
   }
@@ -5528,6 +5628,7 @@ function populateColumnSelect(tableId, col, data) {
     installAllMultiSelects();
     patchResetButtons();
     repopulateFilterDropdowns();
+    installBridgeFilters();
     // Re-render the planning agenda using the freshly-fetched Airtable data
     if (typeof setupAgenda === "function") setupAgenda();
   };

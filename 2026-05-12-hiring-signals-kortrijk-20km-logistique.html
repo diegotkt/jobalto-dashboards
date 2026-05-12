@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prospection Logistique Kortrijk — Jobalto</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #ECF1F0; color: #333333; line-height: 1.5; }
+.header { background: linear-gradient(135deg, #0E2424, #143635); color: #fff; padding: 32px 40px; border-bottom: 3px solid #E6B527; }
+.header h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+.header .subtitle { color: #d4dad9; font-size: 14px; }
+.header .badges { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+.badge { background: rgba(230,181,39,0.15); color: #E6B527; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 500; border: 1px solid rgba(230,181,39,0.3); }
+main { max-width: 1400px; margin: 0 auto; padding: 32px 40px; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+.kpi { background: #fff; border: 1px solid rgba(20,54,53,0.1); border-radius: 8px; padding: 24px; }
+.kpi .label { font-size: 12px; color: #33373D; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.kpi .value { font-size: 28px; font-weight: 600; color: #143635; }
+.kpi .sub { font-size: 12px; color: #33373D; margin-top: 4px; }
+.filters { background: #fff; border: 1px solid rgba(20,54,53,0.1); border-radius: 8px; padding: 20px; margin-bottom: 24px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.filters input, .filters select { padding: 8px 12px; border: 1px solid rgba(20,54,53,0.2); border-radius: 6px; font-size: 14px; font-family: inherit; }
+.filters input { flex: 1; min-width: 200px; }
+.btn { padding: 8px 16px; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; }
+.btn-primary { background: #E6B527; color: #143635; }
+.btn-primary:hover { background: #d4a91d; }
+.section-title { font-size: 18px; font-weight: 600; color: #143635; margin: 32px 0 16px; }
+.charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+.chart-box { background: #fff; border: 1px solid rgba(20,54,53,0.1); border-radius: 8px; padding: 20px; height: 320px; }
+.chart-box h3 { font-size: 14px; color: #143635; margin-bottom: 12px; }
+.chart-box .chart-canvas-wrap { height: 250px; position: relative; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.card { background: #fff; border: 1px solid rgba(20,54,53,0.1); border-radius: 8px; padding: 20px; cursor: pointer; transition: transform 0.15s, border-color 0.15s; }
+.card:hover { transform: translateY(-2px); border-color: #E6B527; }
+.card-header { display: flex; gap: 12px; align-items: start; margin-bottom: 12px; }
+.score-circle { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: #143635; flex-shrink: 0; }
+.score-circle.hot { background: #fee2e2; color: #991b1b; }
+.score-circle.high { background: #fed7aa; color: #9a3412; }
+.score-circle.medium { background: #fef3c7; color: #854d0e; }
+.score-circle.low { background: #e5e7eb; color: #4b5563; }
+.card-title { font-size: 14px; font-weight: 600; color: #143635; line-height: 1.3; }
+.card-city { font-size: 11px; color: #33373D; margin-top: 2px; }
+.card-signals { font-size: 12px; color: #33373D; margin: 8px 0; }
+.card-signals span { display: inline-block; margin-right: 8px; }
+.card-phone { font-size: 12px; color: #143635; font-weight: 500; }
+.card-phone a { color: #143635; text-decoration: none; }
+table { width: 100%; background: #fff; border: 1px solid rgba(20,54,53,0.1); border-radius: 8px; border-collapse: separate; border-spacing: 0; overflow: hidden; }
+thead { background: #143635; color: #fff; }
+th { padding: 12px 14px; text-align: left; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+td { padding: 12px 14px; font-size: 13px; border-bottom: 1px solid rgba(20,54,53,0.06); }
+tbody tr { cursor: pointer; transition: background 0.1s; }
+tbody tr:hover { background: rgba(230,181,39,0.05); }
+.priority-pill { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; display: inline-block; }
+.pill-hot { background: #fee2e2; color: #991b1b; }
+.pill-high { background: #fed7aa; color: #9a3412; }
+.pill-medium { background: #fef3c7; color: #854d0e; }
+.pill-low { background: #e5e7eb; color: #4b5563; }
+.score-bar { background: #ecf1f0; height: 8px; border-radius: 4px; overflow: hidden; width: 80px; display: inline-block; vertical-align: middle; margin-right: 8px; }
+.score-bar-h { background: #143635; height: 100%; float: left; }
+.score-bar-b { background: #E6B527; height: 100%; float: left; }
+.modal-bg { display: none; position: fixed; inset: 0; background: rgba(14,36,36,0.7); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+.modal-bg.show { display: flex; }
+.modal { background: #fff; border-radius: 12px; max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; }
+.modal-header { background: linear-gradient(135deg, #0E2424, #143635); color: #fff; padding: 24px; border-radius: 12px 12px 0 0; border-bottom: 3px solid #E6B527; position: relative; }
+.modal-header h2 { font-size: 20px; margin-bottom: 4px; }
+.modal-header .meta { color: #d4dad9; font-size: 13px; }
+.modal-score { position: absolute; right: 24px; top: 24px; width: 72px; height: 72px; border-radius: 50%; background: #E6B527; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+.modal-score .v { font-size: 22px; font-weight: 700; color: #143635; }
+.modal-score .l { font-size: 9px; color: #143635; margin-top: 2px; }
+.modal-close { position: absolute; right: 16px; top: 110px; background: rgba(255,255,255,0.1); border: none; color: #fff; width: 32px; height: 32px; border-radius: 16px; font-size: 18px; cursor: pointer; }
+.modal-body { padding: 24px; }
+.modal-section { margin-bottom: 24px; }
+.modal-section h3 { font-size: 14px; color: #143635; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.crit { display: grid; grid-template-columns: 1fr auto; gap: 12px; padding: 8px 0; align-items: center; }
+.crit-name { font-size: 13px; }
+.crit-bar { background: #ecf1f0; height: 6px; border-radius: 3px; overflow: hidden; margin-top: 4px; }
+.crit-bar-fill { background: #143635; height: 100%; }
+.crit-bar-fill.acc { background: #E6B527; }
+.crit-pts { font-size: 13px; font-weight: 600; color: #143635; min-width: 60px; text-align: right; }
+.crit-detail { font-size: 11px; color: #33373D; }
+.info-grid { display: grid; grid-template-columns: 120px 1fr; gap: 8px 16px; font-size: 13px; }
+.info-grid .lbl { color: #33373D; font-weight: 500; }
+.info-grid .val { color: #143635; }
+.info-grid a { color: #143635; text-decoration: none; }
+.info-grid a:hover { text-decoration: underline; }
+.tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; background: #ecf1f0; color: #143635; margin: 2px; }
+.report-icons { display: flex; gap: 6px; }
+.report-icons a { font-size: 16px; text-decoration: none; }
+@media (max-width: 768px) {
+  .kpis, .charts { grid-template-columns: 1fr; }
+  main { padding: 16px; }
+  .header { padding: 24px; }
+  table { font-size: 12px; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <h1>Prospection Logistique &amp; Transport — Kortrijk</h1>
+  <div class="subtitle">Signaux d'embauche × Santé financière BNB · Rayon 20 km · 30 derniers jours · Généré le 12 mai 2026</div>
+  <div class="badges">
+    <span class="badge">Kortrijk 8500</span>
+    <span class="badge">Rayon 20 km</span>
+    <span class="badge">Logistique / Transport (NACE H49, H52, H53)</span>
+    <span class="badge">30 derniers jours</span>
+    <span class="badge">Score composite (Hiring + BNB)</span>
+  </div>
+</header>
+
+<main>
+
+<section class="kpis">
+  <div class="kpi"><div class="label">Entreprises</div><div class="value">14</div><div class="sub">qui recrutent</div></div>
+  <div class="kpi"><div class="label">Cibles HOT + HIGH</div><div class="value">4</div><div class="sub">priorité commerciale</div></div>
+  <div class="kpi"><div class="label">Budget pub total</div><div class="value">3 276 €</div><div class="sub">dépensé en annonces</div></div>
+  <div class="kpi"><div class="label">Score moyen</div><div class="value">44/100</div><div class="sub">composite (hiring + BNB)</div></div>
+</section>
+
+
+<section class="filters">
+  <input id="f-search" placeholder="🔍 Rechercher une entreprise..." />
+  <select id="f-prio">
+    <option value="">Toutes priorités</option>
+    <option value="HOT">HOT</option>
+    <option value="HIGH">HIGH</option>
+    <option value="MEDIUM">MEDIUM</option>
+    <option value="LOW">LOW</option>
+  </select>
+  <select id="f-size">
+    <option value="">Toutes tailles</option>
+    <option value="MICRO">Micro (0-9)</option>
+    <option value="PETITES">Petites (10-49)</option>
+    <option value="MOYENNES">Moyennes (50-249)</option>
+    <option value="GRANDES">Grandes (250-999)</option>
+    <option value="TRES_GRANDES">Très grandes (1000+)</option>
+    <option value="INCONNU">Inconnu</option>
+  </select>
+  <input id="f-score" type="number" min="0" max="100" placeholder="Score min" style="max-width:120px" />
+  <button class="btn btn-primary" id="btn-export">⬇️ Export CSV</button>
+</section>
+
+
+<h2 class="section-title">Vue analytique</h2>
+<section class="charts">
+  <div class="chart-box"><h3>Top villes</h3><div class="chart-canvas-wrap"><canvas id="chart-cities"></canvas></div></div>
+  <div class="chart-box"><h3>Secteurs NACE</h3><div class="chart-canvas-wrap"><canvas id="chart-nace"></canvas></div></div>
+  <div class="chart-box"><h3>Répartition priorités</h3><div class="chart-canvas-wrap"><canvas id="chart-prio"></canvas></div></div>
+  <div class="chart-box"><h3>Top 5 — Score composite</h3><div class="chart-canvas-wrap"><canvas id="chart-scores"></canvas></div></div>
+</section>
+
+
+<h2 class="section-title">Cibles prioritaires (4)</h2>
+<section class="cards">
+<div class="card" data-idx="0" onclick="openModal(0)">
+    <div class="card-header">
+      <div class="score-circle high">58</div>
+      <div>
+        <div class="card-title">AàZ-Déménagement - Networking Marketing Srl</div>
+        <div class="card-city">Wavre · 1300</div>
+      </div>
+    </div>
+    <div class="card-signals">
+      <span>📋 1 postes</span>
+      <span>📣 1 annonces</span>
+      <span>📅 2026-05</span>
+    </div>
+    <div style="font-size:11px;color:#33373D;margin-bottom:8px">Opérateur de lift / Liftier</div>
+    
+  </div><div class="card" data-idx="1" onclick="openModal(1)">
+    <div class="card-header">
+      <div class="score-circle high">54</div>
+      <div>
+        <div class="card-title">Belcotrans Bv</div>
+        <div class="card-city">Zulte · 9870</div>
+      </div>
+    </div>
+    <div class="card-signals">
+      <span>📋 2 postes</span>
+      <span>📣 2 annonces</span>
+      <span>📅 2026-05</span>
+    </div>
+    <div style="font-size:11px;color:#33373D;margin-bottom:8px">CHAUFFEUR BESTELWAGEN B/BE - VOLTIJDS</div>
+    
+  </div><div class="card" data-idx="2" onclick="openModal(2)">
+    <div class="card-header">
+      <div class="score-circle high">53</div>
+      <div>
+        <div class="card-title">Willy Naessens Group - Willy Naessens Industriebouw NV</div>
+        <div class="card-city">Wortegem-Petegem · 9790</div>
+      </div>
+    </div>
+    <div class="card-signals">
+      <span>📋 6 postes</span>
+      <span>📣 6 annonces</span>
+      <span>📅 2026-05</span>
+    </div>
+    <div style="font-size:11px;color:#33373D;margin-bottom:8px">Junior Calculator · Monteur industriebouw · Monteur industriebouw (Tessenderlo)</div>
+    <div class="card-phone">📞 <a href="tel:0473855202">0473855202</a></div>
+  </div><div class="card" data-idx="3" onclick="openModal(3)">
+    <div class="card-header">
+      <div class="score-circle high">52</div>
+      <div>
+        <div class="card-title">Stadsbader Nv - Afd. Van Maercke / STV-Trans</div>
+        <div class="card-city">Kluisbergen · 9690</div>
+      </div>
+    </div>
+    <div class="card-signals">
+      <span>📋 8 postes</span>
+      <span>📣 8 annonces</span>
+      <span>📅 2026-04</span>
+    </div>
+    <div style="font-size:11px;color:#33373D;margin-bottom:8px">Betonmedewerker Voorspan · Bekister · Chauffeur CE</div>
+    
+  </div>
+</section>
+
+
+<h2 class="section-title">Base complète (14 entreprises)</h2>
+<table id="main-table">
+<thead>
+<tr>
+  <th>Priorité</th>
+  <th>Score /100</th>
+  <th>Entreprise</th>
+  <th>BCE</th>
+  <th>Ville</th>
+  <th>Taille</th>
+  <th>ETP BNB</th>
+  <th>Postes</th>
+  <th>Annonces</th>
+  <th>Budget</th>
+  <th>Intérim BNB</th>
+</tr>
+</thead>
+<tbody>
+<tr data-idx="0" onclick="openModal(0)" data-name="aàz-déménagement - networking marketing srl" data-prio="HIGH" data-size="INCONNU" data-score="58">
+    <td><span class="priority-pill pill-high">HIGH</span></td>
+    <td>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="score-bar">
+          <div class="score-bar-h" style="width:19%"></div>
+          <div class="score-bar-b" style="width:39%"></div>
+        </div>
+        <strong>58</strong>
+      </div>
+    </td>
+    <td><strong>AàZ-Déménagement - Networking Marketing Srl</strong><span class="tag">A</span></td>
+    <td><code style="font-size:12px">0438.616.083</code></td>
+    <td>Wavre</td>
+    <td>?</td>
+    <td>17.4</td>
+    <td>1</td>
+    <td>1</td>
+    <td>—</td>
+    <td>0</td>
+  </tr><tr data-idx="1" onclick="openModal(1)" data-name="belcotrans bv" data-prio="HIGH" data-size="INCONNU" data-score="54">
+    <td><span class="priority-pill pill-high">HIGH</span></td>
+    <td>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="score-bar">
+          <div class="score-bar-h" style="width:21%"></div>
+          <div class="score-bar-b" style="width:33%"></div>
+        </div>
+        <strong>54</strong>
+      </div>
+    </td>
+    <td><strong>Belcotrans Bv</strong><span class="tag">A</span></td>
+    <td><code style="font-size:12px">0764.302.491</code></td>
+    <td>Zulte</td>
+    <td>?</td>
+    <td>13.2</td>
+    <td>2</td>
+    <td>2</td>
+    <td>999 €</td>
+    <td>0</td>
+  </tr><tr data-idx="2" onclick="openModal(2)" data-name="willy naessens group - willy naessens industriebouw nv" data-prio="HIGH" data-size="TRES_GRANDES" data-score="53">
+    <td><span class="priority-pill pill-high">HIGH</span></td>
+    <td>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="score-bar">
+          <div class="score-bar-h" style="width:26%"></div>
+          <div class="score-bar-b" style="width:27%"></div>
+        </div>
+        <strong>53</strong>
+      </div>
+    </td>
+    <td><strong>Willy Naessens Group - Willy Naessens Industriebouw NV</strong><span class="tag">C</span></td>
+    <td><code style="font-size:12px">0418.972.989</code></td>
+    <td>Wortegem-Petegem</td>
+    <td>Très Gd</td>
+    <td>375.2</td>
+    <td>6</td>
+    <td>6</td>
+    <td>—</td>
+    <td>3 279 413 €</td>
+  </tr><tr data-idx="3" onclick="openModal(3)" data-name="stadsbader nv - afd. van maercke / stv-trans" data-prio="HIGH" data-size="INCONNU" data-score="52">
+    <td><span class="priority-pill pill-high">HIGH</span></td>
+    <td>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="score-bar">
+          <div class="score-bar-h" style="width:52%"></div>
+          
+        </div>
+        <strong>52</strong>
+      </div>
+    </td>
+    <td><strong>Stadsbader Nv - Afd. Van Maercke / STV-Trans</strong></td>
+    <td><code style="font-size:12px">—</code></td>
+    <td>Kluisbergen</td>
+    <td>?</td>
+    <td>—</td>
+    <td>8</td>
+    <td>8</td>
+    <td>—</td>
+    <td>—</td>
+  </tr><tr data-idx="4" onclick="openModal(4)" data-name="vamatrans sa" data-prio="MEDIUM" data-size="INCONNU" data-score="43">
+    <td><span class="priority-pill pill-medium">MEDIUM</span></td>
+    <td>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="score-bar">
+          <div class="score-bar-h" style="width:19%"></div>
+          <div class="score-bar-b" style="width:24%"></div>
+        </div>
+        <strong>43</strong>
+      </div>
+    </td>
+    <td><strong>Vamatrans SA</strong><span class="tag">A</span></td>
+    <td><code style="font-size:12px">0438.978.448</code></td>
+    <td>Mouscron</td>
+    <td>?</td>
+    <td>10.2</td>
+    <td>1</td>
+    <td>1</td>
+    <td>—</td>
+    <td>0</td>
+  </tr><tr data-idx="5" onclick="openModal(5)" data-name="batutrans bvba" data-prio="MEDIUM" data-size="INCONNU" data-score="42">
+    <td><span class="priority-pill pill-medium">MEDIUM</span></td>
+    <td>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="score-bar">
+          <div class="score-bar-h" style="width:42%"></div>
+          
+        </div>
+        <strong>42</strong>
+      </div>
+    </td>
+    <td><strong>BatuTrans bvba</strong></td>
+    <td><code style="font-size:12px">—</code></td>
+    <td>Kruishoutem</td>
+    <td>?</td>
+    <td>—</td>
+    <td>1</td>
+    <td>1</td>
+    <td>999 €</td>
+    <td>—</td>
+  </tr><tr data-idx="6" onclick="openModal(6)" data-name="northfreeze nv - part of cubecold group" data-prio="MEDIUM" data-size="INCONNU" data-score="42">
+    <td><span class="priority-pill pill-medium">MEDIUM</span></td>
+    <td>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="score-bar">
+          <div class="score-bar-h" style="width:42%"></div>
+          
+        </div>
+        <strong>42</strong>
+      </div>
+    </td>
+    <td><strong>Northfreeze Nv - part of Cubecold Group</strong></td>
+    <td><code style="font-size:12px">—</code></td>
+    <td>Evergem</td>
+    <td>?</td>
+    <td>—</td>
+    <td>1</td>
+    <td>1</td>
+    <td>999 €</td>
+    <td>—</td>
+  </tr><tr data-idx="7" onclick="openModal(7)" data-name="keolis group - keolis belgium sa" data-prio="MEDIUM" data-size="TRES_GRANDES" data-score="42">
+    <td><span class="priority-pill pill-medium">MEDIUM</span></td>
+    <td>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="score-bar">
+          <div class="score-bar-h" style="width:42%"></div>
+          
+        </div>
+        <strong>42</strong>
+      </div>
+    </td>
+    <td><strong>Keolis Group - Keolis Belgium SA</strong></td>
+    <td><code style="font-size:12px">—</code></td>
+    <td>Neder-over-Heembeek</td>
+    <td>Très Gd</td>
+    <td>—</td>
+    <td>2</td>
+    <td>2</td>
+    <td>279 €</td>
+    <td>—</td>
+  </tr><tr data-idx="8" onclick="openModal(8)" data-name="postalia belguim srl - easypost" data-prio="MEDIUM" data-size="MICRO" data-score="38">
+    <td><span class="priority-pill pill-medium">MEDIUM</span></td>
+    <td>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="score-bar">
+          <div class="score-bar-h" style="width:38%"></div>
+          
+        </div>
+        <strong>38</strong>
+      </div>
+    </td>
+    <td><strong>Postalia Belguim Srl - EasyPost</strong></td>
+    <td><code style="font-size:12px">—</code></td>
+    <td>Luingne (Mouscron)</td>
+    <td>Micro</td>
+    <td>—</td>
+    <td>2</td>
+    <td>2</td>
+    <td>—</td>
+    <td>—</td>
+  </tr><tr data-idx="9" onclick="openModal(9)" data-name="rotrafic bvba" data-prio="MEDIUM" data-size="MICRO" data-score="38">
+    <td><span class="priority-pill pill-medium">MEDIUM</span></td>
+    <td>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="score-bar">
+          <div class="score-bar-h" style="width:38%"></div>
+          
+        </div>
+        <strong>38</strong>
+      </div>
+    </td>
+    <td><strong>Rotrafic bvba</strong></td>
+    <td><code style="font-size:12px">—</code></td>
+    <td>Zulte</td>
+    <td>Micro</td>
+    <td>—</td>
+    <td>1</td>
+    <td>1</td>
+    <td>—</td>
+    <td>—</td>
+  </tr><tr data-idx="10" onclick="openModal(10)" data-name="desutter group - kranen desutter nv - destrans nv" data-prio="MEDIUM" data-size="MICRO" data-score="38">
+    <td><span class="priority-pill pill-medium">MEDIUM</span></td>
+    <td>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="score-bar">
+          <div class="score-bar-h" style="width:38%"></div>
+          
+        </div>
+        <strong>38</strong>
+      </div>
+    </td>
+    <td><strong>Desutter Group - Kranen Desutter Nv - Destrans Nv</strong></td>
+    <td><code style="font-size:12px">—</code></td>
+    <td>Harelbeke</td>
+    <td>Micro</td>
+    <td>—</td>
+    <td>2</td>
+    <td>2</td>
+    <td>—</td>
+    <td>—</td>
+  </tr><tr data-idx="11" onclick="openModal(11)" data-name="dachser belgium sa" data-prio="MEDIUM" data-size="TRES_GRANDES" data-score="38">
+    <td><span class="priority-pill pill-medium">MEDIUM</span></td>
+    <td>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="score-bar">
+          <div class="score-bar-h" style="width:38%"></div>
+          
+        </div>
+        <strong>38</strong>
+      </div>
+    </td>
+    <td><strong>Dachser Belgium SA</strong></td>
+    <td><code style="font-size:12px">—</code></td>
+    <td>Mouscron</td>
+    <td>Très Gd</td>
+    <td>—</td>
+    <td>2</td>
+    <td>2</td>
+    <td>—</td>
+    <td>—</td>
+  </tr><tr data-idx="12" onclick="openModal(12)" data-name="xwift bv" data-prio="MEDIUM" data-size="MICRO" data-score="38">
+    <td><span class="priority-pill pill-medium">MEDIUM</span></td>
+    <td>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="score-bar">
+          <div class="score-bar-h" style="width:38%"></div>
+          
+        </div>
+        <strong>38</strong>
+      </div>
+    </td>
+    <td><strong>Xwift bv</strong></td>
+    <td><code style="font-size:12px">—</code></td>
+    <td>Nazareth</td>
+    <td>Micro</td>
+    <td>—</td>
+    <td>2</td>
+    <td>2</td>
+    <td>—</td>
+    <td>—</td>
+  </tr><tr data-idx="13" onclick="openModal(13)" data-name="ecs group - ecs bus &amp; coach - euro coach services srl" data-prio="MEDIUM" data-size="PETITES" data-score="35">
+    <td><span class="priority-pill pill-medium">MEDIUM</span></td>
+    <td>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="score-bar">
+          <div class="score-bar-h" style="width:24%"></div>
+          <div class="score-bar-b" style="width:11%"></div>
+        </div>
+        <strong>35</strong>
+      </div>
+    </td>
+    <td><strong>ECS Group - ECS bus &amp; Coach - Euro Coach Services Srl</strong><span class="tag">C</span></td>
+    <td><code style="font-size:12px">0687.763.652</code></td>
+    <td>Dottignies</td>
+    <td>Petites</td>
+    <td>—</td>
+    <td>4</td>
+    <td>4</td>
+    <td>—</td>
+    <td>0</td>
+  </tr>
+</tbody>
+</table>
+
+</main>
+<div class="modal-bg" id="modal" onclick="if(event.target.id==='modal') closeModal()">
+  <div class="modal">
+    <div class="modal-header" id="modal-header"></div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><\/script>
+<script>
+const DATA = [{"name":"AàZ-Déménagement - Networking Marketing Srl","firmId":"FIRM6457133","bce":"0438.616.083","city":"Wavre","postalCode":"1300","address":"Avenue Vésale 20","phone":"010/688072","email":"contact@aaz-demenagement.be","website":"www.aaz-demenagement.be","sizeCat":"INCONNU","totalPositions":1,"totalAds":1,"totalBudget":0,"monthlyAds":[{"month":"2026-05","count":1}],"industries":[{"code":"H49.4","name":"Transports routiers de fret et services de déménagement"}],"contacts":[{"name":"","email":"contact@aaz-demenagement.be","phone":"","function":""}],"jobTitles":["Opérateur de lift / Liftier"],"hiring":{"score":40,"maxScore":105,"percentage":38,"priority":"MEDIUM","breakdown":{"volume":{"pts":10,"max":25,"detail":"1 postes"},"recurrence":{"pts":0,"max":25,"detail":"ratio 1.00"},"acceleration":{"pts":25,"max":25,"detail":"2026-05"},"budget":{"pts":0,"max":15,"detail":"0 €"},"secteur":{"pts":5,"max":15,"detail":"Secteur intérim"}}},"bnbScore":{"score":35,"max":45,"percentage":78,"breakdown":{"etpSize":{"pts":15,"max":15,"detail":"17.4 ETP"},"etpGrowth":{"pts":10,"max":10,"detail":"25% vs N-1"},"interim":{"pts":0,"max":10,"detail":"0.0 ETP intérim"},"sante":{"pts":10,"max":10,"detail":"RN+ CP+"}},"model":"m81-f","modelType":"abrege","year":2024},"bnb":{"model":"m81-f","modelType":"abrege","year":2024,"etp":17.4,"etpPrev":13.9,"ca":0,"mb":1158199.08,"rnet":83686.89,"cp":346381.71,"bilan":1129257.93,"sal":878622,"i617":0,"iEtp":0,"iH":0},"composite":58,"compositeMode":"composite","compositePriority":"HIGH","hiringNorm":19,"bnbNorm":39,"reports":{"company-report-jobs":"https://db.advertsdata.com/api/report?report=stellenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=4dc1a7e20427ecb1b6e22b032928fceb&land=BE","company-report":"https://db.advertsdata.com/api/report?report=firmenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=4dc1a7e20427ecb1b6e22b032928fceb&land=BE","company-report-group-media":"https://db.advertsdata.com/api/report?report=firmenblatt_konzern_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=4dc1a7e20427ecb1b6e22b032928fceb&land=BE","company-report-group-flexible":"https://db.advertsdata.com/api/report?report=konzernfirmenreport_flexibel&i=15132705&u=126264&nav_id=4dc1a7e20427ecb1b6e22b032928fceb&land=BE","company-report-group":"https://db.advertsdata.com/api/report?report=konzernfirmenreport&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=4dc1a7e20427ecb1b6e22b032928fceb&land=BE","company-report-media":"https://db.advertsdata.com/api/report?report=firmenblatt_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=4dc1a7e20427ecb1b6e22b032928fceb&land=BE","company-report-flexible":"https://db.advertsdata.com/api/report?report=firmenblatt_flexibel&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=4dc1a7e20427ecb1b6e22b032928fceb&land=BE"}},{"name":"Belcotrans Bv","firmId":"FIRM10293954","bce":"0764.302.491","city":"Zulte","postalCode":"9870","address":"Oude Waalstraat 251","phone":"09/2511193","email":"info@belcotrans.be","website":"www.belcotrans.be","sizeCat":"INCONNU","totalPositions":2,"totalAds":2,"totalBudget":999,"monthlyAds":[{"month":"2026-05","count":1},{"month":"2026-04","count":1}],"industries":[{"code":"H53.2","name":"Autres activités de poste et de courrier"}],"contacts":[{"name":"","email":"info@belcotrans.be","phone":"","function":""}],"jobTitles":["CHAUFFEUR BESTELWAGEN B/BE - VOLTIJDS"],"hiring":{"score":44,"maxScore":105,"percentage":42,"priority":"MEDIUM","breakdown":{"volume":{"pts":10,"max":25,"detail":"2 postes"},"recurrence":{"pts":0,"max":25,"detail":"ratio 1.00"},"acceleration":{"pts":25,"max":25,"detail":"2026-05"},"budget":{"pts":4,"max":15,"detail":"999 €"},"secteur":{"pts":5,"max":15,"detail":"Secteur intérim"}}},"bnbScore":{"score":30,"max":45,"percentage":67,"breakdown":{"etpSize":{"pts":10,"max":15,"detail":"13.2 ETP"},"etpGrowth":{"pts":10,"max":10,"detail":"35% vs N-1"},"interim":{"pts":0,"max":10,"detail":"0.0 ETP intérim"},"sante":{"pts":10,"max":10,"detail":"RN+ CP+"}},"model":"m87-f","modelType":"abrege","year":2024},"bnb":{"model":"m87-f","modelType":"abrege","year":2024,"etp":13.2,"etpPrev":9.8,"ca":0,"mb":718165.87,"rnet":43408.42,"cp":120396.58,"bilan":247251.85,"sal":647531.01,"i617":0,"iEtp":0,"iH":0},"composite":54,"compositeMode":"composite","compositePriority":"HIGH","hiringNorm":21,"bnbNorm":33,"reports":{"company-report-jobs":"https://db.advertsdata.com/api/report?report=stellenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=45e89335d960d2bccbd4540246d7e88a&land=BE","company-report":"https://db.advertsdata.com/api/report?report=firmenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=45e89335d960d2bccbd4540246d7e88a&land=BE","company-report-group-media":"https://db.advertsdata.com/api/report?report=firmenblatt_konzern_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=45e89335d960d2bccbd4540246d7e88a&land=BE","company-report-group-flexible":"https://db.advertsdata.com/api/report?report=konzernfirmenreport_flexibel&i=15132705&u=126264&nav_id=45e89335d960d2bccbd4540246d7e88a&land=BE","company-report-group":"https://db.advertsdata.com/api/report?report=konzernfirmenreport&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=45e89335d960d2bccbd4540246d7e88a&land=BE","company-report-media":"https://db.advertsdata.com/api/report?report=firmenblatt_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=45e89335d960d2bccbd4540246d7e88a&land=BE","company-report-flexible":"https://db.advertsdata.com/api/report?report=firmenblatt_flexibel&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=45e89335d960d2bccbd4540246d7e88a&land=BE"}},{"name":"Willy Naessens Group - Willy Naessens Industriebouw NV","firmId":"FIRM937521","bce":"0418.972.989","city":"Wortegem-Petegem","postalCode":"9790","address":"Kouter 3","phone":"056/694111","email":"info@willynaessens.be","website":"www.willynaessens.be","sizeCat":"TRES_GRANDES","totalPositions":6,"totalAds":6,"totalBudget":0,"monthlyAds":[{"month":"2026-05","count":2},{"month":"2026-04","count":4}],"industries":[{"code":"F","name":"Construction"},{"code":"H49.4","name":"Transports routiers de fret et services de déménagement"},{"code":"I56.2","name":"Traiteurs et autres services de restauration"}],"contacts":[{"name":"","email":"info@willynaessens.be","phone":"","function":""},{"name":"Frau Louise-Marie Velghe","email":"louisemarie-v@willynaessens.be","phone":"0473855202","function":""},{"name":"Monsieur Stien Carlier","email":"info@willynaessens.be","phone":"","function":""}],"jobTitles":["Junior Calculator","Monteur industriebouw","Monteur industriebouw (Tessenderlo)","Arbeider funderingen industriebouw (Tessenderlo)","Plaatser aluminium schrijnwerk","Chauffeur CE (vrachtwagen mee naar huis)"],"hiring":{"score":55,"maxScore":105,"percentage":52,"priority":"HIGH","breakdown":{"volume":{"pts":25,"max":25,"detail":"6 postes"},"recurrence":{"pts":0,"max":25,"detail":"ratio 1.00"},"acceleration":{"pts":25,"max":25,"detail":"2026-05"},"budget":{"pts":0,"max":15,"detail":"0 €"},"secteur":{"pts":5,"max":15,"detail":"Secteur intérim"}}},"bnbScore":{"score":24,"max":45,"percentage":53,"breakdown":{"etpSize":{"pts":2,"max":15,"detail":"375.2 ETP"},"etpGrowth":{"pts":2,"max":10,"detail":"4% vs N-1"},"interim":{"pts":10,"max":10,"detail":"3 279 412,81 €"},"sante":{"pts":10,"max":10,"detail":"RN+ CP+"}},"model":"m02-f","modelType":"complet","year":2024},"bnb":{"model":"m02-f","modelType":"complet","year":2024,"etp":375.2,"etpPrev":359.3,"ca":333260514.56,"mb":0,"rnet":16684095.73,"cp":82324894,"bilan":220156866.77,"sal":26600066.55,"i617":3279412.81,"iEtp":27.7,"iH":58293},"composite":53,"compositeMode":"composite","compositePriority":"HIGH","hiringNorm":26,"bnbNorm":27,"reports":{"company-report-jobs":"https://db.advertsdata.com/api/report?report=stellenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=229d507c576dd9629f11b2bb987a4186&land=BE","company-report":"https://db.advertsdata.com/api/report?report=firmenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=229d507c576dd9629f11b2bb987a4186&land=BE","company-report-group-media":"https://db.advertsdata.com/api/report?report=firmenblatt_konzern_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=229d507c576dd9629f11b2bb987a4186&land=BE","company-report-group-flexible":"https://db.advertsdata.com/api/report?report=konzernfirmenreport_flexibel&i=15132705&u=126264&nav_id=229d507c576dd9629f11b2bb987a4186&land=BE","company-report-group":"https://db.advertsdata.com/api/report?report=konzernfirmenreport&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=229d507c576dd9629f11b2bb987a4186&land=BE","company-report-media":"https://db.advertsdata.com/api/report?report=firmenblatt_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=229d507c576dd9629f11b2bb987a4186&land=BE","company-report-flexible":"https://db.advertsdata.com/api/report?report=firmenblatt_flexibel&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=229d507c576dd9629f11b2bb987a4186&land=BE"}},{"name":"Stadsbader Nv - Afd. Van Maercke / STV-Trans","firmId":"FIRM7415200","bce":null,"city":"Kluisbergen","postalCode":"9690","address":"Scheldekaai 9","phone":"055/260666","email":"info@stadsbader.com","website":"www.stadsbadergroup.com","sizeCat":"INCONNU","totalPositions":8,"totalAds":8,"totalBudget":0,"monthlyAds":[{"month":"2026-04","count":8}],"industries":[{"code":"F41.2","name":"Construction de bâtiments résidentiels et non résidentiels"},{"code":"H49.4","name":"Transports routiers de fret et services de déménagement"}],"contacts":[{"name":"Madame Axelle Van Cauwenberghe","email":"info@stadsbader.com","phone":"","function":""},{"name":"Madame Solen Stroobandts","email":"info@stadsbader.com","phone":"","function":""}],"jobTitles":["Betonmedewerker Voorspan","Bekister","Chauffeur CE","Calculator Prefab","Productieverantwoordelijke Prefab","Onderhoudstechnieker","Betonhersteller","Chauffeur CE - Prefab"],"hiring":{"score":55,"maxScore":105,"percentage":52,"priority":"HIGH","breakdown":{"volume":{"pts":25,"max":25,"detail":"8 postes"},"recurrence":{"pts":0,"max":25,"detail":"ratio 1.00"},"acceleration":{"pts":25,"max":25,"detail":"2026-04"},"budget":{"pts":0,"max":15,"detail":"0 €"},"secteur":{"pts":5,"max":15,"detail":"Secteur intérim"}}},"bnbScore":{"score":0,"max":45,"error":"no-bnb","breakdown":{}},"bnb":null,"composite":52,"compositeMode":"hiring-only","compositePriority":"HIGH","hiringNorm":52,"bnbNorm":0,"reports":{"company-report-jobs":"https://db.advertsdata.com/api/report?report=stellenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=4e4a4e6ea8b577aeadc20a4f52df25d1&land=BE","company-report":"https://db.advertsdata.com/api/report?report=firmenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=4e4a4e6ea8b577aeadc20a4f52df25d1&land=BE","company-report-group-media":"https://db.advertsdata.com/api/report?report=firmenblatt_konzern_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=4e4a4e6ea8b577aeadc20a4f52df25d1&land=BE","company-report-group-flexible":"https://db.advertsdata.com/api/report?report=konzernfirmenreport_flexibel&i=15132705&u=126264&nav_id=4e4a4e6ea8b577aeadc20a4f52df25d1&land=BE","company-report-group":"https://db.advertsdata.com/api/report?report=konzernfirmenreport&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=4e4a4e6ea8b577aeadc20a4f52df25d1&land=BE","company-report-media":"https://db.advertsdata.com/api/report?report=firmenblatt_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=4e4a4e6ea8b577aeadc20a4f52df25d1&land=BE","company-report-flexible":"https://db.advertsdata.com/api/report?report=firmenblatt_flexibel&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=4e4a4e6ea8b577aeadc20a4f52df25d1&land=BE"}},{"name":"Vamatrans SA","firmId":"FIRM7909544","bce":"0438.978.448","city":"Mouscron","postalCode":"7700","address":"Rue du Plavitoutstraat 174","phone":"056/334009","email":"","website":"www.annatrans-sa.be","sizeCat":"INCONNU","totalPositions":1,"totalAds":1,"totalBudget":0,"monthlyAds":[{"month":"2026-05","count":1}],"industries":[{"code":"H49.4","name":"Transports routiers de fret et services de déménagement"}],"contacts":[],"jobTitles":["Dispatcheur et employé à la facturation et à l'encodage (H/F/X)"],"hiring":{"score":40,"maxScore":105,"percentage":38,"priority":"MEDIUM","breakdown":{"volume":{"pts":10,"max":25,"detail":"1 postes"},"recurrence":{"pts":0,"max":25,"detail":"ratio 1.00"},"acceleration":{"pts":25,"max":25,"detail":"2026-05"},"budget":{"pts":0,"max":15,"detail":"0 €"},"secteur":{"pts":5,"max":15,"detail":"Secteur intérim"}}},"bnbScore":{"score":22,"max":45,"percentage":49,"breakdown":{"etpSize":{"pts":10,"max":15,"detail":"10.2 ETP"},"etpGrowth":{"pts":2,"max":10,"detail":"4% vs N-1"},"interim":{"pts":0,"max":10,"detail":"0.0 ETP intérim"},"sante":{"pts":10,"max":10,"detail":"RN+ CP+"}},"model":"m01-f","modelType":"abrege","year":2025},"bnb":{"model":"m01-f","modelType":"abrege","year":2025,"etp":10.2,"etpPrev":9.8,"ca":0,"mb":850829.08,"rnet":97038.6,"cp":1060417.75,"bilan":2145182.11,"sal":558051.29,"i617":0,"iEtp":0,"iH":0},"composite":43,"compositeMode":"composite","compositePriority":"MEDIUM","hiringNorm":19,"bnbNorm":24,"reports":{"company-report-jobs":"https://db.advertsdata.com/api/report?report=stellenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=6918346d25bb9961af3350e0acadaa7c&land=BE","company-report":"https://db.advertsdata.com/api/report?report=firmenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=6918346d25bb9961af3350e0acadaa7c&land=BE","company-report-group-media":"https://db.advertsdata.com/api/report?report=firmenblatt_konzern_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=6918346d25bb9961af3350e0acadaa7c&land=BE","company-report-group-flexible":"https://db.advertsdata.com/api/report?report=konzernfirmenreport_flexibel&i=15132705&u=126264&nav_id=6918346d25bb9961af3350e0acadaa7c&land=BE","company-report-group":"https://db.advertsdata.com/api/report?report=konzernfirmenreport&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=6918346d25bb9961af3350e0acadaa7c&land=BE","company-report-media":"https://db.advertsdata.com/api/report?report=firmenblatt_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=6918346d25bb9961af3350e0acadaa7c&land=BE","company-report-flexible":"https://db.advertsdata.com/api/report?report=firmenblatt_flexibel&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=6918346d25bb9961af3350e0acadaa7c&land=BE"}},{"name":"BatuTrans bvba","firmId":"FIRM5194221","bce":null,"city":"Kruishoutem","postalCode":"9770","address":"Kazerneweg 7/7","phone":"09/3240886","email":"info@batutrans.be","website":"www.batutrans.be","sizeCat":"INCONNU","totalPositions":1,"totalAds":1,"totalBudget":999,"monthlyAds":[{"month":"2026-05","count":1}],"industries":[{"code":"H49.4","name":"Transports routiers de fret et services de déménagement"}],"contacts":[{"name":"","email":"info@batutrans.be","phone":"","function":""}],"jobTitles":["Vrachtwagenchauffeurs CE"],"hiring":{"score":44,"maxScore":105,"percentage":42,"priority":"MEDIUM","breakdown":{"volume":{"pts":10,"max":25,"detail":"1 postes"},"recurrence":{"pts":0,"max":25,"detail":"ratio 1.00"},"acceleration":{"pts":25,"max":25,"detail":"2026-05"},"budget":{"pts":4,"max":15,"detail":"999 €"},"secteur":{"pts":5,"max":15,"detail":"Secteur intérim"}}},"bnbScore":{"score":0,"max":45,"error":"no-bnb","breakdown":{}},"bnb":null,"composite":42,"compositeMode":"hiring-only","compositePriority":"MEDIUM","hiringNorm":42,"bnbNorm":0,"reports":{"company-report-jobs":"https://db.advertsdata.com/api/report?report=stellenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=2a67450bbdbbde916991bd10a73f29aa&land=BE","company-report":"https://db.advertsdata.com/api/report?report=firmenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=2a67450bbdbbde916991bd10a73f29aa&land=BE","company-report-group-media":"https://db.advertsdata.com/api/report?report=firmenblatt_konzern_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=2a67450bbdbbde916991bd10a73f29aa&land=BE","company-report-group-flexible":"https://db.advertsdata.com/api/report?report=konzernfirmenreport_flexibel&i=15132705&u=126264&nav_id=2a67450bbdbbde916991bd10a73f29aa&land=BE","company-report-group":"https://db.advertsdata.com/api/report?report=konzernfirmenreport&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=2a67450bbdbbde916991bd10a73f29aa&land=BE","company-report-media":"https://db.advertsdata.com/api/report?report=firmenblatt_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=2a67450bbdbbde916991bd10a73f29aa&land=BE","company-report-flexible":"https://db.advertsdata.com/api/report?report=firmenblatt_flexibel&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=2a67450bbdbbde916991bd10a73f29aa&land=BE"}},{"name":"Northfreeze Nv - part of Cubecold Group","firmId":"FIRM7102235","bce":null,"city":"Evergem","postalCode":"9940","address":"Durmakker 12","phone":"09/2534690","email":"evergem@northfreeze.be","website":"www.northfreeze-group.com","sizeCat":"INCONNU","totalPositions":1,"totalAds":1,"totalBudget":999,"monthlyAds":[{"month":"2026-04","count":1}],"industries":[{"code":"H52.1","name":"Entreposage et stockage"}],"contacts":[{"name":"","email":"evergem@northfreeze.be","phone":"","function":""},{"name":"Herrn Jan Schaut","email":"jobsbelgium@cubecold.com","phone":"","function":""}],"jobTitles":["Chauffeur CE - Benelux + Frankrijk"],"hiring":{"score":44,"maxScore":105,"percentage":42,"priority":"MEDIUM","breakdown":{"volume":{"pts":10,"max":25,"detail":"1 postes"},"recurrence":{"pts":0,"max":25,"detail":"ratio 1.00"},"acceleration":{"pts":25,"max":25,"detail":"2026-04"},"budget":{"pts":4,"max":15,"detail":"999 €"},"secteur":{"pts":5,"max":15,"detail":"Secteur intérim"}}},"bnbScore":{"score":0,"max":45,"error":"no-bnb","breakdown":{}},"bnb":null,"composite":42,"compositeMode":"hiring-only","compositePriority":"MEDIUM","hiringNorm":42,"bnbNorm":0,"reports":{"company-report-jobs":"https://db.advertsdata.com/api/report?report=stellenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=50f0f82eace00b2e9041941ee840f3b7&land=BE","company-report":"https://db.advertsdata.com/api/report?report=firmenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=50f0f82eace00b2e9041941ee840f3b7&land=BE","company-report-group-media":"https://db.advertsdata.com/api/report?report=firmenblatt_konzern_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=50f0f82eace00b2e9041941ee840f3b7&land=BE","company-report-group-flexible":"https://db.advertsdata.com/api/report?report=konzernfirmenreport_flexibel&i=15132705&u=126264&nav_id=50f0f82eace00b2e9041941ee840f3b7&land=BE","company-report-group":"https://db.advertsdata.com/api/report?report=konzernfirmenreport&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=50f0f82eace00b2e9041941ee840f3b7&land=BE","company-report-media":"https://db.advertsdata.com/api/report?report=firmenblatt_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=50f0f82eace00b2e9041941ee840f3b7&land=BE","company-report-flexible":"https://db.advertsdata.com/api/report?report=firmenblatt_flexibel&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=50f0f82eace00b2e9041941ee840f3b7&land=BE"}},{"name":"Keolis Group - Keolis Belgium SA","firmId":"FIRM7751197","bce":null,"city":"Neder-over-Heembeek","postalCode":"1120","address":"Avenue de Béjarlaan 5","phone":"02/6521111","email":"info@keolis.be","website":"www.keolis.be","sizeCat":"TRES_GRANDES","totalPositions":2,"totalAds":2,"totalBudget":279,"monthlyAds":[{"month":"2026-04","count":2}],"industries":[{"code":"H49.3","name":"Autres transports terrestres de voyageurs"}],"contacts":[{"name":"Madame Marianne Vandoorne","email":"info@keolis.be","phone":"","function":""},{"name":"Frau Sharry Dieltjens","email":"","phone":"","function":""},{"name":"","email":"info@keolis.be","phone":"","function":""}],"jobTitles":["Mecanicien"],"hiring":{"score":44,"maxScore":105,"percentage":42,"priority":"MEDIUM","breakdown":{"volume":{"pts":10,"max":25,"detail":"2 postes"},"recurrence":{"pts":0,"max":25,"detail":"ratio 1.00"},"acceleration":{"pts":25,"max":25,"detail":"2026-04"},"budget":{"pts":4,"max":15,"detail":"279 €"},"secteur":{"pts":5,"max":15,"detail":"Secteur intérim"}}},"bnbScore":{"score":0,"max":45,"error":"no-bnb","breakdown":{}},"bnb":null,"composite":42,"compositeMode":"hiring-only","compositePriority":"MEDIUM","hiringNorm":42,"bnbNorm":0,"reports":{"company-report-jobs":"https://db.advertsdata.com/api/report?report=stellenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=9984ad54bd0e72e859bb1a84b69ff644&land=BE","company-report":"https://db.advertsdata.com/api/report?report=firmenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=9984ad54bd0e72e859bb1a84b69ff644&land=BE","company-report-group-media":"https://db.advertsdata.com/api/report?report=firmenblatt_konzern_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=9984ad54bd0e72e859bb1a84b69ff644&land=BE","company-report-group-flexible":"https://db.advertsdata.com/api/report?report=konzernfirmenreport_flexibel&i=15132705&u=126264&nav_id=9984ad54bd0e72e859bb1a84b69ff644&land=BE","company-report-group":"https://db.advertsdata.com/api/report?report=konzernfirmenreport&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=9984ad54bd0e72e859bb1a84b69ff644&land=BE","company-report-media":"https://db.advertsdata.com/api/report?report=firmenblatt_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=9984ad54bd0e72e859bb1a84b69ff644&land=BE","company-report-flexible":"https://db.advertsdata.com/api/report?report=firmenblatt_flexibel&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=9984ad54bd0e72e859bb1a84b69ff644&land=BE"}},{"name":"Postalia Belguim Srl - EasyPost","firmId":"FIRM10427117","bce":null,"city":"Luingne (Mouscron)","postalCode":"7700","address":"Drève Gustave Fache 1","phone":"","email":"info@easypost.eu","website":"www.easypost.eu","sizeCat":"MICRO","totalPositions":2,"totalAds":2,"totalBudget":0,"monthlyAds":[{"month":"2026-05","count":2}],"industries":[{"code":"H53.2","name":"Autres activités de poste et de courrier"}],"contacts":[{"name":"","email":"info@easypost.eu","phone":"","function":""}],"jobTitles":["Opérateur de courrier H/F","Chauffeur Livreur laboratoire et courrier H/F"],"hiring":{"score":40,"maxScore":105,"percentage":38,"priority":"MEDIUM","breakdown":{"volume":{"pts":10,"max":25,"detail":"2 postes"},"recurrence":{"pts":0,"max":25,"detail":"ratio 1.00"},"acceleration":{"pts":25,"max":25,"detail":"2026-05"},"budget":{"pts":0,"max":15,"detail":"0 €"},"secteur":{"pts":5,"max":15,"detail":"Secteur intérim"}}},"bnbScore":{"score":0,"max":45,"error":"no-bnb","breakdown":{}},"bnb":null,"composite":38,"compositeMode":"hiring-only","compositePriority":"MEDIUM","hiringNorm":38,"bnbNorm":0,"reports":{"company-report-jobs":"https://db.advertsdata.com/api/report?report=stellenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=20a84482d4afd578586a62a74a2691ee&land=BE","company-report":"https://db.advertsdata.com/api/report?report=firmenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=20a84482d4afd578586a62a74a2691ee&land=BE","company-report-group-media":"https://db.advertsdata.com/api/report?report=firmenblatt_konzern_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=20a84482d4afd578586a62a74a2691ee&land=BE","company-report-group-flexible":"https://db.advertsdata.com/api/report?report=konzernfirmenreport_flexibel&i=15132705&u=126264&nav_id=20a84482d4afd578586a62a74a2691ee&land=BE","company-report-group":"https://db.advertsdata.com/api/report?report=konzernfirmenreport&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=20a84482d4afd578586a62a74a2691ee&land=BE","company-report-media":"https://db.advertsdata.com/api/report?report=firmenblatt_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=20a84482d4afd578586a62a74a2691ee&land=BE","company-report-flexible":"https://db.advertsdata.com/api/report?report=firmenblatt_flexibel&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=20a84482d4afd578586a62a74a2691ee&land=BE"}},{"name":"Rotrafic bvba","firmId":"FIRM3630297","bce":null,"city":"Zulte","postalCode":"9870","address":"Karreweg 34","phone":"09/3889655","email":"info@rotrafic.be","website":"www.rotrafic.be","sizeCat":"MICRO","totalPositions":1,"totalAds":1,"totalBudget":0,"monthlyAds":[{"month":"2026-05","count":1}],"industries":[{"code":"H49.4","name":"Transports routiers de fret et services de déménagement"}],"contacts":[{"name":"","email":"info@rotrafic.be","phone":"","function":""}],"jobTitles":["Magazijnier avond/nacht"],"hiring":{"score":40,"maxScore":105,"percentage":38,"priority":"MEDIUM","breakdown":{"volume":{"pts":10,"max":25,"detail":"1 postes"},"recurrence":{"pts":0,"max":25,"detail":"ratio 1.00"},"acceleration":{"pts":25,"max":25,"detail":"2026-05"},"budget":{"pts":0,"max":15,"detail":"0 €"},"secteur":{"pts":5,"max":15,"detail":"Secteur intérim"}}},"bnbScore":{"score":0,"max":45,"error":"no-bnb","breakdown":{}},"bnb":null,"composite":38,"compositeMode":"hiring-only","compositePriority":"MEDIUM","hiringNorm":38,"bnbNorm":0,"reports":{"company-report-jobs":"https://db.advertsdata.com/api/report?report=stellenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=6dbafb9ba7a15dcd77b9425589a0a19d&land=BE","company-report":"https://db.advertsdata.com/api/report?report=firmenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=6dbafb9ba7a15dcd77b9425589a0a19d&land=BE","company-report-group-media":"https://db.advertsdata.com/api/report?report=firmenblatt_konzern_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=6dbafb9ba7a15dcd77b9425589a0a19d&land=BE","company-report-group-flexible":"https://db.advertsdata.com/api/report?report=konzernfirmenreport_flexibel&i=15132705&u=126264&nav_id=6dbafb9ba7a15dcd77b9425589a0a19d&land=BE","company-report-group":"https://db.advertsdata.com/api/report?report=konzernfirmenreport&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=6dbafb9ba7a15dcd77b9425589a0a19d&land=BE","company-report-media":"https://db.advertsdata.com/api/report?report=firmenblatt_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=6dbafb9ba7a15dcd77b9425589a0a19d&land=BE","company-report-flexible":"https://db.advertsdata.com/api/report?report=firmenblatt_flexibel&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=6dbafb9ba7a15dcd77b9425589a0a19d&land=BE"}},{"name":"Desutter Group - Kranen Desutter Nv - Destrans Nv","firmId":"FIRM2397032","bce":null,"city":"Harelbeke","postalCode":"8530","address":"Blokkestraat 12","phone":"056/720720","email":"info@desuttergroup.com","website":"www.desuttergroup.com","sizeCat":"MICRO","totalPositions":2,"totalAds":2,"totalBudget":0,"monthlyAds":[{"month":"2026-05","count":2}],"industries":[{"code":"N77.3","name":"Location et location-bail d’autres machines, équipements et biens"},{"code":"F43.1","name":"Démolition et préparation des sites"},{"code":"F43.9","name":"Autres travaux de construction spécialisés"},{"code":"H49.4","name":"Transports routiers de fret et services de déménagement"}],"contacts":[{"name":"","email":"info@desuttergroup.com","phone":"","function":""}],"jobTitles":["Grutier – grue à tour mobile","Kraanmachinist mobiele torenkraan"],"hiring":{"score":40,"maxScore":105,"percentage":38,"priority":"MEDIUM","breakdown":{"volume":{"pts":10,"max":25,"detail":"2 postes"},"recurrence":{"pts":0,"max":25,"detail":"ratio 1.00"},"acceleration":{"pts":25,"max":25,"detail":"2026-05"},"budget":{"pts":0,"max":15,"detail":"0 €"},"secteur":{"pts":5,"max":15,"detail":"Secteur intérim"}}},"bnbScore":{"score":0,"max":45,"error":"no-bnb","breakdown":{}},"bnb":null,"composite":38,"compositeMode":"hiring-only","compositePriority":"MEDIUM","hiringNorm":38,"bnbNorm":0,"reports":{"company-report-jobs":"https://db.advertsdata.com/api/report?report=stellenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=32e5fc97520d2b494ccb03790a85c282&land=BE","company-report":"https://db.advertsdata.com/api/report?report=firmenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=32e5fc97520d2b494ccb03790a85c282&land=BE","company-report-group-media":"https://db.advertsdata.com/api/report?report=firmenblatt_konzern_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=32e5fc97520d2b494ccb03790a85c282&land=BE","company-report-group-flexible":"https://db.advertsdata.com/api/report?report=konzernfirmenreport_flexibel&i=15132705&u=126264&nav_id=32e5fc97520d2b494ccb03790a85c282&land=BE","company-report-group":"https://db.advertsdata.com/api/report?report=konzernfirmenreport&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=32e5fc97520d2b494ccb03790a85c282&land=BE","company-report-media":"https://db.advertsdata.com/api/report?report=firmenblatt_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=32e5fc97520d2b494ccb03790a85c282&land=BE","company-report-flexible":"https://db.advertsdata.com/api/report?report=firmenblatt_flexibel&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=32e5fc97520d2b494ccb03790a85c282&land=BE"}},{"name":"Dachser Belgium SA","firmId":"FIRM1128970","bce":null,"city":"Mouscron","postalCode":"7700","address":"Avenue de l’Eau Vive 1","phone":"056/392511","email":"dachser.mouscron@dachser.com","website":"www.dachser.com","sizeCat":"TRES_GRANDES","totalPositions":2,"totalAds":2,"totalBudget":0,"monthlyAds":[{"month":"2026-04","count":2}],"industries":[{"code":"H49.4","name":"Transports routiers de fret et services de déménagement"},{"code":"H52.2","name":"Services auxiliaires des transports"}],"contacts":[{"name":"","email":"dachser.mouscron@dachser.com","phone":"","function":""}],"jobTitles":["Employé(e) logistique polyvalent(e)","Magasinier expérimenté"],"hiring":{"score":40,"maxScore":105,"percentage":38,"priority":"MEDIUM","breakdown":{"volume":{"pts":10,"max":25,"detail":"2 postes"},"recurrence":{"pts":0,"max":25,"detail":"ratio 1.00"},"acceleration":{"pts":25,"max":25,"detail":"2026-04"},"budget":{"pts":0,"max":15,"detail":"0 €"},"secteur":{"pts":5,"max":15,"detail":"Secteur intérim"}}},"bnbScore":{"score":0,"max":45,"error":"no-bnb","breakdown":{}},"bnb":null,"composite":38,"compositeMode":"hiring-only","compositePriority":"MEDIUM","hiringNorm":38,"bnbNorm":0,"reports":{"company-report-jobs":"https://db.advertsdata.com/api/report?report=stellenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=70feb199ff06be73aa8b2258d953410f&land=BE","company-report":"https://db.advertsdata.com/api/report?report=firmenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=70feb199ff06be73aa8b2258d953410f&land=BE","company-report-group-media":"https://db.advertsdata.com/api/report?report=firmenblatt_konzern_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=70feb199ff06be73aa8b2258d953410f&land=BE","company-report-group-flexible":"https://db.advertsdata.com/api/report?report=konzernfirmenreport_flexibel&i=15132705&u=126264&nav_id=70feb199ff06be73aa8b2258d953410f&land=BE","company-report-group":"https://db.advertsdata.com/api/report?report=konzernfirmenreport&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=70feb199ff06be73aa8b2258d953410f&land=BE","company-report-media":"https://db.advertsdata.com/api/report?report=firmenblatt_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=70feb199ff06be73aa8b2258d953410f&land=BE","company-report-flexible":"https://db.advertsdata.com/api/report?report=firmenblatt_flexibel&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=70feb199ff06be73aa8b2258d953410f&land=BE"}},{"name":"Xwift bv","firmId":"FIRM683145","bce":null,"city":"Nazareth","postalCode":"9810","address":"Steenweg Deinze 148","phone":"09/3286064","email":"info@xwift.be","website":"www.xwift.be","sizeCat":"MICRO","totalPositions":2,"totalAds":2,"totalBudget":0,"monthlyAds":[{"month":"2026-04","count":2}],"industries":[{"code":"H49.4","name":"Transports routiers de fret et services de déménagement"}],"contacts":[{"name":"Madame Sara Meersman","email":"jobs@xwift.be","phone":"","function":""},{"name":"Frau Sara Meersman","email":"jobs@xwift.be","phone":"","function":""}],"jobTitles":["Chauffeur CE - regio Moeskroen","Chauffeur C - regio Moeskroen"],"hiring":{"score":40,"maxScore":105,"percentage":38,"priority":"MEDIUM","breakdown":{"volume":{"pts":10,"max":25,"detail":"2 postes"},"recurrence":{"pts":0,"max":25,"detail":"ratio 1.00"},"acceleration":{"pts":25,"max":25,"detail":"2026-04"},"budget":{"pts":0,"max":15,"detail":"0 €"},"secteur":{"pts":5,"max":15,"detail":"Secteur intérim"}}},"bnbScore":{"score":0,"max":45,"error":"no-bnb","breakdown":{}},"bnb":null,"composite":38,"compositeMode":"hiring-only","compositePriority":"MEDIUM","hiringNorm":38,"bnbNorm":0,"reports":{"company-report-jobs":"https://db.advertsdata.com/api/report?report=stellenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=413c30aee03ea880060ed6f7a235c5de&land=BE","company-report":"https://db.advertsdata.com/api/report?report=firmenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=413c30aee03ea880060ed6f7a235c5de&land=BE","company-report-group-media":"https://db.advertsdata.com/api/report?report=firmenblatt_konzern_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=413c30aee03ea880060ed6f7a235c5de&land=BE","company-report-group-flexible":"https://db.advertsdata.com/api/report?report=konzernfirmenreport_flexibel&i=15132705&u=126264&nav_id=413c30aee03ea880060ed6f7a235c5de&land=BE","company-report-group":"https://db.advertsdata.com/api/report?report=konzernfirmenreport&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=413c30aee03ea880060ed6f7a235c5de&land=BE","company-report-media":"https://db.advertsdata.com/api/report?report=firmenblatt_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=413c30aee03ea880060ed6f7a235c5de&land=BE","company-report-flexible":"https://db.advertsdata.com/api/report?report=firmenblatt_flexibel&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=413c30aee03ea880060ed6f7a235c5de&land=BE"}},{"name":"ECS Group - ECS bus & Coach - Euro Coach Services Srl","firmId":"FIRM7875138","bce":"0687.763.652","city":"Dottignies","postalCode":"7711","address":"Rue de France 161","phone":"056/171500","email":"info@ecsgroup.be","website":"www.ecsgroup.be","sizeCat":"PETITES","totalPositions":4,"totalAds":4,"totalBudget":0,"monthlyAds":[{"month":"2026-04","count":4}],"industries":[{"code":"H49.3","name":"Autres transports terrestres de voyageurs"}],"contacts":[{"name":"Monsieur Johan De Wulf","email":"johan@ecsgroup.be","phone":"","function":""},{"name":"","email":"info@ecsgroup.be","phone":"","function":""}],"jobTitles":["Operationeel dossierbeheerder leisure – Tour Operator Activiteiten","Operationeel dossierbeheerder meerdaagse schoolreizen – Tour Operator Activiteiten","Operationeel dossierbeheerder leisure – Tour Operator Activiteiten (toerisme sektor)","Ervaren mecanicien (C1)"],"hiring":{"score":50,"maxScore":105,"percentage":48,"priority":"HIGH","breakdown":{"volume":{"pts":20,"max":25,"detail":"4 postes"},"recurrence":{"pts":0,"max":25,"detail":"ratio 1.00"},"acceleration":{"pts":25,"max":25,"detail":"2026-04"},"budget":{"pts":0,"max":15,"detail":"0 €"},"secteur":{"pts":5,"max":15,"detail":"Secteur intérim"}}},"bnbScore":{"score":10,"max":45,"percentage":22,"breakdown":{"etpSize":{"pts":0,"max":15,"detail":"0.0 ETP"},"etpGrowth":{"pts":0,"max":10,"detail":"N/A"},"interim":{"pts":0,"max":10,"detail":"0 €"},"sante":{"pts":10,"max":10,"detail":"RN+ CP+"}},"model":"m02-f","modelType":"complet","year":2024},"bnb":{"model":"m02-f","modelType":"complet","year":2024,"etp":0,"etpPrev":0,"ca":6149872.4,"mb":0,"rnet":285373.74,"cp":1659079.36,"bilan":5753652.36,"sal":2263187.64,"i617":0,"iEtp":0,"iH":0},"composite":35,"compositeMode":"composite","compositePriority":"MEDIUM","hiringNorm":24,"bnbNorm":11,"reports":{"company-report-jobs":"https://db.advertsdata.com/api/report?report=stellenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=3b603ae638c2bcf88fc8625655156a21&land=BE","company-report":"https://db.advertsdata.com/api/report?report=firmenblatt&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=3b603ae638c2bcf88fc8625655156a21&land=BE","company-report-group-media":"https://db.advertsdata.com/api/report?report=firmenblatt_konzern_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=3b603ae638c2bcf88fc8625655156a21&land=BE","company-report-group-flexible":"https://db.advertsdata.com/api/report?report=konzernfirmenreport_flexibel&i=15132705&u=126264&nav_id=3b603ae638c2bcf88fc8625655156a21&land=BE","company-report-group":"https://db.advertsdata.com/api/report?report=konzernfirmenreport&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=3b603ae638c2bcf88fc8625655156a21&land=BE","company-report-media":"https://db.advertsdata.com/api/report?report=firmenblatt_medien&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=3b603ae638c2bcf88fc8625655156a21&land=BE","company-report-flexible":"https://db.advertsdata.com/api/report?report=firmenblatt_flexibel&i=15132705&u=0d88c45f846de239dc4e173934eefcd7&nav_id=3b603ae638c2bcf88fc8625655156a21&land=BE"}}];
+const TOP_CITIES = [["Zulte",2],["Mouscron",2],["Wavre",1],["Wortegem-Petegem",1],["Kluisbergen",1],["Kruishoutem",1],["Evergem",1],["Neder-over-Heembeek",1],["Luingne (Mouscron)",1],["Harelbeke",1]];
+const TOP_NACE = [["Transports routiers de fret et services de déménagement",9],["Activités de poste et de courrier",2],["Entreposage et services auxiliaires",2],["Autres transports terrestres de voyageurs",2],["Travaux de construction spécialisés",2],["Construction",1],["Traiteurs et autres services de restauration",1],["Construction de bâtiments résidentiels et non résidentiels",1]];
+const PRIO_DIST = {"HOT":0,"HIGH":4,"MEDIUM":10,"LOW":0};
+const SIZE_LBL = {MICRO:'Micro (0-9)',PETITES:'Petites (10-49)',MOYENNES:'Moyennes (50-249)',GRANDES:'Grandes (250-999)',TRES_GRANDES:'Très grandes (>1000)',INCONNU:'Taille inconnue'};
+
+function fmtEur(n) { return n ? Math.round(n).toLocaleString('fr-BE') + ' €' : '0 €'; }
+function fmtNum(n) { return (n||0).toLocaleString('fr-BE'); }
+
+// Charts
+window.addEventListener('DOMContentLoaded', () => {
+  const COL = { teal: '#143635', gold: '#E6B527', sage: '#ECF1F0' };
+  const PRIO_COL = { HOT: '#dc2626', HIGH: '#f97316', MEDIUM: '#eab308', LOW: '#9ca3af' };
+
+  new Chart(document.getElementById('chart-cities'), {
+    type: 'bar',
+    data: { labels: TOP_CITIES.map(x=>x[0]), datasets: [{ label: 'Entreprises', data: TOP_CITIES.map(x=>x[1]), backgroundColor: COL.teal }] },
+    options: { plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}, maintainAspectRatio:false }
+  });
+
+  new Chart(document.getElementById('chart-nace'), {
+    type: 'bar',
+    data: { labels: TOP_NACE.map(x=>x[0].substring(0,30)), datasets: [{ data: TOP_NACE.map(x=>x[1]), backgroundColor: COL.gold }] },
+    options: { indexAxis: 'y', plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true,ticks:{stepSize:1}}}, maintainAspectRatio:false }
+  });
+
+  new Chart(document.getElementById('chart-prio'), {
+    type: 'doughnut',
+    data: { labels: Object.keys(PRIO_DIST), datasets: [{ data: Object.values(PRIO_DIST), backgroundColor: Object.keys(PRIO_DIST).map(k=>PRIO_COL[k]) }] },
+    options: { plugins:{legend:{position:'bottom'}}, maintainAspectRatio:false }
+  });
+
+  const top5 = DATA.slice(0,5);
+  new Chart(document.getElementById('chart-scores'), {
+    type: 'bar',
+    data: {
+      labels: top5.map(c => c.name.length > 25 ? c.name.substring(0,22)+'…' : c.name),
+      datasets: [
+        { label: 'Hiring /50', data: top5.map(c => c.hiringNorm), backgroundColor: COL.teal, stack:'s' },
+        { label: 'BNB /50', data: top5.map(c => c.bnbNorm || 0), backgroundColor: COL.gold, stack:'s' }
+      ]
+    },
+    options: { indexAxis: 'y', plugins:{legend:{position:'bottom'}}, scales:{x:{stacked:true,max:100},y:{stacked:true}}, maintainAspectRatio:false }
+  });
+});
+
+// Modal
+function openModal(i) {
+  const c = DATA[i];
+  const m = document.getElementById('modal');
+  const h = document.getElementById('modal-header');
+  const b = document.getElementById('modal-body');
+  const titleSafe = (c.name||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const cityLine = (c.city||'') + ' · ' + (c.postalCode||'');
+  const sizeTxt = SIZE_LBL[c.sizeCat] || c.sizeCat || '';
+
+  h.innerHTML = '<h2>' + titleSafe + '</h2><div class="meta">BCE ' + (c.bce||'—') + ' · ' + cityLine + ' · ' + sizeTxt + '</div>' +
+    '<div class="modal-score"><div class="v">' + c.composite + '</div><div class="l">/100</div></div>' +
+    '<button class="modal-close" onclick="closeModal()">×</button>';
+
+  const hb = c.hiring.breakdown;
+  const bb = c.bnbScore && c.bnbScore.breakdown;
+  const bnb = c.bnb;
+  let html = '';
+
+  // Hiring breakdown
+  html += '<div class="modal-section"><h3>Score Hiring (' + c.hiring.score + '/105 → ' + c.hiringNorm + '/50)</h3>';
+  ['volume','recurrence','acceleration','budget','secteur'].forEach(k => {
+    const x = hb[k];
+    const lbl = {volume:'Volume de postes',recurrence:'Récurrence des annonces',acceleration:'Accélération récente',budget:'Budget publicitaire',secteur:'Secteur NACE'}[k];
+    html += '<div class="crit"><div><div class="crit-name">' + lbl + '</div><div class="crit-bar"><div class="crit-bar-fill" style="width:' + Math.round(x.pts/x.max*100) + '%"></div></div><div class="crit-detail">' + x.detail + '</div></div><div class="crit-pts">' + x.pts + '/' + x.max + '</div></div>';
+  });
+  html += '</div>';
+
+  // BNB breakdown
+  if (bnb && bb) {
+    html += '<div class="modal-section"><h3>Score Financier BNB (' + c.bnbScore.score + '/45 → ' + c.bnbNorm + '/50) — modèle ' + bnb.modelType + ' ' + bnb.year + '</h3>';
+    ['etpSize','etpGrowth','interim','sante'].forEach(k => {
+      const x = bb[k]; if (!x) return;
+      const lbl = {etpSize:'Taille ETP',etpGrowth:'Croissance ETP',interim:'Dépenses intérim',sante:'Santé financière'}[k];
+      html += '<div class="crit"><div><div class="crit-name">' + lbl + '</div><div class="crit-bar"><div class="crit-bar-fill acc" style="width:' + Math.round(x.pts/x.max*100) + '%"></div></div><div class="crit-detail">' + x.detail + '</div></div><div class="crit-pts">' + x.pts + '/' + x.max + '</div></div>';
+    });
+    html += '<div style="margin-top:12px;font-size:12px;color:#33373D">';
+    if (bnb.modelType === 'complet') html += '<strong>CA :</strong> ' + fmtEur(bnb.ca) + ' · ';
+    else html += '<strong>Marge brute :</strong> ' + fmtEur(bnb.mb) + ' · ';
+    html += '<strong>RN :</strong> ' + fmtEur(bnb.rnet) + ' · <strong>CP :</strong> ' + fmtEur(bnb.cp);
+    html += '</div>';
+    html += '</div>';
+  } else {
+    html += '<div class="modal-section"><h3>Score Financier BNB</h3><div style="font-size:13px;color:#33373D">' + (c.bnbScore && c.bnbScore.error || 'BNB indisponible') + '</div></div>';
+  }
+
+  // Job titles
+  if (c.jobTitles && c.jobTitles.length) {
+    html += '<div class="modal-section"><h3>Postes recherchés (' + c.jobTitles.length + ')</h3><div>';
+    c.jobTitles.forEach(t => { html += '<span class="tag">' + (t||'').replace(/</g,'&lt;') + '</span>'; });
+    html += '</div></div>';
+  }
+
+  // Contacts + entreprise info
+  html += '<div class="modal-section"><h3>Coordonnées</h3><div class="info-grid">';
+  if (c.address) html += '<div class="lbl">Adresse</div><div class="val">' + (c.address||'') + ', ' + (c.postalCode||'') + ' ' + (c.city||'') + '</div>';
+  if (c.phone) html += '<div class="lbl">Tél. siège</div><div class="val"><a href="tel:' + c.phone + '">' + c.phone + '</a></div>';
+  if (c.email) html += '<div class="lbl">Email siège</div><div class="val"><a href="mailto:' + c.email + '">' + c.email + '</a></div>';
+  if (c.website) html += '<div class="lbl">Site web</div><div class="val"><a href="https://' + c.website.replace(/^https?:\/\//,'') + '" target="_blank">' + c.website + '</a></div>';
+  html += '</div></div>';
+
+  if (c.contacts && c.contacts.length) {
+    html += '<div class="modal-section"><h3>Contacts directs</h3>';
+    c.contacts.forEach(ct => {
+      if (!ct.name && !ct.email && !ct.phone) return;
+      html += '<div style="margin-bottom:8px;padding:8px;background:#ecf1f0;border-radius:6px;font-size:13px">';
+      if (ct.name) html += '<strong>' + ct.name + '</strong>';
+      if (ct.function) html += ' <span style="color:#33373D">— ' + ct.function + '</span>';
+      html += '<br>';
+      if (ct.email) html += '<a href="mailto:' + ct.email + '">' + ct.email + '</a> ';
+      if (ct.phone) html += ' · <a href="tel:' + ct.phone + '">' + ct.phone + '</a>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Reports
+  if (c.reports) {
+    html += '<div class="modal-section"><h3>Rapports Advertsdata <span style="font-size:11px;color:#33373D;font-weight:400">(valides 10 jours)</span></h3><div class="report-icons">';
+    if (c.reports['company-report']) html += '<a href="' + c.reports['company-report'] + '" target="_blank" title="Rapport entreprise">🏢 Entreprise</a> ';
+    if (c.reports['company-report-jobs']) html += '<a href="' + c.reports['company-report-jobs'] + '" target="_blank" title="Rapport postes">📋 Postes</a> ';
+    if (c.reports['company-report-flexible']) html += '<a href="' + c.reports['company-report-flexible'] + '" target="_blank" title="Rapport flexible">📊 Flexible</a>';
+    html += '</div></div>';
+  }
+
+  b.innerHTML = html;
+  m.classList.add('show');
+}
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+
+// Filters
+function applyFilters() {
+  const q = (document.getElementById('f-search').value || '').toLowerCase();
+  const p = document.getElementById('f-prio').value;
+  const s = document.getElementById('f-size').value;
+  const sc = parseInt(document.getElementById('f-score').value || '0');
+  document.querySelectorAll('#main-table tbody tr').forEach(tr => {
+    const name = tr.dataset.name || '';
+    const prio = tr.dataset.prio;
+    const size = tr.dataset.size;
+    const score = parseInt(tr.dataset.score || '0');
+    const ok = (!q || name.includes(q)) && (!p || prio === p) && (!s || size === s) && (!sc || score >= sc);
+    tr.style.display = ok ? '' : 'none';
+  });
+}
+document.addEventListener('input', e => { if (['f-search','f-prio','f-size','f-score'].includes(e.target.id)) applyFilters(); });
+document.addEventListener('change', e => { if (['f-search','f-prio','f-size','f-score'].includes(e.target.id)) applyFilters(); });
+
+// CSV export
+function exportCsv() {
+  const rows = [['Priorité','Score','Entreprise','BCE','Ville','CP','Adresse','Téléphone','Email','Site','Taille','ETP BNB','Postes','Annonces','Budget','Modèle BNB','CA','Marge brute','Résultat net','Intérim 617']];
+  document.querySelectorAll('#main-table tbody tr').forEach(tr => {
+    if (tr.style.display === 'none') return;
+    const i = parseInt(tr.dataset.idx);
+    const c = DATA[i];
+    const b = c.bnb || {};
+    rows.push([
+      c.compositePriority, c.composite, c.name, c.bce||'', c.city||'', c.postalCode||'',
+      c.address||'', c.phone||'', c.email||'', c.website||'',
+      SIZE_LBL[c.sizeCat]||'', b.etp||'', c.totalPositions, c.totalAds, c.totalBudget||0,
+      b.modelType||'', b.ca||'', b.mb||'', b.rnet||'', b.i617||''
+    ]);
+  });
+  const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(',')).join('\n');
+  const blob = new Blob(['\ufeff' + csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'prospection-kortrijk-logistique.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+document.addEventListener('click', e => { if (e.target.id === 'btn-export') exportCsv(); });
+document.addEventListener('click', e => { if (e.target.classList && e.target.classList.contains('modal-bg')) closeModal(); });
+<\/script>
+
+</body>
+</html>

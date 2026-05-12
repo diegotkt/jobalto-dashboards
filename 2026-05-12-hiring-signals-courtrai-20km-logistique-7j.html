@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Jobalto — Prospection Courtrai 20km — Logistique & Transport (7 jours)</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --primary: #143635;
+  --primary-dark: #0E2424;
+  --accent: #E6B527;
+  --accent-hover: #D4A017;
+  --bg-page: #ECF1F0;
+  --bg-card: #FFFFFF;
+  --bg-cream: #F9F7F0;
+  --text-body: #333333;
+  --text-secondary: #33373D;
+  --teal-light: #2A6B69;
+  --teal-mid: #5A9E9C;
+  --red: #C0392B;
+  --card-border: rgba(20,54,53,0.1);
+  --card-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg-page); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; color: var(--text-body); }
+.header { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: white; padding: 32px 40px; border-bottom: 3px solid var(--accent); }
+.header h1 { font-size: 24px; font-weight: 600; margin-bottom: 6px; }
+.header .sub { font-size: 13px; opacity: 0.75; margin-bottom: 16px; }
+.header .badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.badge { background: rgba(230,181,39,0.2); color: var(--accent); padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+.section-nav { background: var(--bg-card); border-bottom: 1px solid var(--card-border); position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+.nav-inner { max-width: 1400px; margin: 0 auto; padding: 10px 40px; display: flex; gap: 8px; }
+.nav-btn { padding: 8px 20px; border: 1px solid var(--card-border); border-radius: 6px; background: white; color: var(--text-body); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+.nav-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+.container { max-width: 1400px; margin: 0 auto; padding: 24px 40px 60px; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.kpi { background: var(--bg-card); border: 1px solid var(--card-border); border-radius: 8px; padding: 18px; box-shadow: var(--card-shadow); }
+.kpi-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.kpi-value { font-size: 28px; font-weight: 700; color: var(--primary); }
+.kpi-sub { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+.filters { background: var(--bg-card); border: 1px solid var(--card-border); border-radius: 8px; padding: 16px; margin-bottom: 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+.filters label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+.filters select, .filters input { background: white; border: 1px solid var(--card-border); color: var(--text-body); padding: 8px 12px; border-radius: 6px; font-size: 13px; }
+.filters input[type="text"] { width: 220px; }
+.export-btn { background: rgba(230,181,39,0.15); color: var(--accent); border: 1px solid rgba(230,181,39,0.3); padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+.export-btn:hover { background: var(--accent); color: var(--primary); }
+.section-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; margin-top: 24px; }
+.section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-body); padding-left: 12px; border-left: 3px solid var(--accent); }
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.chart-card { background: var(--bg-card); border: 1px solid var(--card-border); border-radius: 8px; padding: 18px; box-shadow: var(--card-shadow); }
+.chart-card h3 { font-size: 13px; font-weight: 600; color: var(--primary); margin-bottom: 12px; }
+.chart-card canvas { max-height: 280px; }
+.hot-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+@media (max-width: 1200px) { .hot-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 900px) { .hot-grid { grid-template-columns: repeat(2, 1fr); } }
+.hot-card { background: var(--bg-card); border: 1px solid var(--card-border); border-radius: 8px; padding: 16px; cursor: pointer; transition: box-shadow 0.2s; position: relative; }
+.hot-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.hc-name { font-size: 14px; font-weight: 600; color: var(--primary); margin-bottom: 2px; padding-right: 50px; }
+.hc-location { font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; }
+.hc-score { position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: white; }
+.hc-score-HOT { background: var(--red); }
+.hc-score-HIGH { background: var(--accent); color: var(--primary) !important; }
+.hc-score-MEDIUM { background: var(--teal-mid); }
+.hc-jobs { margin-bottom: 10px; }
+.hc-job { font-size: 12px; color: var(--text-body); padding: 2px 0; border-bottom: 1px solid rgba(20,54,53,0.04); }
+.hc-signals { display: flex; gap: 8px; font-size: 11px; color: var(--text-secondary); flex-wrap: wrap; }
+.hc-phone { display: block; margin-top: 8px; font-size: 12px; color: var(--primary); font-weight: 600; text-decoration: none; }
+table.main { width: 100%; border-collapse: collapse; background: var(--bg-card); border-radius: 8px; overflow: hidden; box-shadow: var(--card-shadow); }
+table.main th { background: var(--primary); color: white; padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+table.main td { padding: 12px; border-bottom: 1px solid var(--card-border); font-size: 13px; }
+table.main tr.row { cursor: pointer; }
+table.main tr.row:hover { background: var(--bg-page); }
+.priority { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.priority-HOT { background: rgba(192,57,43,0.1); color: #C0392B; }
+.priority-HIGH { background: rgba(230,181,39,0.15); color: #D4870E; }
+.priority-MEDIUM { background: rgba(90,158,156,0.15); color: #2A6B69; }
+.priority-LOW { background: rgba(51,55,61,0.1); color: #33373D; }
+.score-cell { font-weight: 700; color: var(--primary); font-size: 14px; }
+.model-badge { display: inline-block; padding: 2px 6px; background: var(--bg-cream); border-radius: 4px; font-size: 10px; font-weight: 600; color: var(--primary); margin-left: 6px; }
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+.modal-overlay.show { display: flex; }
+.modal { background: white; border-radius: 12px; max-width: 880px; width: 100%; max-height: 90vh; overflow-y: auto; }
+.modal-header { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: white; padding: 22px 28px; border-radius: 12px 12px 0 0; position: relative; }
+.modal-header .close { position: absolute; top: 18px; right: 22px; background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
+.modal-header h2 { font-size: 20px; margin-bottom: 6px; }
+.modal-header .meta { font-size: 13px; opacity: 0.85; }
+.modal-score-circle { position: absolute; top: 18px; right: 60px; width: 56px; height: 56px; border-radius: 50%; background: var(--accent); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; }
+.modal-body { padding: 24px 28px; }
+.modal-body h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); margin: 18px 0 8px; padding-left: 10px; border-left: 3px solid var(--accent); }
+.signals-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 8px; }
+.signal-box { background: var(--bg-cream); padding: 10px; border-radius: 6px; }
+.signal-box .v { font-size: 18px; font-weight: 700; color: var(--primary); }
+.signal-box .l { font-size: 11px; color: var(--text-secondary); }
+.bd { display: grid; grid-template-columns: 220px 1fr 50px; gap: 8px; align-items: center; padding: 6px 0; }
+.bd-name { font-size: 13px; font-weight: 600; color: var(--primary); }
+.bd-bar { height: 8px; background: var(--bg-page); border-radius: 4px; position: relative; overflow: hidden; }
+.bd-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); border-radius: 4px; }
+.bd-score { text-align: right; font-size: 12px; font-weight: 600; color: var(--primary); }
+.bd-detail { grid-column: 1 / -1; font-size: 11px; color: var(--text-secondary); padding-left: 0; margin-bottom: 6px; }
+.tag { display: inline-block; padding: 3px 8px; background: var(--bg-cream); border: 1px solid var(--card-border); border-radius: 4px; font-size: 11px; margin: 2px; color: var(--text-body); }
+.contact-list { display: flex; flex-direction: column; gap: 4px; }
+.contact { font-size: 12px; padding: 6px 0; }
+.contact a { color: var(--primary); text-decoration: none; }
+.no-bnb-note { font-size: 11px; font-style: italic; color: var(--text-secondary); padding: 6px 10px; background: var(--bg-page); border-radius: 4px; }
+.footer { text-align: center; padding: 30px; color: var(--text-secondary); font-size: 11px; }
+.footer a { color: var(--primary); }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Prospection Hiring Signals — Logistique &amp; Transport autour de Courtrai</h1>
+  <div class="sub">Généré le 12 mai 2026 — Données Advertsdata × BNB (Centrale des bilans)</div>
+  <div class="badges">
+    <span class="badge">📍 Courtrai (8500) · 20 km</span>
+    <span class="badge">🚚 Logistique &amp; Transport (NACE H49/H52/H53)</span>
+    <span class="badge">📅 7 derniers jours</span>
+    <span class="badge">🏢 Toutes fonctions</span>
+    <span class="badge">💰 Score composite (Hiring × BNB)</span>
+  </div>
+</div>
+
+<nav class="section-nav">
+  <div class="nav-inner">
+    <button class="nav-btn" onclick="scrollSec('section-charts')">📊 Graphiques</button>
+    <button class="nav-btn" onclick="scrollSec('section-prospects')">🔥 Prospects priorité</button>
+    <button class="nav-btn" onclick="scrollSec('section-table')">📋 Tableau complet</button>
+  </div>
+</nav>
+
+<div class="container">
+
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-label">Entreprises identifiées</div><div class="kpi-value">13</div><div class="kpi-sub">5 enrichies BNB</div></div>
+    <div class="kpi"><div class="kpi-label">Cibles HOT + HIGH</div><div class="kpi-value">2</div><div class="kpi-sub">Priorité contact J+0</div></div>
+    <div class="kpi"><div class="kpi-label">Postes ouverts (uniques)</div><div class="kpi-value">17</div><div class="kpi-sub">17 annonces actives</div></div>
+    <div class="kpi"><div class="kpi-label">Score moyen</div><div class="kpi-value">44/100</div><div class="kpi-sub">Budget pub total 2 697 €</div></div>
+  </div>
+
+  <div class="filters">
+    <div class="filter-group">
+      <label>Recherche</label>
+      <input type="text" id="fSearch" placeholder="Nom, ville, NACE…">
+    </div>
+    <div class="filter-group">
+      <label>Score min</label>
+      <select id="fScore">
+        <option value="0" selected>Tous</option>
+        <option value="30">30+</option>
+        <option value="50">50+</option>
+        <option value="65">65+</option>
+        <option value="75">75+ (HOT)</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Taille</label>
+      <select id="fSize">
+        <option value="" selected>Toutes</option>
+        <option value="MICRO">Micro (0-9)</option>
+        <option value="PETITES">Petites (10-49)</option>
+        <option value="MOYENNES">Moyennes (50-249)</option>
+        <option value="GRANDES">Grandes (250-999)</option>
+        <option value="TRES_GRANDES">Très grandes (&gt;1000)</option>
+        <option value="INCONNU">Inconnu</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Priorité</label>
+      <select id="fPrio">
+        <option value="">Toutes</option>
+        <option value="HOT">HOT</option>
+        <option value="HIGH">HIGH</option>
+        <option value="MEDIUM">MEDIUM</option>
+        <option value="LOW">LOW</option>
+      </select>
+    </div>
+    <div class="filter-group" style="margin-left:auto">
+      <label>&nbsp;</label>
+      <button class="export-btn" onclick="exportCSV()">⬇ EXPORT CSV</button>
+    </div>
+  </div>
+
+  <div id="section-charts">
+    <div class="section-toolbar"><h3 class="section-title">📊 Vue d'ensemble</h3></div>
+    <div class="charts-grid">
+      <div class="chart-card"><h3>Top villes — Postes ouverts</h3><canvas id="chartCities"></canvas></div>
+      <div class="chart-card"><h3>Secteurs NACE — Postes publiés</h3><canvas id="chartNace"></canvas></div>
+      <div class="chart-card"><h3>Répartition par priorité</h3><canvas id="chartPriority"></canvas></div>
+      <div class="chart-card"><h3>Budget recrutement — Top HOT/HIGH</h3><canvas id="chartBudget"></canvas></div>
+    </div>
+  </div>
+
+  <div id="section-prospects">
+    <div class="section-toolbar"><h3 class="section-title">🔥 Prospects HOT + HIGH — Priorité contact</h3></div>
+    <div id="hotProspects" class="hot-grid"></div>
+  </div>
+
+  <div id="section-table">
+    <div class="section-toolbar"><h3 class="section-title">📋 Tableau complet — toutes entreprises</h3></div>
+    <table class="main">
+      <thead>
+        <tr>
+          <th>Priorité</th>
+          <th>Score</th>
+          <th>Entreprise</th>
+          <th>Ville</th>
+          <th>Taille</th>
+          <th>BCE / Modèle</th>
+          <th>Postes</th>
+          <th>Budget</th>
+          <th>ETP BNB</th>
+          <th>Intérim BNB</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<div class="footer">
+  Jobalto — Prospection automatisée · Sources : <a href="https://db.advertsdata.com">Advertsdata</a> × <a href="https://consult.cbso.nbb.be">BNB CBSO</a>
+</div>
+
+<script>
+const DATA = [{"firmId": "FIRM6457133", "name": "AàZ-Déménagement - Networking Marketing Srl", "address": "Avenue Vésale 20", "postalCode": "1300", "city": "Wavre", "phone": "010/688072", "email": "contact@aaz-demenagement.be", "website": "www.aaz-demenagement.be", "employeesRaw": "", "vatNumber": "BE0438.616.083", "ads": ["2443246766"], "positions": ["2516946405"], "monthlyAds": [{"month": "2026-05", "count": 1}], "totalBudget": 0.0, "industries": [{"code": "H49.4", "name": "Transports routiers de fret et services de déménagement"}], "contacts": [{"name": "", "email": "contact@aaz-demenagement.be", "phone": "", "function": ""}], "jobTitles": ["Opérateur de lift / Liftier"], "totalAds": 1, "totalPositions": 1, "size": {"category": "INCONNU", "etpMin": 0, "etpMax": 0, "sizeId": 0}, "bce": "0438.616.083", "scoring": {"score": 40, "maxScore": 105, "percentage": 38, "priority": "MEDIUM", "breakdown": {"volume": {"pts": 10, "max": 25, "detail": "1 poste(s)"}, "recurrence": {"pts": 0, "max": 25, "detail": "ratio 1.0"}, "acceleration": {"pts": 25, "max": 25, "detail": "2026-05"}, "budget": {"pts": 0, "max": 15, "detail": "0€"}, "secteur": {"pts": 5, "max": 15, "detail": "Secteur intérim"}}}, "bnbScoring": {"score": 35, "maxScore": 45, "available": true, "percentage": 78, "modelType": "abrege", "year": 2024, "breakdown": {"etp_taille": {"pts": 15, "max": 15, "detail": "17.4 ETP"}, "etp_croissance": {"pts": 10, "max": 10, "detail": "+25% vs N-1"}, "interim": {"pts": 0, "max": 10, "detail": "0.0 ETP intérim (0h)"}, "sante": {"pts": 10, "max": 10, "detail": "RN OK (83 687€) / CP OK"}}, "rawData": {"etp": 17.4, "etp_prev": 13.9, "rnet": 83686.89, "cp": 346381.71, "i617": 0, "i9097": 0, "i9098": 0, "ca": 0, "mb": 1158199.08}}, "scoreMode": "composite", "compositeScore": 58, "compositeMax": 100, "hiringNorm": 19, "bnbNorm": 39, "compositePriority": "HIGH"}, {"firmId": "FIRM699189", "name": "SNCB-NMBS - Nationale Maatschappij der Belgische Spoorwegen N.V. - Société Nationale des Chemins de fer Belges S.A. - HR Rail", "address": "Rue de France 56", "postalCode": "1060", "city": "Bruxelles / Saint Gilles", "phone": "02/5252111", "email": "medicoffice@b-holding.be", "website": "www.despoorwegenwervenaan.be", "employeesRaw": ">1.000", "vatNumber": "BE-0203.430.576", "ads": ["2443851238", "2444095395", "2444120145"], "positions": ["2517824049", "2517840327", "2517570323"], "monthlyAds": [{"month": "2026-05", "count": 3}], "totalBudget": 1698.0, "industries": [{"code": "H49.1", "name": "Transport ferroviaire interurbain de voyageurs"}, {"code": "H49.2", "name": "Transports ferroviaires de fret"}], "contacts": [{"name": "", "email": "medicoffice@b-holding.be", "phone": "", "function": ""}, {"name": "Frau Liesbeth Carton", "email": "liesbeth.carton@hr-rail.be", "phone": "025253989", "function": ""}, {"name": "Monsieur Filip Bernaert", "email": "filip.bernaert@belgiantrain.be", "phone": "", "function": ""}], "jobTitles": ["Logistiek bediende TOP Kortrijk"], "totalAds": 3, "totalPositions": 3, "size": {"category": "TRES_GRANDES", "etpMin": 1000, "etpMax": 99999, "sizeId": 5}, "bce": "0203.430.576", "scoring": {"score": 58, "maxScore": 105, "percentage": 55, "priority": "HIGH", "breakdown": {"volume": {"pts": 20, "max": 25, "detail": "3 poste(s)"}, "recurrence": {"pts": 0, "max": 25, "detail": "ratio 1.0"}, "acceleration": {"pts": 25, "max": 25, "detail": "2026-05"}, "budget": {"pts": 8, "max": 15, "detail": "1 698€"}, "secteur": {"pts": 5, "max": 15, "detail": "Secteur intérim"}}}, "bnbScoring": {"score": 0, "maxScore": 45, "available": false, "error": "Comptes consolidés (hors scope)"}, "scoreMode": "hiring-only", "compositeScore": 55, "compositeMax": 100, "hiringNorm": 28, "bnbNorm": 0, "compositePriority": "HIGH"}, {"firmId": "FIRM11093221", "name": "Autocars Strobbe bv", "address": "Bilksken 16", "postalCode": "9920", "city": "Lievegem", "phone": "09/3727055", "email": "jobs@bus.be", "website": "www.bus.be", "employeesRaw": "", "vatNumber": "BE0446924629", "ads": ["2444748078"], "positions": ["2518454110"], "monthlyAds": [{"month": "2026-05", "count": 1}], "totalBudget": 0.0, "industries": [{"code": "H49.3", "name": "Autres transports terrestres de voyageurs"}], "contacts": [{"name": "Madame Daphné Deopere", "email": "jobs@bus.be", "phone": "003256223717", "function": ""}], "jobTitles": ["Planner / dispatcher"], "totalAds": 1, "totalPositions": 1, "size": {"category": "INCONNU", "etpMin": 0, "etpMax": 0, "sizeId": 0}, "bce": "0446.924.629", "scoring": {"score": 40, "maxScore": 105, "percentage": 38, "priority": "MEDIUM", "breakdown": {"volume": {"pts": 10, "max": 25, "detail": "1 poste(s)"}, "recurrence": {"pts": 0, "max": 25, "detail": "ratio 1.0"}, "acceleration": {"pts": 25, "max": 25, "detail": "2026-05"}, "budget": {"pts": 0, "max": 15, "detail": "0€"}, "secteur": {"pts": 5, "max": 15, "detail": "Secteur intérim"}}}, "bnbScoring": {"score": 27, "maxScore": 45, "available": true, "percentage": 60, "modelType": "abrege", "year": 2024, "breakdown": {"etp_taille": {"pts": 15, "max": 15, "detail": "32.1 ETP"}, "etp_croissance": {"pts": 2, "max": 10, "detail": "+4% vs N-1"}, "interim": {"pts": 0, "max": 10, "detail": "0.0 ETP intérim (0h)"}, "sante": {"pts": 10, "max": 10, "detail": "RN OK (698 160€) / CP OK"}}, "rawData": {"etp": 32.1, "etp_prev": 30.8, "rnet": 698159.85, "cp": 1800195.97, "i617": 0, "i9097": 0, "i9098": 0, "ca": 0, "mb": 2507357.31}}, "scoreMode": "composite", "compositeScore": 49, "compositeMax": 100, "hiringNorm": 19, "bnbNorm": 30, "compositePriority": "MEDIUM"}, {"firmId": "FIRM7309299", "name": "Laebens Logistics Bv - Laebens Transport", "address": "Blokkestraat 34c", "postalCode": "8550", "city": "Zwevegem", "phone": "056/644112", "email": "info@lcz.be", "website": "www.transport-laebens.be", "employeesRaw": "", "vatNumber": "BE-0426.587.984", "ads": ["2445062966"], "positions": ["2518827427"], "monthlyAds": [{"month": "2026-05", "count": 1}], "totalBudget": 0.0, "industries": [{"code": "H49.4", "name": "Transports routiers de fret et services de déménagement"}], "contacts": [{"name": "Monsieur Cato Moerman", "email": "jobs@lcz.be", "phone": "0032494140724", "function": ""}, {"name": "Frau Emilie Laebens", "email": "laebens.emilie@transport-laebens.be", "phone": "056644112", "function": ""}], "jobTitles": ["Chauffeurs CE regionale ritten"], "totalAds": 1, "totalPositions": 1, "size": {"category": "INCONNU", "etpMin": 0, "etpMax": 0, "sizeId": 0}, "bce": "0426.587.984", "scoring": {"score": 40, "maxScore": 105, "percentage": 38, "priority": "MEDIUM", "breakdown": {"volume": {"pts": 10, "max": 25, "detail": "1 poste(s)"}, "recurrence": {"pts": 0, "max": 25, "detail": "ratio 1.0"}, "acceleration": {"pts": 25, "max": 25, "detail": "2026-05"}, "budget": {"pts": 0, "max": 15, "detail": "0€"}, "secteur": {"pts": 5, "max": 15, "detail": "Secteur intérim"}}}, "bnbScoring": {"score": 25, "maxScore": 45, "available": true, "percentage": 56, "modelType": "abrege", "year": 2025, "breakdown": {"etp_taille": {"pts": 15, "max": 15, "detail": "30.7 ETP"}, "etp_croissance": {"pts": 0, "max": 10, "detail": "N/A"}, "interim": {"pts": 0, "max": 10, "detail": "0.0 ETP intérim (0h)"}, "sante": {"pts": 10, "max": 10, "detail": "RN OK (92 986€) / CP OK"}}, "rawData": {"etp": 30.7, "etp_prev": 0, "rnet": 92986.03, "cp": 2704097.94, "i617": 0, "i9097": 0, "i9098": 0, "ca": 0, "mb": 4164886.46}}, "scoreMode": "composite", "compositeScore": 47, "compositeMax": 100, "hiringNorm": 19, "bnbNorm": 28, "compositePriority": "MEDIUM"}, {"firmId": "FIRM937521", "name": "Willy Naessens Group - Willy Naessens Industriebouw NV", "address": "Kouter 3", "postalCode": "9790", "city": "Wortegem-Petegem", "phone": "056/694111", "email": "info@willynaessens.be", "website": "www.willynaessens.be", "employeesRaw": ">1.000", "vatNumber": "BE 0418 972 989", "ads": ["2444659350"], "positions": ["2518193781"], "monthlyAds": [{"month": "2026-05", "count": 1}], "totalBudget": 0.0, "industries": [{"code": "F", "name": "Construction"}, {"code": "H49.4", "name": "Transports routiers de fret et services de déménagement"}, {"code": "I56.2", "name": "Traiteurs et autres services de restauration"}], "contacts": [{"name": "", "email": "info@willynaessens.be", "phone": "", "function": ""}, {"name": "Frau Louise-Marie Velghe", "email": "louisemarie-v@willynaessens.be", "phone": "0473855202", "function": ""}], "jobTitles": ["Junior Calculator"], "totalAds": 1, "totalPositions": 1, "size": {"category": "TRES_GRANDES", "etpMin": 1000, "etpMax": 99999, "sizeId": 5}, "bce": "0418.972.989", "scoring": {"score": 40, "maxScore": 105, "percentage": 38, "priority": "MEDIUM", "breakdown": {"volume": {"pts": 10, "max": 25, "detail": "1 poste(s)"}, "recurrence": {"pts": 0, "max": 25, "detail": "ratio 1.0"}, "acceleration": {"pts": 25, "max": 25, "detail": "2026-05"}, "budget": {"pts": 0, "max": 15, "detail": "0€"}, "secteur": {"pts": 5, "max": 15, "detail": "Secteur intérim"}}}, "bnbScoring": {"score": 24, "maxScore": 45, "available": true, "percentage": 53, "modelType": "complet", "year": 2024, "breakdown": {"etp_taille": {"pts": 2, "max": 15, "detail": "375.2 ETP"}, "etp_croissance": {"pts": 2, "max": 10, "detail": "+4% vs N-1"}, "interim": {"pts": 10, "max": 10, "detail": "3 279 413€ frais 617"}, "sante": {"pts": 10, "max": 10, "detail": "RN OK (16 684 096€) / CP OK"}}, "rawData": {"etp": 375.2, "etp_prev": 359.3, "rnet": 16684095.73, "cp": 82324894, "i617": 3279412.81, "i9097": 27.7, "i9098": 58293, "ca": 333260514.56, "mb": 0}}, "scoreMode": "composite", "compositeScore": 46, "compositeMax": 100, "hiringNorm": 19, "bnbNorm": 27, "compositePriority": "MEDIUM"}, {"firmId": "FIRM7909544", "name": "Vamatrans SA", "address": "Rue du Plavitoutstraat 174", "postalCode": "7700", "city": "Mouscron", "phone": "056/334009", "email": "", "website": "www.annatrans-sa.be", "employeesRaw": "", "vatNumber": "BE0438.978.448", "ads": ["2443490020"], "positions": ["2517202327"], "monthlyAds": [{"month": "2026-05", "count": 1}], "totalBudget": 0.0, "industries": [{"code": "H49.4", "name": "Transports routiers de fret et services de déménagement"}], "contacts": [], "jobTitles": ["Dispatcheur et employé à la facturation et à l'encodage (H/F/X)"], "totalAds": 1, "totalPositions": 1, "size": {"category": "INCONNU", "etpMin": 0, "etpMax": 0, "sizeId": 0}, "bce": "0438.978.448", "scoring": {"score": 40, "maxScore": 105, "percentage": 38, "priority": "MEDIUM", "breakdown": {"volume": {"pts": 10, "max": 25, "detail": "1 poste(s)"}, "recurrence": {"pts": 0, "max": 25, "detail": "ratio 1.0"}, "acceleration": {"pts": 25, "max": 25, "detail": "2026-05"}, "budget": {"pts": 0, "max": 15, "detail": "0€"}, "secteur": {"pts": 5, "max": 15, "detail": "Secteur intérim"}}}, "bnbScoring": {"score": 22, "maxScore": 45, "available": true, "percentage": 49, "modelType": "abrege", "year": 2025, "breakdown": {"etp_taille": {"pts": 10, "max": 15, "detail": "10.2 ETP"}, "etp_croissance": {"pts": 2, "max": 10, "detail": "+4% vs N-1"}, "interim": {"pts": 0, "max": 10, "detail": "0.0 ETP intérim (0h)"}, "sante": {"pts": 10, "max": 10, "detail": "RN OK (97 039€) / CP OK"}}, "rawData": {"etp": 10.2, "etp_prev": 9.8, "rnet": 97038.6, "cp": 1060417.75, "i617": 0, "i9097": 0, "i9098": 0, "ca": 0, "mb": 850829.08}}, "scoreMode": "composite", "compositeScore": 43, "compositeMax": 100, "hiringNorm": 19, "bnbNorm": 24, "compositePriority": "MEDIUM"}, {"firmId": "FIRM5194221", "name": "BatuTrans bvba", "address": "Kazerneweg 7/7", "postalCode": "9770", "city": "Kruishoutem", "phone": "09/3240886", "email": "info@batutrans.be", "website": "www.batutrans.be", "employeesRaw": "", "vatNumber": "", "ads": ["2442841926"], "positions": ["2516508665"], "monthlyAds": [{"month": "2026-05", "count": 1}], "totalBudget": 999.0, "industries": [{"code": "H49.4", "name": "Transports routiers de fret et services de déménagement"}], "contacts": [{"name": "", "email": "info@batutrans.be", "phone": "", "function": ""}], "jobTitles": ["Vrachtwagenchauffeurs CE"], "totalAds": 1, "totalPositions": 1, "size": {"category": "INCONNU", "etpMin": 0, "etpMax": 0, "sizeId": 0}, "bce": null, "scoring": {"score": 44, "maxScore": 105, "percentage": 42, "priority": "MEDIUM", "breakdown": {"volume": {"pts": 10, "max": 25, "detail": "1 poste(s)"}, "recurrence": {"pts": 0, "max": 25, "detail": "ratio 1.0"}, "acceleration": {"pts": 25, "max": 25, "detail": "2026-05"}, "budget": {"pts": 4, "max": 15, "detail": "999€"}, "secteur": {"pts": 5, "max": 15, "detail": "Secteur intérim"}}}, "bnbScoring": {"score": 0, "maxScore": 45, "available": false, "error": "Pas de BCE"}, "scoreMode": "hiring-only", "compositeScore": 42, "compositeMax": 100, "hiringNorm": 21, "bnbNorm": 0, "compositePriority": "MEDIUM"}, {"firmId": "FIRM2397032", "name": "Desutter Group - Kranen Desutter Nv - Destrans Nv", "address": "Blokkestraat 12", "postalCode": "8530", "city": "Harelbeke", "phone": "056/720720", "email": "info@desuttergroup.com", "website": "www.desuttergroup.com", "employeesRaw": "250 - 999", "vatNumber": "", "ads": ["2444906638"], "positions": ["2518632676"], "monthlyAds": [{"month": "2026-05", "count": 1}], "totalBudget": 0.0, "industries": [{"code": "N77.3", "name": "Location et location-bail d’autres machines, équipements et biens"}, {"code": "F43.1", "name": "Démolition et préparation des sites"}, {"code": "F43.9", "name": "Autres travaux de construction spécialisés"}, {"code": "H49.4", "name": "Transports routiers de fret et services de déménagement"}], "contacts": [{"name": "", "email": "info@desuttergroup.com", "phone": "", "function": ""}], "jobTitles": ["CE-Fahrer – Plateau- und Schwertransport"], "totalAds": 1, "totalPositions": 1, "size": {"category": "GRANDES", "etpMin": 250, "etpMax": 999, "sizeId": 4}, "bce": null, "scoring": {"score": 40, "maxScore": 105, "percentage": 38, "priority": "MEDIUM", "breakdown": {"volume": {"pts": 10, "max": 25, "detail": "1 poste(s)"}, "recurrence": {"pts": 0, "max": 25, "detail": "ratio 1.0"}, "acceleration": {"pts": 25, "max": 25, "detail": "2026-05"}, "budget": {"pts": 0, "max": 15, "detail": "0€"}, "secteur": {"pts": 5, "max": 15, "detail": "Secteur intérim"}}}, "bnbScoring": {"score": 0, "maxScore": 45, "available": false, "error": "Pas de BCE"}, "scoreMode": "hiring-only", "compositeScore": 38, "compositeMax": 100, "hiringNorm": 19, "bnbNorm": 0, "compositePriority": "MEDIUM"}, {"firmId": "FIRM1517664", "name": "Herreman Transport bvba", "address": "Menenstraat 500", "postalCode": "8560", "city": "Wevelgem", "phone": "056/512033", "email": "", "website": "www.transportherreman.be", "employeesRaw": "", "vatNumber": "", "ads": ["2444761453"], "positions": ["2518458491"], "monthlyAds": [{"month": "2026-05", "count": 1}], "totalBudget": 0.0, "industries": [{"code": "H49.4", "name": "Transports routiers de fret et services de déménagement"}, {"code": "H49.2", "name": "Transports ferroviaires de fret"}, {"code": "H50.2", "name": "Transports maritimes et côtiers de fret"}, {"code": "H51.2", "name": "Transports aériens de fret et transports spatiaux"}], "contacts": [], "jobTitles": ["Chauffeurs CE"], "totalAds": 1, "totalPositions": 1, "size": {"category": "INCONNU", "etpMin": 0, "etpMax": 0, "sizeId": 0}, "bce": null, "scoring": {"score": 40, "maxScore": 105, "percentage": 38, "priority": "MEDIUM", "breakdown": {"volume": {"pts": 10, "max": 25, "detail": "1 poste(s)"}, "recurrence": {"pts": 0, "max": 25, "detail": "ratio 1.0"}, "acceleration": {"pts": 25, "max": 25, "detail": "2026-05"}, "budget": {"pts": 0, "max": 15, "detail": "0€"}, "secteur": {"pts": 5, "max": 15, "detail": "Secteur intérim"}}}, "bnbScoring": {"score": 0, "maxScore": 45, "available": false, "error": "Pas de BCE"}, "scoreMode": "hiring-only", "compositeScore": 38, "compositeMax": 100, "hiringNorm": 19, "bnbNorm": 0, "compositePriority": "MEDIUM"}, {"firmId": "FIRM2373706", "name": "Gosselin Group", "address": "Belcrownlaan 23", "postalCode": "2100", "city": "Deurne", "phone": "03/3605500", "email": "info@gosselingroup.eu", "website": "www.gosselingroup.eu", "employeesRaw": ">1.000", "vatNumber": "", "ads": ["2444013477", "2444473951"], "positions": ["2518183247", "2517745831"], "monthlyAds": [{"month": "2026-05", "count": 2}], "totalBudget": 0.0, "industries": [{"code": "H49.4", "name": "Transports routiers de fret et services de déménagement"}, {"code": "H52.1", "name": "Entreposage et stockage"}, {"code": "H52.2", "name": "Services auxiliaires des transports"}], "contacts": [{"name": "", "email": "info@gosselingroup.eu", "phone": "", "function": ""}, {"name": "Frau Karlien Van Molle", "email": "jobs@gosselingroup.eu", "phone": "", "function": ""}, {"name": "Madame Karlien Van Molle", "email": "jobs@gosselingroup.eu", "phone": "", "function": "Founder of Soulving HR • Freelance HR Business Partner @ Gos"}], "jobTitles": ["Magazijnier (met heftruckattest)", "Magazijnier (Delca)"], "totalAds": 2, "totalPositions": 2, "size": {"category": "TRES_GRANDES", "etpMin": 1000, "etpMax": 99999, "sizeId": 5}, "bce": null, "scoring": {"score": 40, "maxScore": 105, "percentage": 38, "priority": "MEDIUM", "breakdown": {"volume": {"pts": 10, "max": 25, "detail": "2 poste(s)"}, "recurrence": {"pts": 0, "max": 25, "detail": "ratio 1.0"}, "acceleration": {"pts": 25, "max": 25, "detail": "2026-05"}, "budget": {"pts": 0, "max": 15, "detail": "0€"}, "secteur": {"pts": 5, "max": 15, "detail": "Secteur intérim"}}}, "bnbScoring": {"score": 0, "maxScore": 45, "available": false, "error": "Pas de BCE"}, "scoreMode": "hiring-only", "compositeScore": 38, "compositeMax": 100, "hiringNorm": 19, "bnbNorm": 0, "compositePriority": "MEDIUM"}, {"firmId": "FIRM11243932", "name": "PL-Freight Network srl", "address": "Boulevard de l'Empereur 10", "postalCode": "1000", "city": "Bruxelles", "phone": "02/", "email": "", "website": "", "employeesRaw": "", "vatNumber": "", "ads": ["2444555848"], "positions": ["2518259767"], "monthlyAds": [{"month": "2026-05", "count": 1}], "totalBudget": 0.0, "industries": [{"code": "H49.4", "name": "Transports routiers de fret et services de déménagement"}], "contacts": [], "jobTitles": ["Chauffeur livreur permis B"], "totalAds": 1, "totalPositions": 1, "size": {"category": "INCONNU", "etpMin": 0, "etpMax": 0, "sizeId": 0}, "bce": null, "scoring": {"score": 40, "maxScore": 105, "percentage": 38, "priority": "MEDIUM", "breakdown": {"volume": {"pts": 10, "max": 25, "detail": "1 poste(s)"}, "recurrence": {"pts": 0, "max": 25, "detail": "ratio 1.0"}, "acceleration": {"pts": 25, "max": 25, "detail": "2026-05"}, "budget": {"pts": 0, "max": 15, "detail": "0€"}, "secteur": {"pts": 5, "max": 15, "detail": "Secteur intérim"}}}, "bnbScoring": {"score": 0, "maxScore": 45, "available": false, "error": "Pas de BCE"}, "scoreMode": "hiring-only", "compositeScore": 38, "compositeMax": 100, "hiringNorm": 19, "bnbNorm": 0, "compositePriority": "MEDIUM"}, {"firmId": "FIRM10427117", "name": "Postalia Belguim Srl - EasyPost", "address": "Drève Gustave Fache 1", "postalCode": "7700", "city": "Luingne (Mouscron)", "phone": "", "email": "info@easypost.eu", "website": "www.easypost.eu", "employeesRaw": "250 - 999", "vatNumber": "", "ads": ["2442871897", "2443127345"], "positions": ["2516533414", "2516806143"], "monthlyAds": [{"month": "2026-05", "count": 2}], "totalBudget": 0.0, "industries": [{"code": "H53.2", "name": "Autres activités de poste et de courrier"}], "contacts": [{"name": "", "email": "info@easypost.eu", "phone": "", "function": ""}], "jobTitles": ["Opérateur de courrier H/F", "Chauffeur Livreur laboratoire et courrier H/F"], "totalAds": 2, "totalPositions": 2, "size": {"category": "GRANDES", "etpMin": 250, "etpMax": 999, "sizeId": 4}, "bce": null, "scoring": {"score": 40, "maxScore": 105, "percentage": 38, "priority": "MEDIUM", "breakdown": {"volume": {"pts": 10, "max": 25, "detail": "2 poste(s)"}, "recurrence": {"pts": 0, "max": 25, "detail": "ratio 1.0"}, "acceleration": {"pts": 25, "max": 25, "detail": "2026-05"}, "budget": {"pts": 0, "max": 15, "detail": "0€"}, "secteur": {"pts": 5, "max": 15, "detail": "Secteur intérim"}}}, "bnbScoring": {"score": 0, "maxScore": 45, "available": false, "error": "Pas de BCE"}, "scoreMode": "hiring-only", "compositeScore": 38, "compositeMax": 100, "hiringNorm": 19, "bnbNorm": 0, "compositePriority": "MEDIUM"}, {"firmId": "FIRM3630297", "name": "Rotrafic bvba", "address": "Karreweg 34", "postalCode": "9870", "city": "Zulte", "phone": "09/3889655", "email": "info@rotrafic.be", "website": "www.rotrafic.be", "employeesRaw": "50 - 249", "vatNumber": "", "ads": ["2442875117"], "positions": ["2516533386"], "monthlyAds": [{"month": "2026-05", "count": 1}], "totalBudget": 0.0, "industries": [{"code": "H49.4", "name": "Transports routiers de fret et services de déménagement"}], "contacts": [{"name": "", "email": "info@rotrafic.be", "phone": "", "function": ""}], "jobTitles": ["Magazijnier avond/nacht"], "totalAds": 1, "totalPositions": 1, "size": {"category": "MOYENNES", "etpMin": 50, "etpMax": 249, "sizeId": 3}, "bce": null, "scoring": {"score": 40, "maxScore": 105, "percentage": 38, "priority": "MEDIUM", "breakdown": {"volume": {"pts": 10, "max": 25, "detail": "1 poste(s)"}, "recurrence": {"pts": 0, "max": 25, "detail": "ratio 1.0"}, "acceleration": {"pts": 25, "max": 25, "detail": "2026-05"}, "budget": {"pts": 0, "max": 15, "detail": "0€"}, "secteur": {"pts": 5, "max": 15, "detail": "Secteur intérim"}}}, "bnbScoring": {"score": 0, "maxScore": 45, "available": false, "error": "Pas de BCE"}, "scoreMode": "hiring-only", "compositeScore": 38, "compositeMax": 100, "hiringNorm": 19, "bnbNorm": 0, "compositePriority": "MEDIUM"}];
+let filtered = DATA.slice();
+
+const NACE_SECTORS = {
+  'A':'Agriculture','B':'Industries extractives',
+  'C10':'Alimentation','C11':'Boissons','C13':'Textile','C16':'Bois','C17':'Papier','C20':'Chimie','C22':'Caoutchouc/Plastique','C23':'Minéraux non métalliques','C24':'Métallurgie','C25':'Fabrication métallique','C26':'Électronique','C27':'Équipements électriques','C28':'Machines/Équipements','C29':'Véhicules automobiles','C30':'Autres transports','C31':'Meubles','C32':'Autres industries','C33':'Réparation/Installation',
+  'D':'Énergie','E':'Eau/Déchets',
+  'F41':'Construction de bâtiments','F42':'Génie civil','F43':'Travaux de construction spécialisés','F':'Construction',
+  'G45':'Commerce véhicules','G46':'Commerce de gros','G47':'Commerce de détail',
+  'H49':'Transport terrestre','H50':'Transport par eau','H51':'Transport aérien','H52':'Entreposage / Logistique','H53':'Poste et courrier',
+  'I55':'Hébergement','I56':'Restauration',
+  'J':'IT/Communication','K':'Finance/Assurance','L':'Immobilier','M':'Services professionnels',
+  'N77':'Location','N78':'Emploi (intérim)','N81':'Services bâtiments','N82':'Services administratifs',
+  'O':'Administration publique','P':'Enseignement','Q86':'Santé','Q87':'Hébergement médico-social','Q88':'Action sociale','R':'Arts/Loisirs','S':'Autres services'
+};
+function getNaceLabel(code) {
+  if (!code) return 'Autre';
+  const clean = code.replace(/\./g,'');
+  for (let len = clean.length; len >= 1; len--) {
+    const key = clean.substring(0, len);
+    if (NACE_SECTORS[key]) return NACE_SECTORS[key];
+  }
+  return code;
+}
+function fmtN(n) { return (n||0).toLocaleString('fr-BE'); }
+function fmtE(n) { return ((n||0).toLocaleString('fr-BE')) + ' €'; }
+
+function scrollSec(id) { document.getElementById(id)?.scrollIntoView({behavior:'smooth',block:'start'}); }
+
+function priorityClass(p) { return 'priority-' + p; }
+function scoreColor(p) { return p === 'HOT' ? '#C0392B' : (p === 'HIGH' ? '#E6B527' : (p === 'MEDIUM' ? '#2A6B69' : '#33373D')); }
+
+function applyFilters() {
+  const s = (document.getElementById('fSearch').value || '').toLowerCase();
+  const minS = parseInt(document.getElementById('fScore').value) || 0;
+  const sz = document.getElementById('fSize').value;
+  const pr = document.getElementById('fPrio').value;
+  filtered = DATA.filter(d => {
+    if (d.compositeScore < minS) return false;
+    if (sz && d.size?.category !== sz) return false;
+    if (pr && d.compositePriority !== pr) return false;
+    if (s) {
+      const hay = (d.name + ' ' + d.city + ' ' + (d.industries||[]).map(i=>i.code+' '+i.name).join(' ') + ' ' + (d.jobTitles||[]).join(' ')).toLowerCase();
+      if (!hay.includes(s)) return false;
+    }
+    return true;
+  });
+  renderTable();
+  renderHot();
+}
+
+function renderHot() {
+  const hot = filtered.filter(d => ['HOT','HIGH'].includes(d.compositePriority))
+    .sort((a,b) => b.compositeScore - a.compositeScore);
+  const c = document.getElementById('hotProspects');
+  if (hot.length === 0) {
+    c.innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--text-secondary);background:var(--bg-card);border:1px dashed var(--card-border);border-radius:8px">Aucun prospect HOT/HIGH avec les filtres actuels.</div>';
+    return;
+  }
+  c.innerHTML = hot.map(d => `
+    <div class="hot-card" onclick="openCard('${d.firmId}')">
+      <div class="hc-name">${escapeHtml(d.name)}</div>
+      <div class="hc-location">📍 ${escapeHtml(d.city)} ${d.postalCode}</div>
+      <div class="hc-score hc-score-${d.compositePriority}">${d.compositeScore}</div>
+      <div class="hc-jobs">${(d.jobTitles||[]).slice(0,3).map(j=>'<div class="hc-job">'+escapeHtml(j)+'</div>').join('')}</div>
+      <div class="hc-signals">
+        <span>📄 ${d.totalPositions} poste${d.totalPositions>1?'s':''}</span>
+        <span>💰 ${fmtE(d.totalBudget)}</span>
+        ${d.bnbScoring?.available ? '<span>👥 '+Math.round(d.bnbScoring.rawData.etp)+' ETP</span>' : ''}
+      </div>
+      ${d.phone ? '<a class="hc-phone" href="tel:'+d.phone+'" onclick="event.stopPropagation()">📞 '+d.phone+'</a>' : ''}
+    </div>
+  `).join('');
+}
+
+function renderTable() {
+  const tb = document.getElementById('tbody');
+  tb.innerHTML = filtered.map(d => {
+    const etp = d.bnbScoring?.available ? Math.round(d.bnbScoring.rawData.etp) + ' ETP' : '—';
+    let interim = '—';
+    if (d.bnbScoring?.available) {
+      const rd = d.bnbScoring.rawData;
+      if (d.bnbScoring.modelType === 'complet') {
+        interim = rd.i617 > 0 ? fmtE(rd.i617) : '0';
+      } else {
+        interim = rd.i9097 > 0 ? rd.i9097.toFixed(1)+' ETP' : '—';
+      }
+    }
+    const modelBadge = d.bnbScoring?.available ? '<span class="model-badge">'+ (d.bnbScoring.modelType === 'complet' ? 'C' : 'A') +'</span>' : '';
+    const bce = d.bce || '—';
+    return `<tr class="row" onclick="openCard('${d.firmId}')">
+      <td><span class="priority ${priorityClass(d.compositePriority)}">${d.compositePriority}</span></td>
+      <td class="score-cell">${d.compositeScore}/100</td>
+      <td><strong>${escapeHtml(d.name)}</strong><div style="font-size:11px;color:var(--text-secondary);margin-top:2px">${(d.industries||[]).slice(0,2).map(i=>getNaceLabel(i.code)).join(', ')}</div></td>
+      <td>${escapeHtml(d.city)} ${d.postalCode}</td>
+      <td>${d.size?.category||'—'}</td>
+      <td>${bce}${modelBadge}</td>
+      <td>${d.totalPositions}</td>
+      <td>${fmtE(d.totalBudget)}</td>
+      <td>${etp}</td>
+      <td>${interim}</td>
+    </tr>`;
+  }).join('');
+}
+
+function escapeHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function openCard(firmId) {
+  const d = DATA.find(x => x.firmId === firmId);
+  if (!d) return;
+  const sb = d.scoring.breakdown;
+  const bb = d.bnbScoring?.breakdown;
+  
+  const hiringBars = ['volume','recurrence','acceleration','budget','secteur'].map(k => {
+    const c = sb[k];
+    const labels = {volume:'Volume de postes',recurrence:'Récurrence',acceleration:'Accélération',budget:'Budget pub',secteur:'Secteur NACE'};
+    const w = c.max ? (c.pts/c.max*100) : 0;
+    return `<div class="bd"><div class="bd-name">${labels[k]}</div><div class="bd-bar"><div class="bd-fill" style="width:${w}%"></div></div><div class="bd-score">${c.pts}/${c.max}</div><div class="bd-detail">${escapeHtml(c.detail)}</div></div>`;
+  }).join('');
+  
+  let bnbSection = '';
+  if (d.bnbScoring?.available) {
+    const bbars = ['etp_taille','etp_croissance','interim','sante'].map(k => {
+      const c = bb[k];
+      const labels = {etp_taille:'Taille ETP',etp_croissance:'Croissance ETP',interim:'Intérim',sante:'Santé financière'};
+      const w = c.max ? (c.pts/c.max*100) : 0;
+      return `<div class="bd"><div class="bd-name">${labels[k]}</div><div class="bd-bar"><div class="bd-fill" style="width:${w}%"></div></div><div class="bd-score">${c.pts}/${c.max}</div><div class="bd-detail">${escapeHtml(c.detail)}</div></div>`;
+    }).join('');
+    bnbSection = `<h3>Score financier BNB — ${d.bnbScoring.score}/45 (modèle ${d.bnbScoring.modelType}, année ${d.bnbScoring.year})</h3>${bbars}`;
+  } else {
+    bnbSection = `<h3>Score financier BNB</h3><div class="no-bnb-note">${escapeHtml(d.bnbScoring?.error || 'Non disponible')}</div>`;
+  }
+  
+  const contacts = (d.contacts||[]).filter(c => c.name||c.email||c.phone).map(c => 
+    `<div class="contact"><strong>${escapeHtml(c.name||'(sans nom)')}</strong>${c.function?' · '+escapeHtml(c.function):''}<br>${c.email?'<a href="mailto:'+escapeHtml(c.email)+'">'+escapeHtml(c.email)+'</a>':''} ${c.phone?'· <a href="tel:'+escapeHtml(c.phone)+'">'+escapeHtml(c.phone)+'</a>':''}</div>`
+  ).join('') || '<div class="contact" style="color:var(--text-secondary)">Aucun contact direct extrait</div>';
+  
+  document.getElementById('modalContent').innerHTML = `
+    <div class="modal-header">
+      <button class="close" onclick="closeModal()">×</button>
+      <div class="modal-score-circle">${d.compositeScore}</div>
+      <h2>${escapeHtml(d.name)}</h2>
+      <div class="meta">📍 ${escapeHtml(d.address)} · ${d.postalCode} ${escapeHtml(d.city)} · ${d.bce ? 'BCE '+d.bce : 'Sans BCE'} · <span class="priority ${priorityClass(d.compositePriority)}">${d.compositePriority}</span></div>
+    </div>
+    <div class="modal-body">
+      <h3>Signaux</h3>
+      <div class="signals-row">
+        <div class="signal-box"><div class="v">${d.totalPositions}</div><div class="l">Postes ouverts</div></div>
+        <div class="signal-box"><div class="v">${d.totalAds}</div><div class="l">Annonces actives</div></div>
+        <div class="signal-box"><div class="v">${fmtE(d.totalBudget)}</div><div class="l">Budget pub (7j)</div></div>
+      </div>
+      <h3>Score hiring Advertsdata — ${d.scoring.score}/105 (${d.scoring.priority})</h3>
+      ${hiringBars}
+      ${bnbSection}
+      <h3>Postes ouverts (${d.jobTitles?.length || 0})</h3>
+      <div>${(d.jobTitles||[]).map(j => '<span class="tag">'+escapeHtml(j)+'</span>').join('')}</div>
+      <h3>Secteurs NACE</h3>
+      <div>${(d.industries||[]).map(i => '<span class="tag">'+i.code+' — '+escapeHtml(getNaceLabel(i.code))+'</span>').join('')}</div>
+      <h3>Contacts</h3>
+      <div class="contact-list">${contacts}</div>
+      ${d.website ? '<h3>Web</h3><div class="contact"><a href="'+(d.website.startsWith('http')?d.website:'https://'+d.website)+'" target="_blank">'+escapeHtml(d.website)+'</a></div>' : ''}
+    </div>
+  `;
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+function exportCSV() {
+  const header = 'Score,Priorite,Nom,Ville,CP,Taille,BCE,Modele,Postes,Annonces,Budget,ETP,Frais617,Secteurs,JobTitles,Telephone,Email,Website
+';
+  const esc = v => '"'+String(v||'').replace(/"/g,'""')+'"';
+  const rows = filtered.map(d => {
+    const rd = d.bnbScoring?.rawData || {};
+    return [
+      d.compositeScore, d.compositePriority,
+      esc(d.name), esc(d.city), d.postalCode, esc(d.size?.category||''),
+      d.bce||'', d.bnbScoring?.modelType||'',
+      d.totalPositions, d.totalAds, Math.round(d.totalBudget),
+      d.bnbScoring?.available ? Math.round(rd.etp||0) : '',
+      d.bnbScoring?.available && d.bnbScoring.modelType==='complet' ? Math.round(rd.i617||0) : '',
+      esc((d.industries||[]).map(i=>i.code+' '+getNaceLabel(i.code)).join('; ')),
+      esc((d.jobTitles||[]).join('; ')),
+      esc(d.phone), esc(d.email), esc(d.website)
+    ].join(',');
+  });
+  const blob = new Blob(['﻿'+header+rows.join('
+')], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'jobalto-prospection-courtrai-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+// Charts
+function makeCharts() {
+  // Cities
+  const cityMap = {};
+  DATA.forEach(d => { if(d.city) cityMap[d.city] = (cityMap[d.city]||0) + d.totalPositions; });
+  const topC = Object.entries(cityMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  new Chart(document.getElementById('chartCities'), {
+    type:'bar', data:{labels:topC.map(c=>c[0]), datasets:[{data:topC.map(c=>c[1]), backgroundColor:'#143635', borderRadius:4}]},
+    options:{plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,ticks:{precision:0}}}}
+  });
+  // NACE labels
+  const naceMap = {};
+  DATA.forEach(d => (d.industries||[]).forEach(ind => {
+    const lab = getNaceLabel(ind.code);
+    naceMap[lab] = (naceMap[lab]||0) + d.totalPositions;
+  }));
+  const topN = Object.entries(naceMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  new Chart(document.getElementById('chartNace'), {
+    type:'bar', data:{labels:topN.map(n=>n[0]), datasets:[{data:topN.map(n=>n[1]), backgroundColor:'#E6B527', borderRadius:4}]},
+    options:{indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true,ticks:{precision:0}}}}
+  });
+  // Priority
+  const counts = {HOT:0,HIGH:0,MEDIUM:0,LOW:0};
+  DATA.forEach(d => { counts[d.compositePriority]++; });
+  new Chart(document.getElementById('chartPriority'), {
+    type:'doughnut',
+    data:{labels:['HOT','HIGH','MEDIUM','LOW'], datasets:[{data:[counts.HOT,counts.HIGH,counts.MEDIUM,counts.LOW], backgroundColor:['#C0392B','#E6B527','#2A6B69','#33373D'], borderWidth:0}]},
+    options:{cutout:'60%', plugins:{legend:{position:'bottom',labels:{padding:14,usePointStyle:true,font:{size:11}}}}}
+  });
+  // Budget Top HOT/HIGH
+  const hh = DATA.filter(d => ['HOT','HIGH'].includes(d.compositePriority)).sort((a,b)=>b.totalBudget-a.totalBudget).slice(0,8);
+  if (hh.length && hh.some(d => d.totalBudget > 0)) {
+    new Chart(document.getElementById('chartBudget'), {
+      type:'bar', data:{labels:hh.map(c=>c.name.substring(0,28)), datasets:[{data:hh.map(c=>c.totalBudget), backgroundColor:'#143635', borderRadius:4}]},
+      options:{indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{ticks:{callback:v=>v.toLocaleString('fr-BE')+'€'}}}}
+    });
+  } else {
+    document.getElementById('chartBudget').parentElement.innerHTML = '<h3>Budget recrutement — Top HOT/HIGH</h3><div style="padding:20px;color:var(--text-secondary);font-size:13px">Aucun budget publicitaire significatif détecté chez les prospects HOT/HIGH sur cette fenêtre 7 jours.</div>';
+  }
+}
+
+document.getElementById('fSearch').addEventListener('input', applyFilters);
+document.getElementById('fScore').addEventListener('change', applyFilters);
+document.getElementById('fSize').addEventListener('change', applyFilters);
+document.getElementById('fPrio').addEventListener('change', applyFilters);
+
+renderTable();
+renderHot();
+makeCharts();
+</script>
+</body>
+</html>

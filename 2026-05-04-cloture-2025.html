@@ -26,6 +26,7 @@
     --st-quest: #7c3aed; --st-quest-bg: #ede9fe;
     --st-bloque: #b91c1c; --st-bloque-bg: #fee2e2;
     --st-clos: #166534; --st-clos-bg: #dcfce7;
+    --st-perdu: #57534e; --st-perdu-bg: #f5f5f4;
 
     --owner-diego: #1d4ed8; --owner-diego-bg: #dbeafe;
     --owner-palof: #0d9488; --owner-palof-bg: #ccfbf1;
@@ -161,6 +162,7 @@
   .pill.st-quest { background: var(--st-quest-bg); color: var(--st-quest); }
   .pill.st-bloque { background: var(--st-bloque-bg); color: var(--st-bloque); }
   .pill.st-clos { background: var(--st-clos-bg); color: var(--st-clos); }
+  .pill.st-perdu { background: var(--st-perdu-bg); color: var(--st-perdu); text-decoration: line-through; }
   .pill.ow-diego { background: var(--owner-diego-bg); color: var(--owner-diego); }
   .pill.ow-palof { background: var(--owner-palof-bg); color: var(--owner-palof); }
   .pill.ow-compta { background: var(--owner-compta-bg); color: var(--owner-compta); }
@@ -339,14 +341,16 @@
     COMPTE_ATTENTE: 'fldy3avqATcMH6fhf'
   };
 
-  const STATUTS = ['A traiter', 'En cours', 'Document trouve', 'Envoye compta', 'Question posee', 'Bloque', 'Clos'];
+  const STATUTS = ['A traiter', 'En cours', 'Document trouve', 'Envoye compta', 'Question posee', 'Bloque', 'Document perdu', 'Clos'];
   const STATUT_LABEL = {
     'A traiter': 'À traiter', 'En cours': 'En cours', 'Document trouve': 'Document trouvé',
-    'Envoye compta': 'Envoyé compta', 'Question posee': 'Question posée', 'Bloque': 'Bloqué', 'Clos': 'Clos'
+    'Envoye compta': 'Envoyé compta', 'Question posee': 'Question posée', 'Bloque': 'Bloqué',
+    'Document perdu': 'Document perdu', 'Clos': 'Clos'
   };
   const STATUT_CLASS = {
     'A traiter': 'st-attr', 'En cours': 'st-cours', 'Document trouve': 'st-trouve',
-    'Envoye compta': 'st-envoye', 'Question posee': 'st-quest', 'Bloque': 'st-bloque', 'Clos': 'st-clos'
+    'Envoye compta': 'st-envoye', 'Question posee': 'st-quest', 'Bloque': 'st-bloque',
+    'Document perdu': 'st-perdu', 'Clos': 'st-clos'
   };
   const OWNERS = ['Non assigne', 'Diego', 'Palof', 'Comptable'];
   const OWNER_LABEL = { 'Non assigne': 'Non assigné', 'Diego': 'Diego', 'Palof': 'Palof', 'Comptable': 'Comptable' };
@@ -375,7 +379,7 @@
   ];
 
   const IN_PROGRESS_STATUSES = ['En cours', 'Document trouve', 'Question posee'];
-  const CLOS_STATUSES = ['Clos', 'Envoye compta'];
+  const CLOS_STATUSES = ['Clos', 'Envoye compta', 'Document perdu'];
 
   const state = {
     records: [],
@@ -656,7 +660,7 @@
   }
 
   function rowHtml(r) {
-    const isClos = r.statut === 'Clos';
+    const isClos = CLOS_STATUSES.includes(r.statut);
     const expanded = state.expanded.has(r.id);
     const meta = [];
     if (r.montant) meta.push(`<span class="amount">${fmtMontant(r.montant)}</span>`);

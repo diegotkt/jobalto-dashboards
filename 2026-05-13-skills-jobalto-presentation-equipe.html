@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tes super-pouvoirs Claude — Jobalto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --teal: #143635;
+  --teal-soft: #1f4e4c;
+  --gold: #E6B527;
+  --cream: #F9F7F0;
+  --white: #FFFFFF;
+  --charcoal: #333333;
+  --slate: #33373D;
+  --border: #E5E1D5;
+  --shadow: 0 1px 2px rgba(20,54,53,0.04), 0 8px 24px rgba(20,54,53,0.06);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--charcoal);
+  background: var(--white);
+  -webkit-font-smoothing: antialiased;
+}
+header {
+  background: var(--teal);
+  color: var(--white);
+  padding: 24px 48px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 4px solid var(--gold);
+}
+.logo {
+  font-weight: 900;
+  font-size: 24px;
+  letter-spacing: -1px;
+  text-transform: uppercase;
+}
+.logo .a-accent { color: var(--gold); }
+.nav-tagline {
+  font-size: 14px;
+  font-weight: 400;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.hero {
+  background: linear-gradient(135deg, var(--teal) 0%, var(--teal-soft) 100%);
+  color: var(--white);
+  padding: 100px 48px 80px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 220px;
+  height: 220px;
+  background: var(--gold);
+  opacity: 0.08;
+  border-radius: 50%;
+}
+.hero h1 {
+  font-size: clamp(36px, 6vw, 72px);
+  font-weight: 900;
+  text-transform: uppercase;
+  line-height: 1;
+  letter-spacing: -3px;
+  margin-bottom: 24px;
+  position: relative;
+}
+.hero h1 .accent { color: var(--gold); }
+.hero p {
+  font-size: 20px;
+  max-width: 720px;
+  margin: 0 auto 16px;
+  opacity: 0.95;
+  line-height: 1.5;
+}
+.hero .lead {
+  font-weight: 500;
+}
+.hero-stats {
+  margin-top: 48px;
+  display: flex;
+  justify-content: center;
+  gap: 64px;
+  flex-wrap: wrap;
+}
+.stat {
+  text-align: center;
+}
+.stat-num {
+  font-size: 56px;
+  font-weight: 900;
+  color: var(--gold);
+  line-height: 1;
+  letter-spacing: -2px;
+}
+.stat-label {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-top: 8px;
+  opacity: 0.85;
+}
+main {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 80px 48px;
+}
+.intro-block {
+  background: var(--cream);
+  border-left: 4px solid var(--gold);
+  padding: 28px 32px;
+  margin-bottom: 80px;
+  border-radius: 0 8px 8px 0;
+}
+.intro-block h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--teal);
+  text-transform: uppercase;
+  letter-spacing: -0.5px;
+  margin-bottom: 12px;
+}
+.intro-block p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--charcoal);
+}
+.intro-block strong {
+  color: var(--teal);
+  font-weight: 700;
+}
+.section {
+  margin-bottom: 80px;
+}
+.section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.section-number {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.section-title {
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 900;
+  color: var(--teal);
+  text-transform: uppercase;
+  letter-spacing: -1.5px;
+  line-height: 1;
+}
+.section-sub {
+  font-size: 17px;
+  color: var(--slate);
+  margin-bottom: 36px;
+  max-width: 760px;
+  line-height: 1.55;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 24px;
+}
+.card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 28px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  position: relative;
+}
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+  border-color: var(--gold);
+}
+.card-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--gold);
+  background: rgba(230, 181, 39, 0.12);
+  padding: 4px 10px;
+  border-radius: 3px;
+  margin-bottom: 14px;
+}
+.card-name {
+  font-family: 'Menlo', 'Monaco', monospace;
+  font-size: 14px;
+  color: var(--teal);
+  background: var(--cream);
+  padding: 3px 8px;
+  border-radius: 3px;
+  display: inline-block;
+  margin-bottom: 14px;
+  font-weight: 500;
+}
+.card h3 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--teal);
+  margin-bottom: 12px;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+.card .desc {
+  font-size: 15px;
+  color: var(--charcoal);
+  line-height: 1.55;
+  margin-bottom: 18px;
+}
+.card .meta {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  margin-top: 16px;
+}
+.card .meta-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+.card .meta-value {
+  font-size: 14px;
+  color: var(--slate);
+  line-height: 1.5;
+}
+.card .meta-value em {
+  font-style: normal;
+  background: var(--cream);
+  padding: 1px 6px;
+  border-radius: 2px;
+  font-size: 13px;
+  display: inline-block;
+  margin: 2px 4px 2px 0;
+  color: var(--teal);
+}
+.card-featured {
+  background: var(--teal);
+  color: var(--white);
+  border-color: var(--teal);
+}
+.card-featured:hover { border-color: var(--gold); }
+.card-featured .card-name {
+  background: rgba(255,255,255,0.1);
+  color: var(--gold);
+}
+.card-featured h3 { color: var(--white); }
+.card-featured .desc { color: rgba(255,255,255,0.92); }
+.card-featured .meta {
+  border-top-color: rgba(255,255,255,0.15);
+}
+.card-featured .meta-value {
+  color: rgba(255,255,255,0.88);
+}
+.card-featured .meta-value em {
+  background: rgba(255,255,255,0.12);
+  color: var(--gold);
+}
+.advanced-section {
+  background: var(--cream);
+  padding: 60px 48px;
+  border-radius: 12px;
+  margin-top: 40px;
+}
+.advanced-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 28px;
+}
+.advanced-item {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 18px 20px;
+}
+.advanced-item code {
+  font-family: 'Menlo', monospace;
+  font-size: 13px;
+  color: var(--teal);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 6px;
+}
+.advanced-item .why {
+  font-size: 13px;
+  color: var(--slate);
+  line-height: 1.45;
+}
+.how-to {
+  background: var(--teal);
+  color: var(--white);
+  padding: 60px 48px;
+  border-radius: 12px;
+  text-align: center;
+  margin-top: 80px;
+}
+.how-to h2 {
+  font-size: 32px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -1.5px;
+  margin-bottom: 16px;
+  color: var(--white);
+}
+.how-to h2 .accent { color: var(--gold); }
+.how-to p {
+  font-size: 17px;
+  max-width: 640px;
+  margin: 0 auto 28px;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+.steps {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  margin-top: 36px;
+  flex-wrap: wrap;
+  text-align: left;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.step {
+  flex: 1;
+  min-width: 240px;
+  background: rgba(255,255,255,0.04);
+  padding: 24px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.step-num {
+  font-size: 36px;
+  font-weight: 900;
+  color: var(--gold);
+  line-height: 1;
+  margin-bottom: 12px;
+}
+.step h4 {
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.step p {
+  font-size: 14px;
+  opacity: 0.85;
+  margin: 0;
+  text-align: left;
+}
+footer {
+  background: var(--teal);
+  color: var(--white);
+  padding: 40px 48px;
+  text-align: center;
+  font-size: 13px;
+  border-top: 4px solid var(--gold);
+}
+footer a {
+  color: var(--gold);
+  text-decoration: none;
+  font-weight: 500;
+}
+footer .tagline {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  color: var(--gold);
+}
+@media (max-width: 760px) {
+  header { padding: 16px 24px; }
+  .hero { padding: 60px 24px; }
+  .hero-stats { gap: 32px; }
+  main { padding: 48px 24px; }
+  .advanced-section, .how-to { padding: 40px 24px; }
+  .cards { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">JOB<span class="a-accent">▲</span>LTO</div>
+  <div class="nav-tagline">Plugins Claude · Édition équipe</div>
+</header>
+
+<section class="hero">
+  <h1>Tes super-pouvoirs<br><span class="accent">Claude</span></h1>
+  <p class="lead">Un guide pratique des plugins maison de Jobalto.</p>
+  <p>Pour chaque cas d'usage métier, une skill Claude qui fait le boulot — extraire des données, anonymiser un CV, générer un dashboard, analyser un client avant un rendez-vous. Plus besoin de réinventer.</p>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">30</div><div class="stat-label">Plugins équipe</div></div>
+    <div class="stat"><div class="stat-num">10</div><div class="stat-label">Indispensables au quotidien</div></div>
+    <div class="stat"><div class="stat-num">4</div><div class="stat-label">Cas d'usage métier</div></div>
+  </div>
+</section>
+
+<main>
+
+<div class="intro-block">
+  <h2>Comment ça marche, en deux phrases</h2>
+  <p>Tu parles à Claude comme à un collègue. Tu décris ce que tu veux faire (en français, avec tes mots), et si une skill correspond, elle <strong>se déclenche toute seule</strong> grâce à des mots-clés. Pas besoin de retenir les noms techniques — ils sont juste là pour les curieux. Si tu butes, regarde la section <strong>"Quand t'en sers"</strong> de chaque carte : c'est exactement la formulation que Claude attend.</p>
+</div>
+
+<!-- ===================== SECTION 1 : PROSPECTION ===================== -->
+<section class="section">
+  <div class="section-header">
+    <span class="section-number">01 — Cas d'usage</span>
+  </div>
+  <h2 class="section-title">Prospection commerciale</h2>
+  <p class="section-sub">Identifier qui contacter, qui recrute en ce moment, et arriver en rendez-vous client avec une analyse financière sérieuse sous le bras.</p>
+
+  <div class="cards">
+
+    <div class="card card-featured">
+      <span class="card-tag">★ Indispensable</span>
+      <div class="card-name">prospection-expert</div>
+      <h3>Lance une prospection ciblée</h3>
+      <p class="desc">Identifie automatiquement les entreprises belges qui recrutent dans ta région ou ton secteur, les score, et publie un dashboard partageable avec l'équipe commerciale.</p>
+      <div class="meta">
+        <div class="meta-label">Quand t'en sers</div>
+        <div class="meta-value">
+          <em>« qui recrute dans le Hainaut »</em>
+          <em>« lance une prospection logistique »</em>
+          <em>« short-list construction Liège »</em>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="meta-label">Tu obtiens</div>
+        <div class="meta-value">Un dashboard HTML scoré, publié sur une URL partageable, prêt à envoyer à l'équipe.</div>
+      </div>
+    </div>
+
+    <div class="card card-featured">
+      <span class="card-tag">★ Indispensable</span>
+      <div class="card-name">belgian-company-analyzer</div>
+      <h3>Analyse un client avant rendez-vous</h3>
+      <p class="desc">Donne-lui un nom de société ou un numéro BCE — il sort un dashboard complet avec chiffre d'affaires, marge brute, ETP, résultat net et dépenses intérim sur 3 ans. Détecte automatiquement les holdings et propose d'analyser tout le groupe.</p>
+      <div class="meta">
+        <div class="meta-label">Quand t'en sers</div>
+        <div class="meta-value">
+          <em>« analyse-moi cette société »</em>
+          <em>« j'ai rendez-vous chez X demain »</em>
+          <em>« mapping du groupe Y »</em>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="meta-label">Tu obtiens</div>
+        <div class="meta-value">Un dashboard HTML brandé Jobalto avec recommandations stratégiques pour le rendez-vous.</div>
+      </div>
+    </div>
+
+    <div class="card card-featured">
+      <span class="card-tag">★ Indispensable</span>
+      <div class="card-name">advertsdata-connector</div>
+      <h3>Qui recrute, où, sur quel profil</h3>
+      <p class="desc">Le couteau suisse Advertsdata. Trois modes : <strong style="color:var(--gold)">(1)</strong> profiler une boîte précise (offres, budget pub, contacts RH), <strong style="color:var(--gold)">(2)</strong> vue régionale par secteur (qui recrute en Wallonie dans la logistique), <strong style="color:var(--gold)">(3)</strong> prospection sur base d'un CV — tu lui donnes le profil d'un candidat, il te sort les boîtes qui cherchent ce profil.</p>
+      <div class="meta">
+        <div class="meta-label">Quand t'en sers</div>
+        <div class="meta-value">
+          <em>« qui recrute en Hainaut dans la logistique »</em>
+          <em>« trouve des boîtes pour ce candidat »</em>
+          <em>« potentiel commercial de Y »</em>
+          <em>« budget pub de X »</em>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="meta-label">Tu obtiens</div>
+        <div class="meta-value">Un tableau d'entreprises avec offres actives, budget pub, NACE, taille et contacts RH — filtré par société, par région + secteur, ou par matching CV.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="card-tag">Utile</span>
+      <div class="card-name">belgian-address-finder</div>
+      <h3>Trouve l'adresse d'une société</h3>
+      <p class="desc">Siège social ou siège d'exploitation, via le registre BCE/KBO. Fonctionne pour une société unique ou pour enrichir un fichier de centaines de prospects.</p>
+      <div class="meta">
+        <div class="meta-label">Quand t'en sers</div>
+        <div class="meta-value">
+          <em>« adresse du siège de X »</em>
+          <em>« enrichis ce CSV avec les adresses »</em>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="meta-label">Tu obtiens</div>
+        <div class="meta-value">Un CSV avec rue, numéro, code postal, commune et site web.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="card-tag">Utile</span>
+      <div class="card-name">nace-lookup</div>
+      <h3>Code NACE / secteur d'activité</h3>
+      <p class="desc">Récupère le code NACE-BEL officiel d'une société belge depuis le registre public. Utile pour remplir les colonnes "secteur" manquantes dans tes fichiers clients.</p>
+      <div class="meta">
+        <div class="meta-label">Quand t'en sers</div>
+        <div class="meta-value">
+          <em>« code NACE de X »</em>
+          <em>« enrichis les NACE manquants »</em>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="meta-label">Tu obtiens</div>
+        <div class="meta-value">Ton fichier enrichi avec le code NACE principal et son libellé officiel.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===================== SECTION 2 : RECRUTEMENT ===================== -->
+<section class="section">
+  <div class="section-header">
+    <span class="section-number">02 — Cas d'usage</span>
+  </div>
+  <h2 class="section-title">Recrutement &amp; candidats</h2>
+  <p class="section-sub">L'outil qui te fait gagner 20 minutes par CV présenté à un client. <strong style="color:var(--teal);">Bonus :</strong> tu peux aussi utiliser <code style="background:var(--cream); padding:2px 6px; border-radius:3px; font-size:14px; color:var(--teal);">advertsdata-connector</code> (section 01) en mode "prospection sur base de CV" — il te sort les boîtes qui cherchent ce profil.</p>
+
+  <div class="cards">
+
+    <div class="card card-featured">
+      <span class="card-tag">★ Indispensable</span>
+      <div class="card-name">cv-anonymizer</div>
+      <h3>Anonymise et reformate un CV</h3>
+      <p class="desc">Upload un CV brut (PDF ou Word) — Claude te ressort un CV au format Jobalto "Template B Header Bold" : bandeau teal, barre dorée, deux colonnes. Nom, email, téléphone, adresse et photo retirés. Noms d'entreprises remplacés par "secteur + région".</p>
+      <div class="meta">
+        <div class="meta-label">Quand t'en sers</div>
+        <div class="meta-value">
+          <em>« anonymise ce CV »</em>
+          <em>« présente ce candidat »</em>
+          <em>« CV pour le client »</em>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="meta-label">Tu obtiens</div>
+        <div class="meta-value">Un CV HTML brandé Jobalto au format A4, prêt à imprimer en PDF et à envoyer au client.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===================== SECTION 3 : MARKETING / MARCHÉ ===================== -->
+<section class="section">
+  <div class="section-header">
+    <span class="section-number">03 — Cas d'usage</span>
+  </div>
+  <h2 class="section-title">Marketing &amp; analyse marché</h2>
+  <p class="section-sub">Savoir où en est le marché belge de l'intérim et optimiser le budget pub Indeed.</p>
+
+  <div class="cards">
+
+    <div class="card">
+      <span class="card-tag">★ Important</span>
+      <div class="card-name">indeed-analytics</div>
+      <h3>Performance des campagnes Indeed</h3>
+      <p class="desc">Upload l'export mensuel Indeed — Claude te sort un dashboard avec les KPIs par campagne, alertes sur les campagnes fantômes et les renouvellements tacites, et une recommandation budget.</p>
+      <div class="meta">
+        <div class="meta-label">Quand t'en sers</div>
+        <div class="meta-value">
+          <em>« analyse Indeed de ce mois »</em>
+          <em>« campagnes fantômes »</em>
+          <em>« optimise le budget pub »</em>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="meta-label">Tu obtiens</div>
+        <div class="meta-value">Un dashboard HTML brandé Jobalto avec CPA, CPC, CTR et reco budget par campagne.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="card-tag">★ Important</span>
+      <div class="card-name">federgon-market-report</div>
+      <h3>État du marché intérim belge</h3>
+      <p class="desc">Génère un rapport PDF brandé Jobalto à partir des chiffres officiels Federgon — évolution 12 mois par région, indice Federgon, KPI annuels. Optionnel : benchmark Jobalto vs marché.</p>
+      <div class="meta">
+        <div class="meta-label">Quand t'en sers</div>
+        <div class="meta-value">
+          <em>« où en est le marché »</em>
+          <em>« on performe bien ? »</em>
+          <em>« rapport Federgon »</em>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="meta-label">Tu obtiens</div>
+        <div class="meta-value">Un PDF "Rapport marché intérim" prêt à partager en interne ou en réunion stratégique.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===================== SECTION 4 : ADMIN / PAIE ===================== -->
+<section class="section">
+  <div class="section-header">
+    <span class="section-number">04 — Cas d'usage</span>
+  </div>
+  <h2 class="section-title">Rentabilité, paie &amp; data clients</h2>
+  <p class="section-sub">Voir où sont les pertes et les gains de marge, et garder une taxonomie propre des clients.</p>
+
+  <div class="cards">
+
+    <div class="card card-featured">
+      <span class="card-tag">★ Indispensable</span>
+      <div class="card-name">easypay-dashboard-builder</div>
+      <h3>Où on perd, où on gagne (rentabilité paie)</h3>
+      <p class="desc">L'outil rentabilité par agence (et par client si besoin). À partir des CSV Easypay, il décompose les <strong style="color:var(--gold);">jours prestés productifs</strong> vs les <strong style="color:var(--gold);">absences</strong> autorisées, non autorisées, JF et maladie avec salaire garanti. Tu vois immédiatement où sont les poches de perte et où on maximise les revenus.</p>
+      <div class="meta">
+        <div class="meta-label">Quand t'en sers</div>
+        <div class="meta-value">
+          <em>« rentabilité par agence »</em>
+          <em>« où on perd cette année »</em>
+          <em>« absences vs prestés ce trimestre »</em>
+          <em>« comparatif clients »</em>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="meta-label">Tu obtiens</div>
+        <div class="meta-value">Un dashboard interactif avec ratio productif / non-productif par agence, ventilation absences par type, focus client à la demande, et identification des poches de perte — publié sur GitHub Pages.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="card-tag">Utile</span>
+      <div class="card-name">classifications-clients-industrie-gf</div>
+      <h3>Classifie tes clients par secteur</h3>
+      <p class="desc">À partir d'un export Carerix, Claude enrichit ton fichier avec deux colonnes : "Secteur industrie" et "Groupes de fonctions" selon la taxonomie officielle Jobalto.</p>
+      <div class="meta">
+        <div class="meta-label">Quand t'en sers</div>
+        <div class="meta-value">
+          <em>« classifie ces clients »</em>
+          <em>« ajoute le secteur industrie »</em>
+          <em>« dans quel secteur est X ? »</em>
+        </div>
+      </div>
+      <div class="meta">
+        <div class="meta-label">Tu obtiens</div>
+        <div class="meta-value">Ton fichier enrichi avec deux nouvelles colonnes prêtes à filtrer dans Airtable.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===================== SECTION TECHNIQUE ===================== -->
+<section class="advanced-section">
+  <div class="section-header">
+    <span class="section-number">05 — Pour les pros</span>
+  </div>
+  <h2 class="section-title" style="font-size: 32px;">Skills techniques</h2>
+  <p class="section-sub">Ces skills tournent en coulisses ou ne te seront utiles qu'occasionnellement (côté tech / admin). Tu n'as pas besoin de les déclencher toi-même — la plupart sont appelées automatiquement par les autres.</p>
+
+  <div class="advanced-list">
+    <div class="advanced-item"><code>bnb-financial-extractor</code><div class="why">Moteur d'extraction BNB. Appelé par <em>belgian-company-analyzer</em>.</div></div>
+    <div class="advanced-item"><code>group-structure-analyzer</code><div class="why">Cartographie de groupes belges via CompanyWeb. Sous-skill d'analyse.</div></div>
+    <div class="advanced-item"><code>financial-analysis-dashboard-builder</code><div class="why">Génère les dashboards financiers. Appelée en aval de l'extraction BNB.</div></div>
+    <div class="advanced-item"><code>github-pages-publisher</code><div class="why">Publie les dashboards sur une URL partageable. 100% automatique.</div></div>
+    <div class="advanced-item"><code>jobalto-airtable</code><div class="why">Pour les automatisations Airtable (réservé tech).</div></div>
+    <div class="advanced-item"><code>jobalto-finance-context</code><div class="why">Contexte base finance Airtable — utilisé en interne.</div></div>
+    <div class="advanced-item"><code>airtable-formula-builder</code><div class="why">Construit les formules de classification finance Airtable.</div></div>
+    <div class="advanced-item"><code>at-automation-google-webapp-html-email</code><div class="why">Pattern pour envoyer des emails HTML depuis Airtable.</div></div>
+    <div class="advanced-item"><code>gmail-mcp-extended</code><div class="why">Permet à Claude d'envoyer/transférer des mails Gmail.</div></div>
+    <div class="advanced-item"><code>jobalto-branding</code><div class="why">Charge la charte graphique Jobalto sur les livrables visuels.</div></div>
+    <div class="advanced-item"><code>jobalto-it-infrastructure</code><div class="why">Contexte infra réseau bureau (Diego / IT).</div></div>
+    <div class="advanced-item"><code>jobalto-wordpress</code><div class="why">Maintenance jobalto.be (Diego / dev).</div></div>
+    <div class="advanced-item"><code>souviens-toi</code><div class="why">Récupère le transcript d'une conversation Cowork compactée.</div></div>
+    <div class="advanced-item"><code>sync-skills-github</code><div class="why">Sync automatique des skills vers les repos GitHub (Diego).</div></div>
+  </div>
+</section>
+
+<!-- ===================== HOW TO ===================== -->
+<section class="how-to">
+  <h2>Comment <span class="accent">démarrer</span></h2>
+  <p>Tu n'as rien à apprendre par cœur. Ouvre Claude (Desktop ou Cowork), parle français, et regarde la section <strong style="color:var(--gold)">"Quand t'en sers"</strong> de chaque carte ci-dessus pour les phrases qui marchent.</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h4>Ouvre Claude</h4>
+      <p>Sur ton ordi, Claude Desktop ou Cowork. Les plugins équipe sont déjà installés pour toi.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h4>Décris ce que tu veux</h4>
+      <p>En français, comme à un collègue. Pas besoin de formuler comme un développeur.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h4>Claude te dit ce qu'il fait</h4>
+      <p>Il annonce quelle skill il déclenche, te demande les inputs manquants, et te livre le résultat.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="tagline">ÉLÈVE TA CARRIÈRE</div>
+  <p>Un souci ou une idée de skill ? Parle-en à <a href="mailto:diego@jobalto.be">Diego</a>.<br>
+  Repo : <a href="https://github.com/diegotkt/jobalto-claude-plugins" target="_blank">diegotkt/jobalto-claude-plugins</a></p>
+</footer>
+
+</body>
+</html>

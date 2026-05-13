@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raphaël Boulard — Liste employeurs cibles</title>
+<style>
+  :root {
+    --teal: #143635;
+    --teal-light: #2A6B69;
+    --gold: #E6B527;
+    --cream: #F9F7F0;
+    --bg: #f7f9fa;
+    --card: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --high: #dcfce7;
+    --high-text: #14532d;
+    --mid: #fef3c7;
+    --mid-text: #78350f;
+    --low: #fee2e2;
+    --low-text: #7f1d1d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  header {
+    background: linear-gradient(135deg, var(--teal) 0%, var(--teal-light) 100%);
+    color: white;
+    padding: 32px 40px 24px;
+    border-bottom: 4px solid var(--gold);
+  }
+  header h1 { margin: 0 0 6px; font-size: 26px; font-weight: 700; }
+  header .sub { opacity: 0.92; font-size: 14px; }
+  header .meta {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    font-size: 13px;
+  }
+  header .meta span { background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 4px; }
+  main { padding: 24px 40px 40px; max-width: 1500px; margin: 0 auto; }
+  .summary {
+    background: var(--card);
+    border-left: 4px solid var(--gold);
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .summary h2 { margin: 0 0 8px; font-size: 16px; color: var(--teal); }
+  .summary p { margin: 4px 0; font-size: 14px; }
+  .exclusions {
+    background: #fef9e7;
+    border-left: 4px solid var(--gold);
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #78350f;
+  }
+  .exclusions strong { color: var(--teal); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--card);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    font-size: 13px;
+  }
+  thead { background: var(--teal); color: white; }
+  thead th { padding: 12px 10px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #fafbfc; }
+  tbody td { padding: 12px 10px; vertical-align: top; }
+  .score {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 13px;
+    min-width: 36px;
+    text-align: center;
+  }
+  .score-high { background: var(--high); color: var(--high-text); }
+  .score-mid { background: var(--mid); color: var(--mid-text); }
+  .score-low { background: var(--low); color: var(--low-text); }
+  .company { font-weight: 600; color: var(--teal); }
+  .bce {
+    display: inline-block;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 3px;
+    letter-spacing: 0.02em;
+  }
+  .bce a { color: var(--muted); text-decoration: none; }
+  .bce a:hover { color: var(--teal); text-decoration: underline; }
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--cream);
+    border-radius: 12px;
+    font-size: 11px;
+    color: var(--teal-light);
+    margin-top: 4px;
+    border: 1px solid rgba(20,54,53,0.08);
+  }
+  a { color: var(--teal-light); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .btn-link {
+    display: inline-block;
+    background: var(--teal);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 4px;
+  }
+  .btn-link:hover { background: var(--teal-light); color: white; text-decoration: none; }
+  .urgent {
+    display: inline-block;
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-left: 6px;
+    text-transform: uppercase;
+  }
+  .contact-line { margin: 2px 0; font-size: 12px; }
+  .contact-line strong { color: var(--text); }
+  .notes { font-size: 12px; color: var(--muted); font-style: italic; }
+  footer {
+    margin-top: 30px;
+    padding: 16px 0;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    border-top: 1px solid var(--border);
+  }
+  @media print {
+    body { background: white; }
+    main { padding: 16px; }
+    table { font-size: 11px; box-shadow: none; }
+    .btn-link { background: white; color: var(--teal); border: 1px solid var(--teal); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Raphaël Boulard — Liste d'employeurs cibles</h1>
+  <div class="sub">Carrossier-Peintre confirmé • 9 ans d'expérience • Charleroi</div>
+  <div class="meta">
+    <span>📍 Charleroi (6032)</span>
+    <span>🚗 Permis B provisoire</span>
+    <span>⚡ Dispo immédiate</span>
+    <span>💰 20 €/h brut</span>
+    <span>🗺 Hainaut élargi</span>
+    <span>🎯 Concession multimarque / Carrosserie indépendante</span>
+  </div>
+</header>
+<main>
+  <div class="summary">
+    <h2>Contexte du matching — Tier 1 + Tier 2 + Tier 3</h2>
+    <p><strong>12 employeurs directs</strong> identifiés avec contacts vérifiés et numéros BCE. Sources : Google (Tier 1), web_fetch direct sur sites employeurs et Indeed (Tier 2), recoupement avec Stepstone, Forem et CompanyWeb (Tier 3).</p>
+    <p>Profil <strong>carrossier-peintre senior</strong> (~9 ans). Métier en <strong>pénurie Forem</strong> + disponibilité immédiate + prétention 20 €/h alignée CP 112 cat. III-IV = profil très attractif.</p>
+  </div>
+
+  <div class="exclusions">
+    <strong>🚫 Exclusions appliquées :</strong>
+    <span>Agences d'intérim (AGO, Adecco, Randstad, Manpower, Start People, Daoust, Tempo-Team, Impact NV, Team One…)</span> •
+    <span>Employeurs précédents : Carglass, TEC Charleroi, AutoRepairGroup (tous sites), LOUYET, SOCO, Ford Colson, Toyota Cactus</span>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Score</th>
+        <th>Entreprise &amp; BCE</th>
+        <th>Site / Distance</th>
+        <th>Type structure</th>
+        <th>Poste cible</th>
+        <th>Contact</th>
+        <th>Offre</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="score score-high">95</span></td>
+        <td>
+          <span class="company">Tim Carrosserie SRL</span>
+          <div class="pill">Carrosserie locale Charleroi</div>
+          <div class="bce">🏢 <a href="https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0802882559&actionLu=Recherche" target="_blank">BE 0802.882.559</a></div>
+        </td>
+        <td>Gilly 6060<br><small>~5 km</small></td>
+        <td>Carrosserie indépendante</td>
+        <td>Peintre en carrosserie expérimenté <span class="urgent">URGENT</span></td>
+        <td>
+          <div class="contact-line">📞 <a href="tel:+3271541499">071 54 14 99</a></div>
+          <div class="contact-line">✉ <a href="mailto:contact@timcarrosserie.be">contact@timcarrosserie.be</a></div>
+          <div class="contact-line">📍 Ch. de Montigny 108/110</div>
+        </td>
+        <td><a class="btn-link" href="https://www.timcarrosserie.be/" target="_blank">Voir site</a></td>
+        <td class="notes">CDI temps plein · chèques repas + assurance hospitalisation + éco-chèques · <strong>5 km</strong></td>
+      </tr>
+      <tr>
+        <td><span class="score score-high">93</span></td>
+        <td>
+          <span class="company">Centr'Auto Charleroi SA</span>
+          <div class="pill">VW / Audi / Seat / Cupra / Škoda · groupe Le Centre Automobile</div>
+          <div class="bce">🏢 <a href="https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0408314372&actionLu=Recherche" target="_blank">BE 0408.314.372</a></div>
+        </td>
+        <td>Gosselies 6041<br><small>~10 km</small></td>
+        <td>Concession multimarque</td>
+        <td>Tôlier / Préparateur (offre active)</td>
+        <td>
+          <div class="contact-line">📞 <a href="tel:+3271256080">071 25 60 80</a></div>
+          <div class="contact-line">✉ <a href="mailto:olivier.masset@lecentreautomobile.be">olivier.masset@lecentreautomobile.be</a></div>
+          <div class="contact-line">📍 Av. du Millénaire 2</div>
+        </td>
+        <td><a class="btn-link" href="https://www.lecentreautomobile.be/jobs/tolier-preparateur" target="_blank">Voir offre</a></td>
+        <td class="notes"><strong>TOP MATCH</strong> · 60 ETP · fondé 1971 · CA ~63 M€</td>
+      </tr>
+      <tr>
+        <td><span class="score score-high">90</span></td>
+        <td>
+          <span class="company">Garage Detournay SA</span>
+          <div class="pill">Audi · groupe Le Centre Automobile</div>
+          <div class="bce">🏢 <a href="https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0426628566&actionLu=Recherche" target="_blank">BE 0426.628.566</a></div>
+        </td>
+        <td>Thuin 6530<br><small>~25 km</small></td>
+        <td>Concession Audi</td>
+        <td>Carrossier polyvalent (offre active)</td>
+        <td>
+          <div class="contact-line">📞 <a href="tel:+3271256080">071 25 60 80</a></div>
+          <div class="contact-line">✉ <a href="mailto:olivier.masset@lecentreautomobile.be">olivier.masset@lecentreautomobile.be</a></div>
+          <div class="contact-line">📍 Drève des Alliés 89</div>
+        </td>
+        <td><a class="btn-link" href="https://www.lecentreautomobile.be/jobs/carrossier-polyvalent" target="_blank">Voir offre</a></td>
+        <td class="notes">Repris 2015 par groupe Le Centre Automobile · fondé 1984</td>
+      </tr>
+      <tr>
+        <td><span class="score score-high">88</span></td>
+        <td>
+          <span class="company">Carrosserie Gruselle</span>
+          <div class="pill">Indépendant · réseau AXIAL</div>
+          <div class="bce">🏢 <a href="https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0768659771&actionLu=Recherche" target="_blank">BE 0768.659.771</a></div>
+        </td>
+        <td>Montignies-sur-Sambre 6061<br><small>~5 km</small></td>
+        <td>Indépendant local</td>
+        <td>Candidature spontanée</td>
+        <td>
+          <div class="contact-line">📞 <a href="tel:+3271318210">071 31 82 10</a></div>
+          <div class="contact-line">✉ <a href="mailto:carrosserie@gruselle.be">carrosserie@gruselle.be</a></div>
+          <div class="contact-line">📍 Rue de Grimard 300</div>
+        </td>
+        <td><a class="btn-link" href="https://www.carrosserie-gruselle.be/contact" target="_blank">Page contact</a></td>
+        <td class="notes">Activité depuis 1973 (BCE 2021 = restructuration SRL) · pas d'offre publiée → approche directe</td>
+      </tr>
+      <tr>
+        <td><span class="score score-high">87</span></td>
+        <td>
+          <span class="company">SAGA Charleroi SA</span>
+          <div class="pill">Mercedes-Benz premium</div>
+          <div class="bce">🏢 <a href="https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0454235855&actionLu=Recherche" target="_blank">BE 0454.235.855</a></div>
+        </td>
+        <td>Charleroi (Lodelinsart) 6060<br><small>~5 km</small></td>
+        <td>Concession Mercedes premium</td>
+        <td>Carrossier / Peintre Mercedes</td>
+        <td>
+          <div class="contact-line">📞 <a href="tel:+3271281111">071 28 11 11</a></div>
+          <div class="contact-line">📍 Route de la Basse Sambre 1</div>
+        </td>
+        <td><a class="btn-link" href="https://www.mercedes-benz-saga.be/a-propos-de-nous/concessions/saga-charleroi" target="_blank">Voir concession</a></td>
+        <td class="notes">Mercedes premium · fondé 1995 · atelier carrosserie Lun-Ven 8h-16h30</td>
+      </tr>
+      <tr>
+        <td><span class="score score-high">87</span></td>
+        <td>
+          <span class="company">Carrosserie Cuvelier SA</span>
+          <div class="pill">Indépendant Mons</div>
+          <div class="bce">🏢 <a href="https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0437747142&actionLu=Recherche" target="_blank">BE 0437.747.142</a></div>
+        </td>
+        <td>Mons (Cuesmes) 7033<br><small>~55 km</small></td>
+        <td>Carrosserie indépendante</td>
+        <td>Carrossier / Tôlier (offre active)</td>
+        <td>
+          <div class="contact-line">📞 <a href="tel:+3265340666">065 34 06 66</a></div>
+          <div class="contact-line">📍 Rue de la Poire d'Or 17</div>
+        </td>
+        <td><a class="btn-link" href="https://www.carrosserie-cuvelier.be/" target="_blank">Voir site</a></td>
+        <td class="notes">Indé depuis 1989 · dépose/repose · éco-chèques</td>
+      </tr>
+      <tr>
+        <td><span class="score score-mid">85</span></td>
+        <td>
+          <span class="company">Michaël Mazuin Charleroi Sud</span>
+          <div class="pill">VW / Audi / Seat / Cupra / Škoda</div>
+          <div class="bce">🏢 <a href="https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0664882342&actionLu=Recherche" target="_blank">BE 0664.882.342</a></div>
+        </td>
+        <td>Fosses-la-Ville / Tarcienne / Fleurus<br><small>~15-25 km</small></td>
+        <td>Concession multimarque</td>
+        <td>Carrossier polyvalent + Monteur/Démonteur carrosserie</td>
+        <td>
+          <div class="contact-line">Via formulaire site</div>
+          <div class="contact-line">📍 Av. des Déportés 32, Fosses-la-Ville</div>
+        </td>
+        <td>
+          <a class="btn-link" href="https://www.mazuin.be/jobs/carrossier-polyvalent" target="_blank">Carrossier polyvalent</a><br>
+          <a class="btn-link" href="https://www.mazuin.be/jobs/un-monteur-demonteur-carrosserie-hfx" target="_blank">Monteur/démonteur</a>
+        </td>
+        <td class="notes">2 offres actives · groupe Mazuin depuis 1948 · 3ᵉ génération · formations Allemagne</td>
+      </tr>
+      <tr>
+        <td><span class="score score-mid">82</span></td>
+        <td>
+          <span class="company">Steveny SA</span>
+          <div class="pill">Ford / Kia / VW / Audi / Seat / Cupra / Škoda</div>
+          <div class="bce">🏢 <a href="https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0401401044&actionLu=Recherche" target="_blank">BE 0401.401.044</a> · Holding <a href="https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0704876135&actionLu=Recherche" target="_blank">BE 0704.876.135</a></div>
+        </td>
+        <td>8 ateliers Wallonie<br><small>~45-55 km</small></td>
+        <td>Concession multimarque</td>
+        <td>Carrossier confirmé + Préparateur véhicules</td>
+        <td>
+          <div class="contact-line">📞 <a href="tel:+3281301451">081 30 14 51</a></div>
+          <div class="contact-line">✉ <a href="mailto:ressources.humaines@steveny.eu">ressources.humaines@steveny.eu</a></div>
+          <div class="contact-line">📍 Tienne aux Clochers 135, Namur</div>
+        </td>
+        <td><a class="btn-link" href="https://jobs.steveny.be/careers" target="_blank">Voir tous postes</a></td>
+        <td class="notes">~50 concessions Wallonie · CDI 38h · méthode spot repair · 8 ateliers carrosserie</td>
+      </tr>
+      <tr>
+        <td><span class="score score-mid">78</span></td>
+        <td>
+          <span class="company">BMW Dejonckheere Tournai</span>
+          <div class="pill">BMW / MINI premium · JOY'N US</div>
+          <div class="bce">🏢 <a href="https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0426182564&actionLu=Recherche" target="_blank">BE 0426.182.564</a></div>
+        </td>
+        <td>Tournai 7500<br><small>~80 km</small></td>
+        <td>Concession BMW/MINI</td>
+        <td>Carrossier polyvalent (normes BMW/MINI)</td>
+        <td>
+          <div class="contact-line">📞 <a href="tel:+3269891212">069 89 12 12</a></div>
+          <div class="contact-line">✉ <a href="mailto:tournai@dejonckheere.net.bmw.be">tournai@dejonckheere.net.bmw.be</a></div>
+          <div class="contact-line">📍 Ch. de Bruxelles 190</div>
+        </td>
+        <td><a class="btn-link" href="https://www.dejonckheere-tournai.bmw.be/node/80" target="_blank">Voir Body &amp; Paint</a></td>
+        <td class="notes">Groupe Dejonckheere · fondé 1984 · préparation, montage/démontage, peinture · normes BMW/MINI</td>
+      </tr>
+      <tr>
+        <td><span class="score score-mid">75</span></td>
+        <td>
+          <span class="company">Garage Delbar</span>
+          <div class="pill">VW / Škoda · réseau WONDERCAR</div>
+          <div class="bce">🏢 <a href="https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0408080780&actionLu=Recherche" target="_blank">BE 0408.080.780</a></div>
+        </td>
+        <td>Mouscron 7700<br><small>~80 km</small></td>
+        <td>Concession + carrosserie multimarques</td>
+        <td>Carrossier préparateur</td>
+        <td>
+          <div class="contact-line">📞 <a href="tel:+3256331926">056 33 19 26</a></div>
+          <div class="contact-line">📍 Ch. de Gand 2</div>
+        </td>
+        <td><a class="btn-link" href="https://www.delbar.info/fr/contact" target="_blank">Page contact</a></td>
+        <td class="notes">Garage familial 75 ans · 50-99 ETP · réseau WONDERCAR · fondé 1971</td>
+      </tr>
+      <tr>
+        <td><span class="score score-mid">72</span></td>
+        <td>
+          <span class="company">Garage De Ro SA</span>
+          <div class="pill">Peugeot / Citroën</div>
+          <div class="bce">🏢 <a href="https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0403461107&actionLu=Recherche" target="_blank">BE 0403.461.107</a></div>
+        </td>
+        <td>Marcinelle (Charleroi) 6001<br><small>~5 km</small></td>
+        <td>Garage local</td>
+        <td>Candidature spontanée</td>
+        <td>
+          <div class="contact-line">📞 <a href="tel:+3271470500">071 47 05 00</a></div>
+          <div class="contact-line">📍 Av. Eugène Mascaux 836</div>
+        </td>
+        <td><a class="btn-link" href="https://www.garagedero.be/" target="_blank">Voir site</a></td>
+        <td class="notes">Familial depuis 1939 · Peugeot/Citroën/Opel/Fiat/Jeep</td>
+      </tr>
+      <tr>
+        <td><span class="score score-mid">72</span></td>
+        <td>
+          <span class="company">Renault Lodelinsart SA</span>
+          <div class="pill">Renault · groupe GSL</div>
+          <div class="bce">🏢 <a href="https://kbopub.economie.fgov.be/kbopub/zoeknummerform.html?nummer=0422539126&actionLu=Recherche" target="_blank">BE 0422.539.126</a></div>
+        </td>
+        <td>Lodelinsart (Charleroi) 6042<br><small>~5 km</small></td>
+        <td>Concession Renault</td>
+        <td>Candidature spontanée</td>
+        <td>
+          <div class="contact-line">Via site</div>
+        </td>
+        <td><a class="btn-link" href="https://renault.renaultlodelinsart.be/" target="_blank">Voir concession</a></td>
+        <td class="notes">Carrosserie et vitrage · structure groupe GSL</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <footer>
+    Liste générée le 13 mai 2026 · 12 employeurs directs · BCE vérifiés via CompanyWeb / KBO · Tier 1 + Tier 2 + Tier 3<br>
+    Filtres : aucune agence d'intérim, aucun employeur précédent du candidat
+  </footer>
+</main>
+</body>
+</html>

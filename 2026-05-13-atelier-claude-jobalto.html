@@ -1,0 +1,3382 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atelier Claude @ Jobalto</title>
+<style>
+  :root {
+    --teal: #143635;
+    --teal-light: #2A6B69;
+    --teal-darker: #0E2424;
+    --gold: #E6B527;
+    --gold-dark: #D4870E;
+    --cream: #F9F7F0;
+    --white: #FFFFFF;
+    --charcoal: #333333;
+    --slate: #33373D;
+    --link: #0034FF;
+    --red: #C0392B;
+    --font: 'Suisse Intl', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; font-family: var(--font); color: var(--charcoal); background: var(--white); overflow: hidden; }
+
+  /* Layout — 2D nav : topbar (chapters) + sidebar (slides in chapter) + stage */
+  .app {
+    display: grid;
+    grid-template-rows: 60px 1fr;
+    grid-template-columns: 260px 1fr;
+    grid-template-areas:
+      "topbar topbar"
+      "sidebar stage";
+    height: 100vh;
+    width: 100vw;
+  }
+  .topbar { grid-area: topbar; }
+  .sidebar { grid-area: sidebar; }
+  .stage { grid-area: stage; }
+
+  /* Top bar — chapter selector */
+  .topbar {
+    background: linear-gradient(180deg, #0E2424 0%, var(--teal) 100%);
+    border-bottom: 3px solid var(--gold);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+  }
+  .topbar::-webkit-scrollbar { height: 0; }
+  .topbar-brand {
+    color: var(--gold);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    margin-right: 28px;
+    white-space: nowrap;
+  }
+  .chapter-btn {
+    background: transparent;
+    color: rgba(255,255,255,0.55);
+    border: none;
+    padding: 8px 14px;
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .chapter-btn:hover { color: white; background: rgba(255,255,255,0.05); }
+  .chapter-btn.active {
+    color: var(--teal);
+    background: var(--gold);
+  }
+  .chapter-btn .ch-num {
+    font-size: 10px;
+    opacity: 0.6;
+    font-weight: 700;
+  }
+  .chapter-btn.active .ch-num { opacity: 0.7; }
+
+  /* Chapter cover slides */
+  .slide.chapter-cover {
+    background: linear-gradient(135deg, #0E2424 0%, #143635 55%, #1f4a48 100%);
+    color: white;
+    text-align: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .slide.chapter-cover::before {
+    content: '';
+    position: absolute;
+    top: -180px;
+    right: -180px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(230, 181, 39, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .slide.chapter-cover::after {
+    content: '';
+    position: absolute;
+    bottom: -120px;
+    left: -120px;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(42, 107, 105, 0.2) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .chapter-meta {
+    position: relative;
+    font-size: 12px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-weight: 700;
+    margin-bottom: 22px;
+    z-index: 2;
+  }
+  .chapter-number-big {
+    font-size: 200px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: -10px;
+    line-height: 0.8;
+    margin-bottom: 14px;
+    position: relative;
+    z-index: 2;
+    opacity: 0.95;
+  }
+  .chapter-cover-title {
+    font-size: 64px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: -2px;
+    line-height: 0.95;
+    margin-bottom: 22px;
+    position: relative;
+    z-index: 2;
+  }
+  .chapter-cover-subtitle {
+    font-size: 17px;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.55;
+    max-width: 620px;
+    margin: 0 auto 36px;
+    position: relative;
+    z-index: 2;
+  }
+  .chapter-toc {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 540px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 2;
+  }
+  .toc-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 11px 18px;
+    background: rgba(255,255,255,0.05);
+    border-left: 3px solid var(--gold);
+    border-radius: 0 3px 3px 0;
+    color: white;
+    font-size: 14px;
+    text-align: left;
+  }
+  .toc-item .toc-num {
+    font-size: 11px;
+    color: var(--gold);
+    font-weight: 700;
+    min-width: 28px;
+    letter-spacing: 1px;
+  }
+
+  /* Sidebar — slides for active chapter only */
+  .sidebar-chapter-label {
+    font-size: 10px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    padding: 0 12px;
+  }
+  .sidebar-chapter-title {
+    font-size: 18px;
+    color: white;
+    font-weight: 700;
+    margin-bottom: 24px;
+    padding: 0 12px;
+    line-height: 1.1;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--teal);
+    color: white;
+    padding: 32px 24px;
+    overflow-y: auto;
+    border-right: 4px solid var(--gold);
+  }
+  .sidebar h1 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    color: white;
+  }
+  .sidebar .tagline {
+    font-size: 11px;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 32px;
+    font-weight: 700;
+  }
+  .nav-list { list-style: none; }
+  .nav-list li {
+    padding: 10px 12px;
+    margin-bottom: 2px;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 13px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.65);
+    transition: all 0.15s ease;
+    border-left: 3px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .nav-list li:hover { color: white; background: rgba(255,255,255,0.05); }
+  .nav-list li.active {
+    color: white;
+    background: rgba(230, 181, 39, 0.12);
+    border-left-color: var(--gold);
+    font-weight: 700;
+  }
+  .nav-list li .num {
+    font-size: 10px;
+    color: var(--gold);
+    font-weight: 700;
+    min-width: 16px;
+  }
+  .sidebar-footer {
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    line-height: 1.6;
+  }
+
+  /* Main content */
+  .stage {
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    position: relative;
+    background: var(--white);
+  }
+  .progress-bar {
+    position: sticky;
+    top: 0;
+    left: 0;
+    height: 4px;
+    background: rgba(20, 54, 53, 0.08);
+    z-index: 100;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--gold);
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+  .slide {
+    min-height: 100vh;
+    padding: 60px 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    border-bottom: 1px solid rgba(20, 54, 53, 0.06);
+  }
+  .slide.dark {
+    background: linear-gradient(135deg, #0E2424 0%, #143635 100%);
+    color: white;
+  }
+  .slide.cream { background: var(--cream); }
+  .slide-badge {
+    position: absolute;
+    top: 40px;
+    right: 60px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  .slide-num {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .slide h2 {
+    font-size: 48px;
+    font-weight: 700;
+    line-height: 1.05;
+    margin-bottom: 18px;
+    color: var(--teal);
+    letter-spacing: -1.2px;
+  }
+  .slide.dark h2 { color: white; }
+  .slide h3 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--teal);
+  }
+  .slide.dark h3 { color: var(--gold); }
+  .slide .lede {
+    font-size: 19px;
+    color: var(--slate);
+    line-height: 1.55;
+    margin-bottom: 40px;
+    max-width: 780px;
+    font-weight: 400;
+  }
+  .slide.dark .lede { color: #D0D0D0; }
+
+  /* Cover */
+  .cover-title {
+    font-size: 96px;
+    font-weight: 700;
+    line-height: 0.95;
+    color: white;
+    letter-spacing: -3px;
+    margin-bottom: 18px;
+  }
+  .cover-title span { color: var(--gold); }
+  .cover-sub {
+    font-size: 22px;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 12px;
+    font-weight: 400;
+  }
+  .cover-meta {
+    font-size: 12px;
+    color: var(--gold);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-top: 60px;
+  }
+  .cover-arrow {
+    position: absolute;
+    bottom: 50px;
+    right: 80px;
+    color: var(--gold);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: translateX(0); opacity: 0.85; }
+    50% { transform: translateX(8px); opacity: 1; }
+  }
+
+  /* Objectives */
+  .objectives {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    margin-top: 24px;
+  }
+  .obj-card {
+    background: var(--cream);
+    padding: 28px;
+    border-left: 4px solid var(--gold);
+    border-radius: 3px;
+  }
+  .obj-card .obj-num {
+    font-size: 11px;
+    color: var(--gold-dark);
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+  }
+  .obj-card h4 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--teal);
+    margin-bottom: 6px;
+  }
+  .obj-card p {
+    font-size: 14px;
+    color: var(--slate);
+    line-height: 1.5;
+  }
+
+  /* Comparison table */
+  .compare {
+    width: 100%;
+    margin-top: 16px;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .compare th {
+    background: var(--teal);
+    color: white;
+    padding: 18px 20px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+  }
+  .compare th.claude { background: var(--gold); color: var(--teal); }
+  .compare th.gpt { background: rgba(255,255,255,0.1); }
+  .slide.dark .compare th:first-child { background: rgba(255,255,255,0.08); color: var(--gold); }
+  .compare td {
+    padding: 16px 20px;
+    background: rgba(255,255,255,0.04);
+    font-size: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .compare td:first-child {
+    font-weight: 700;
+    color: var(--gold);
+    background: rgba(0,0,0,0.2);
+  }
+  .compare .check { color: #5ED4A0; font-weight: 700; }
+  .compare .cross { color: #ff9a8a; }
+  .compare .partial { color: var(--gold); }
+
+  /* Three modes */
+  .modes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 16px;
+  }
+  .mode-card {
+    background: white;
+    border: 2px solid rgba(20, 54, 53, 0.1);
+    border-radius: 6px;
+    padding: 28px 24px;
+    transition: all 0.25s ease;
+    position: relative;
+    cursor: pointer;
+  }
+  .mode-card:hover {
+    border-color: var(--gold);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(20, 54, 53, 0.12);
+  }
+  .mode-card .mode-icon {
+    width: 48px;
+    height: 48px;
+    background: var(--cream);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    color: var(--teal);
+  }
+  .mode-card.featured { border-color: var(--gold); background: linear-gradient(180deg, #fffdf5 0%, white 100%); }
+  .mode-card.featured .mode-icon { background: var(--gold); color: var(--teal); }
+  .mode-card .mode-name {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--teal);
+    margin-bottom: 4px;
+  }
+  .mode-card .mode-where {
+    font-size: 11px;
+    color: var(--gold-dark);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .mode-card .mode-desc {
+    font-size: 14px;
+    color: var(--slate);
+    line-height: 1.55;
+    margin-bottom: 16px;
+  }
+  .mode-card ul {
+    list-style: none;
+    margin-bottom: 16px;
+  }
+  .mode-card ul li {
+    font-size: 13px;
+    color: var(--charcoal);
+    padding: 4px 0 4px 16px;
+    position: relative;
+  }
+  .mode-card ul li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 11px;
+    width: 5px;
+    height: 5px;
+    background: var(--gold);
+    border-radius: 50%;
+  }
+  .mode-card .usecase {
+    font-style: italic;
+    font-size: 13px;
+    color: var(--teal-light);
+    padding: 12px;
+    background: var(--cream);
+    border-left: 3px solid var(--gold);
+    border-radius: 2px;
+  }
+  .mode-card .usecase strong { color: var(--teal); font-style: normal; }
+
+  /* Decision tree */
+  .tree {
+    margin-top: 16px;
+    padding: 32px;
+    background: var(--cream);
+    border-radius: 6px;
+  }
+  .tree-q {
+    text-align: center;
+    font-size: 18px;
+    color: var(--teal);
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .tree-branches {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .tree-branch {
+    background: white;
+    padding: 20px;
+    border-radius: 4px;
+    border-top: 4px solid var(--teal);
+    position: relative;
+  }
+  .tree-branch.cowork { border-top-color: var(--gold); }
+  .tree-branch.code { border-top-color: var(--teal-light); }
+  .tree-branch .condition {
+    font-size: 13px;
+    color: var(--slate);
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  .tree-branch .answer {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--teal);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 8px 0;
+    border-top: 1px dashed rgba(20, 54, 53, 0.2);
+  }
+
+  /* Connectors grid */
+  .connectors {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-top: 16px;
+  }
+  .conn-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(230, 181, 39, 0.15);
+    border-radius: 4px;
+    padding: 18px;
+    transition: all 0.2s ease;
+  }
+  .conn-card:hover {
+    background: rgba(230, 181, 39, 0.08);
+    border-color: var(--gold);
+  }
+  .conn-card .conn-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+  .conn-card .conn-desc {
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.45;
+  }
+
+  /* Plugins catalog */
+  .plugins-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 16px;
+  }
+  .plugin-cat {
+    background: white;
+    border-radius: 6px;
+    padding: 22px;
+    border-top: 4px solid var(--gold);
+    box-shadow: 0 4px 14px rgba(20, 54, 53, 0.06);
+  }
+  .plugin-cat h4 {
+    font-size: 13px;
+    color: var(--gold-dark);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(20, 54, 53, 0.08);
+  }
+  .plugin-cat ul { list-style: none; }
+  .plugin-cat ul li {
+    padding: 7px 0;
+    font-size: 13px;
+    color: var(--charcoal);
+    border-bottom: 1px dashed rgba(20, 54, 53, 0.06);
+  }
+  .plugin-cat ul li:last-child { border-bottom: none; }
+  .plugin-cat ul li code {
+    background: var(--cream);
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-size: 11px;
+    color: var(--teal);
+    font-family: 'SF Mono', Consolas, monospace;
+    margin-right: 6px;
+  }
+
+  /* Prompting rules */
+  .rules {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .rule {
+    background: white;
+    padding: 22px;
+    border-radius: 4px;
+    border-left: 4px solid var(--gold);
+    display: flex;
+    gap: 18px;
+  }
+  .rule .rule-num {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--gold);
+    line-height: 0.9;
+    letter-spacing: -2px;
+    min-width: 50px;
+  }
+  .rule .rule-content h5 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--teal);
+    margin-bottom: 4px;
+  }
+  .rule .rule-content p {
+    font-size: 13px;
+    color: var(--slate);
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+  .rule .example {
+    font-size: 12px;
+    background: var(--cream);
+    padding: 10px;
+    border-radius: 3px;
+    font-family: 'SF Mono', Consolas, monospace;
+    color: var(--teal);
+    line-height: 1.5;
+  }
+  .rule .example .good { color: var(--teal-light); font-weight: 700; }
+  .rule .example .bad { color: var(--red); text-decoration: line-through; }
+
+  /* Skill creation workflow */
+  .workflow {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin-top: 24px;
+    position: relative;
+  }
+  .workflow-step {
+    background: white;
+    padding: 18px;
+    border-radius: 4px;
+    border-top: 4px solid var(--gold);
+    text-align: center;
+    position: relative;
+  }
+  .workflow-step .step-num {
+    width: 32px;
+    height: 32px;
+    background: var(--gold);
+    color: var(--teal);
+    font-weight: 700;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    font-size: 14px;
+  }
+  .workflow-step h5 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--teal);
+    margin-bottom: 6px;
+  }
+  .workflow-step p {
+    font-size: 11px;
+    color: var(--slate);
+    line-height: 1.4;
+  }
+  .workflow-example {
+    margin-top: 30px;
+    padding: 24px;
+    background: var(--teal);
+    color: white;
+    border-radius: 6px;
+    border-left: 4px solid var(--gold);
+  }
+  .workflow-example h5 {
+    color: var(--gold);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+  }
+  .workflow-example .user-prompt {
+    font-style: italic;
+    font-size: 16px;
+    line-height: 1.5;
+    color: white;
+  }
+  .workflow-example .user-prompt::before { content: '« '; color: var(--gold); }
+  .workflow-example .user-prompt::after { content: ' »'; color: var(--gold); }
+
+  /* GitOps diagram */
+  .gitops {
+    margin-top: 24px;
+    background: white;
+    padding: 32px;
+    border-radius: 6px;
+    box-shadow: 0 4px 14px rgba(20, 54, 53, 0.08);
+  }
+  .gitops-flow {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .gitops-box {
+    background: var(--cream);
+    padding: 20px;
+    border-radius: 4px;
+    text-align: center;
+    border-top: 4px solid var(--gold);
+  }
+  .gitops-box.middle { border-top-color: var(--teal); }
+  .gitops-box.team { border-top-color: var(--teal-light); background: linear-gradient(135deg, var(--cream) 0%, #ECE5D0 100%); }
+  .gitops-box h5 {
+    font-size: 13px;
+    color: var(--gold-dark);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+  }
+  .gitops-box .code-block {
+    font-family: 'SF Mono', Consolas, monospace;
+    font-size: 11px;
+    color: var(--teal);
+    background: white;
+    padding: 8px;
+    border-radius: 3px;
+    margin-top: 8px;
+  }
+  .gitops-arrow {
+    font-size: 32px;
+    color: var(--gold);
+    font-weight: 700;
+  }
+  .gitops-steps {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    padding-top: 24px;
+    border-top: 1px dashed rgba(20, 54, 53, 0.15);
+  }
+  .gitops-step {
+    text-align: center;
+    padding: 12px;
+  }
+  .gitops-step .step-circle {
+    width: 28px;
+    height: 28px;
+    background: var(--teal);
+    color: var(--gold);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 8px;
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .gitops-step p {
+    font-size: 11px;
+    color: var(--slate);
+    line-height: 1.4;
+  }
+
+  /* Chat vs Cowork infographic */
+  .vs-infographic {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    margin-top: 16px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(20, 54, 53, 0.18);
+  }
+  .vs-col { background: white; display: flex; flex-direction: column; }
+  .vs-col.featured { background: linear-gradient(180deg, #fffdf5 0%, white 100%); position: relative; }
+  .vs-col-header {
+    padding: 26px 30px;
+    background: var(--teal);
+    color: white;
+    position: relative;
+  }
+  .vs-col.featured .vs-col-header { background: var(--gold); color: var(--teal); }
+  .vs-col-title {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -1.5px;
+    margin-bottom: 4px;
+    line-height: 1;
+  }
+  .vs-col-subtitle {
+    font-size: 11px;
+    opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 1.8px;
+    font-weight: 700;
+  }
+  .vs-col.featured .vs-col-subtitle { opacity: 0.85; }
+  .vs-col-star {
+    position: absolute;
+    top: 26px;
+    right: 26px;
+    background: var(--teal);
+    color: var(--gold);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 5px 11px;
+    border-radius: 3px;
+    letter-spacing: 1.5px;
+  }
+  .vs-section {
+    padding: 18px 30px;
+    border-bottom: 1px solid rgba(20, 54, 53, 0.06);
+  }
+  .vs-section:last-child { border-bottom: none; }
+  .vs-section-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--gold-dark);
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .vs-section ul { list-style: none; }
+  .vs-section ul li {
+    padding: 4px 0 4px 22px;
+    font-size: 13px;
+    color: var(--charcoal);
+    position: relative;
+    line-height: 1.5;
+  }
+  .vs-section ul.usecase li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--gold);
+    font-weight: 700;
+  }
+  .vs-section ul.pros li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--teal-light);
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .vs-section ul.cons li::before {
+    content: '✗';
+    position: absolute;
+    left: 0;
+    color: var(--red);
+    font-weight: 700;
+  }
+  .vs-verdict {
+    margin-top: 26px;
+    padding: 20px 28px;
+    background: var(--teal);
+    color: white;
+    border-radius: 4px;
+    border-left: 5px solid var(--gold);
+    text-align: center;
+    font-size: 17px;
+    font-weight: 700;
+  }
+  .vs-verdict span { color: var(--gold); font-size: 19px; }
+
+  /* Connector warning badge */
+  .conn-card .conn-warning {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--teal);
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    margin-left: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+    vertical-align: middle;
+  }
+
+  /* Bar analogy slide */
+  .bar-flow {
+    display: grid;
+    grid-template-columns: 1fr 40px 1fr 40px 1fr;
+    align-items: stretch;
+    gap: 12px;
+    margin-top: 24px;
+  }
+  .bar-step {
+    background: white;
+    border-radius: 6px;
+    padding: 28px 22px;
+    border-top: 5px solid var(--gold);
+    box-shadow: 0 4px 14px rgba(20, 54, 53, 0.08);
+    text-align: center;
+    transition: transform 0.2s ease;
+  }
+  .bar-step:hover { transform: translateY(-4px); }
+  .bar-step.middle { border-top-color: var(--teal); }
+  .bar-step.last { border-top-color: var(--teal-light); }
+  .bar-step .bar-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 14px;
+    background: var(--cream);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--teal);
+  }
+  .bar-step.middle .bar-icon { background: var(--gold); color: var(--teal); }
+  .bar-step h4 {
+    font-size: 18px;
+    color: var(--teal);
+    margin-bottom: 10px;
+    font-weight: 700;
+  }
+  .bar-step p {
+    font-size: 13px;
+    color: var(--slate);
+    line-height: 1.55;
+  }
+  .bar-step em { color: var(--gold-dark); font-style: italic; }
+  .bar-arrow-big {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: var(--gold);
+    font-weight: 700;
+  }
+  .analogy-table {
+    margin-top: 28px;
+    background: white;
+    border-radius: 6px;
+    padding: 20px 24px;
+    box-shadow: 0 2px 8px rgba(20, 54, 53, 0.06);
+  }
+  .analogy-table h5 {
+    font-size: 12px;
+    color: var(--gold-dark);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+    font-weight: 700;
+  }
+  .analogy-table table { width: 100%; border-collapse: collapse; }
+  .analogy-table td {
+    padding: 8px 14px;
+    font-size: 13px;
+    border-bottom: 1px dashed rgba(20, 54, 53, 0.08);
+  }
+  .analogy-table tr:last-child td { border-bottom: none; }
+  .analogy-table td:first-child { color: var(--slate); font-weight: 700; width: 35%; }
+  .analogy-table td:nth-child(2) { color: var(--gold); width: 30px; text-align: center; font-weight: 700; }
+  .analogy-table td:last-child { color: var(--teal); }
+
+  /* Section dividers within a slide */
+  .section-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--gold-dark);
+    font-weight: 700;
+    margin: 32px 0 16px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .section-label::before, .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(230, 181, 39, 0.5), transparent);
+  }
+
+  /* Enhanced bar-step icon container */
+  .bar-step .bar-icon {
+    background: linear-gradient(135deg, #fffdf5 0%, var(--cream) 100%);
+    width: 72px;
+    height: 72px;
+    box-shadow: inset 0 0 0 2px rgba(230, 181, 39, 0.2);
+  }
+  .bar-step.middle .bar-icon {
+    background: linear-gradient(135deg, var(--gold) 0%, #c89615 100%);
+    box-shadow: inset 0 0 0 2px rgba(20, 54, 53, 0.15);
+  }
+  .bar-step .step-pill {
+    display: inline-block;
+    font-size: 10px;
+    color: var(--gold-dark);
+    background: rgba(230, 181, 39, 0.15);
+    padding: 3px 10px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .bar-step.middle .step-pill { background: rgba(20, 54, 53, 0.08); color: var(--teal); }
+  .bar-step.last .step-pill { background: rgba(42, 107, 105, 0.15); color: var(--teal-light); }
+
+  /* Verdicts (Diego's 3 possible responses) */
+  .verdicts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 4px;
+  }
+  .verdict {
+    background: white;
+    padding: 20px 18px;
+    border-radius: 6px;
+    border-top: 4px solid var(--teal-light);
+    text-align: center;
+    position: relative;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 14px rgba(20, 54, 53, 0.06);
+  }
+  .verdict:hover { transform: translateY(-3px); box-shadow: 0 8px 22px rgba(20, 54, 53, 0.1); }
+  .verdict.verdict-no { border-top-color: var(--red); }
+  .verdict.verdict-dup { border-top-color: var(--gold); }
+  .verdict-badge {
+    width: 44px;
+    height: 44px;
+    margin: 0 auto 12px;
+    background: var(--teal-light);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 700;
+    box-shadow: 0 4px 10px rgba(42, 107, 105, 0.3);
+  }
+  .verdict.verdict-no .verdict-badge {
+    background: var(--red);
+    box-shadow: 0 4px 10px rgba(192, 57, 43, 0.3);
+  }
+  .verdict.verdict-dup .verdict-badge {
+    background: var(--gold);
+    color: var(--teal);
+    box-shadow: 0 4px 10px rgba(230, 181, 39, 0.4);
+  }
+  .verdict-quote {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--teal);
+    margin-bottom: 10px;
+    font-style: italic;
+    line-height: 1.4;
+    min-height: 38px;
+  }
+  .verdict-result {
+    font-size: 12px;
+    color: var(--slate);
+    line-height: 1.5;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(20, 54, 53, 0.1);
+  }
+  .verdict-result strong { color: var(--teal-light); }
+  .verdict.verdict-no .verdict-result strong { color: var(--red); }
+  .verdict.verdict-dup .verdict-result strong { color: var(--gold-dark); }
+
+  /* Slide 2.3 (refonte accessible) — Le concept en 3 boxes */
+  .concept-visual {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin: 4px 0 8px;
+  }
+  .concept-box {
+    background: white;
+    padding: 24px 22px;
+    border-radius: 8px;
+    text-align: center;
+    border-top: 4px solid var(--gold);
+    box-shadow: 0 4px 14px rgba(20, 54, 53, 0.08);
+  }
+  .concept-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 14px;
+    background: var(--cream);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--teal);
+  }
+  .concept-box h4 {
+    font-size: 17px;
+    color: var(--teal);
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
+  .concept-box p {
+    font-size: 13px;
+    color: var(--slate);
+    line-height: 1.5;
+  }
+
+  /* Slide 2.3 — 4 examples */
+  .examples-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 4px;
+  }
+  .example {
+    background: white;
+    padding: 18px 16px;
+    border-radius: 6px;
+    border-left: 4px solid var(--gold);
+    box-shadow: 0 4px 12px rgba(20, 54, 53, 0.05);
+  }
+  .example-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--teal);
+    margin-bottom: 10px;
+    font-style: italic;
+  }
+  .example-name::before { content: '« '; color: var(--gold); font-style: normal; }
+  .example-name::after { content: ' »'; color: var(--gold); font-style: normal; }
+  .example p {
+    font-size: 12px;
+    color: var(--slate);
+    line-height: 1.5;
+  }
+
+  /* Slide 2.3 — Do/Don't */
+  .practices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 4px;
+  }
+  .practice {
+    background: white;
+    padding: 20px 22px;
+    border-radius: 6px;
+    border-top: 4px solid var(--teal-light);
+    box-shadow: 0 4px 12px rgba(20, 54, 53, 0.05);
+  }
+  .practice.dont { border-top-color: var(--red); }
+  .practice-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 11px;
+    border-radius: 3px;
+    margin-bottom: 12px;
+    background: var(--teal-light);
+    color: white;
+  }
+  .practice.dont .practice-badge { background: var(--red); }
+  .practice ul { list-style: none; }
+  .practice li {
+    font-size: 13px;
+    color: var(--slate);
+    padding: 6px 0 6px 20px;
+    position: relative;
+    line-height: 1.55;
+  }
+  .practice li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--gold);
+    font-weight: 700;
+  }
+  .practice strong { color: var(--teal); }
+
+  /* Slide 2.3 — Footnote */
+  .footnote {
+    margin-top: 22px;
+    padding: 16px 22px;
+    background: white;
+    border-left: 4px solid var(--gold);
+    border-radius: 0 4px 4px 0;
+    font-size: 13px;
+    color: var(--slate);
+    line-height: 1.55;
+  }
+  .footnote strong { color: var(--teal); }
+
+  /* Slide 2.4 — Skills portability */
+  .portab-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 4px;
+  }
+  .portab-col {
+    background: white;
+    padding: 24px 26px;
+    border-radius: 8px;
+    border-top: 5px solid var(--teal-light);
+    box-shadow: 0 4px 14px rgba(20, 54, 53, 0.08);
+  }
+  .portab-col.cloud { border-top-color: var(--gold); }
+  .portab-col h4 {
+    font-size: 18px;
+    color: var(--teal);
+    margin-bottom: 4px;
+  }
+  .portab-col .portab-sub {
+    font-size: 11px;
+    color: var(--gold-dark);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+  .portab-col ul { list-style: none; }
+  .portab-col ul li {
+    font-size: 13px;
+    color: var(--slate);
+    padding: 5px 0 5px 22px;
+    position: relative;
+    line-height: 1.55;
+  }
+  .portab-col ul li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--teal-light);
+    font-weight: 700;
+  }
+  .portab-col.cloud ul li::before { color: var(--gold); }
+  .portab-col strong { color: var(--teal); }
+
+  .compat-table {
+    background: white;
+    border-radius: 8px;
+    padding: 22px 24px;
+    box-shadow: 0 4px 14px rgba(20, 54, 53, 0.06);
+    margin-top: 4px;
+  }
+  .compat-table table { width: 100%; border-collapse: collapse; }
+  .compat-table th {
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--gold-dark);
+    font-weight: 700;
+    border-bottom: 2px solid var(--cream);
+  }
+  .compat-table td {
+    padding: 12px;
+    font-size: 13.5px;
+    border-bottom: 1px solid rgba(20, 54, 53, 0.05);
+    color: var(--slate);
+    line-height: 1.5;
+  }
+  .compat-table tr:last-child td { border-bottom: none; }
+  .compat-table td:first-child { color: var(--teal); font-weight: 700; width: 38%; }
+  .compat-table .yes { color: var(--teal-light); font-weight: 700; }
+  .compat-table .no { color: var(--red); font-weight: 700; }
+  .compat-table .partial { color: var(--gold-dark); font-weight: 700; }
+
+  .reco-block {
+    background: var(--teal);
+    color: white;
+    border-radius: 8px;
+    padding: 22px 26px;
+    margin-top: 24px;
+    border-left: 5px solid var(--gold);
+  }
+  .reco-block h5 {
+    color: var(--gold);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+  .reco-block p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: rgba(255,255,255,0.9);
+  }
+  .reco-block strong { color: var(--gold); }
+
+  /* Slide Mémoire — 3 niveaux de mémoire */
+  .memory-comparison {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-top: 4px;
+  }
+  .memory-card {
+    background: white;
+    padding: 22px 20px;
+    border-radius: 6px;
+    border-top: 4px solid var(--teal-light);
+    box-shadow: 0 4px 14px rgba(20, 54, 53, 0.06);
+    transition: transform 0.2s;
+  }
+  .memory-card:hover { transform: translateY(-3px); }
+  .memory-card.featured { border-top-color: var(--gold); background: linear-gradient(180deg, #fffdf5 0%, white 100%); }
+  .memory-card h4 {
+    font-size: 17px;
+    color: var(--teal);
+    margin-bottom: 4px;
+  }
+  .memory-scope {
+    font-size: 10px;
+    color: var(--gold-dark);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+  .memory-card p {
+    font-size: 13px;
+    color: var(--slate);
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+  .memory-usecase {
+    font-size: 12px;
+    color: var(--slate);
+    padding: 10px 14px;
+    background: var(--cream);
+    border-left: 3px solid var(--gold);
+    border-radius: 0 3px 3px 0;
+    line-height: 1.5;
+  }
+  .memory-usecase strong { color: var(--teal); }
+
+  /* Commands */
+  .commands-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 4px;
+  }
+  .command-card {
+    background: var(--teal);
+    color: white;
+    padding: 20px 22px;
+    border-radius: 6px;
+    border-left: 4px solid var(--gold);
+  }
+  .command-code {
+    display: inline-block;
+    font-family: 'SF Mono', Consolas, monospace;
+    font-size: 16px;
+    background: rgba(230,181,39,0.15);
+    color: var(--gold);
+    padding: 4px 12px;
+    border-radius: 3px;
+    margin-bottom: 12px;
+    font-weight: 700;
+  }
+  .command-card p { font-size: 13px; color: rgba(255,255,255,0.85); line-height: 1.55; }
+
+  /* Slide Confidentialité */
+  .privacy-flow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 4px;
+  }
+  .privacy-col {
+    background: white;
+    padding: 22px 24px;
+    border-radius: 6px;
+    border-top: 4px solid var(--red);
+    box-shadow: 0 4px 14px rgba(20, 54, 53, 0.06);
+  }
+  .privacy-col.featured {
+    border-top-color: var(--teal-light);
+    background: linear-gradient(180deg, #f5fbfa 0%, white 100%);
+  }
+  .privacy-col h4 {
+    font-size: 16px;
+    color: var(--teal);
+    margin-bottom: 14px;
+  }
+  .privacy-items { list-style: none; }
+  .privacy-items li {
+    font-size: 13px;
+    color: var(--slate);
+    padding: 5px 0 5px 22px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .privacy-items li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--red);
+    font-weight: 700;
+  }
+  .privacy-col.featured .privacy-items li::before {
+    color: var(--teal-light);
+  }
+
+  .privacy-policy {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 4px;
+  }
+  .policy-item {
+    background: white;
+    padding: 18px;
+    border-radius: 6px;
+    border-left: 3px solid var(--gold);
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .policy-icon {
+    width: 28px;
+    height: 28px;
+    background: var(--teal-light);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .policy-item.no .policy-icon { background: var(--red); }
+  .policy-item p { font-size: 12.5px; color: var(--slate); line-height: 1.5; }
+  .policy-item p strong { color: var(--teal); }
+
+  .golden-rules {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-top: 4px;
+  }
+  .gold-rule {
+    background: white;
+    padding: 20px 22px;
+    border-radius: 6px;
+    border-left: 4px solid var(--gold);
+    box-shadow: 0 4px 12px rgba(20, 54, 53, 0.05);
+    display: flex;
+    gap: 16px;
+  }
+  .gold-rule-num {
+    font-size: 32px;
+    color: var(--gold);
+    font-weight: 700;
+    line-height: 0.9;
+    min-width: 38px;
+  }
+  .gold-rule h5 {
+    font-size: 15px;
+    color: var(--teal);
+    margin-bottom: 6px;
+  }
+  .gold-rule p { font-size: 13px; color: var(--slate); line-height: 1.5; }
+  .gold-rule code { background: var(--cream); padding: 1px 6px; border-radius: 2px; font-size: 11px; color: var(--teal); }
+
+  /* Slide Limites */
+  .limits-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 4px;
+  }
+  .limit-card {
+    background: white;
+    padding: 22px 24px;
+    border-radius: 6px;
+    border-top: 4px solid var(--gold);
+    box-shadow: 0 4px 14px rgba(20, 54, 53, 0.06);
+  }
+  .limit-header { margin-bottom: 12px; }
+  .limit-badge {
+    display: inline-block;
+    font-size: 10px;
+    color: var(--gold-dark);
+    background: rgba(230, 181, 39, 0.15);
+    padding: 3px 10px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .limit-card h4 { font-size: 18px; color: var(--teal); }
+  .limit-card > p { font-size: 13.5px; color: var(--slate); line-height: 1.55; margin-bottom: 12px; }
+  .limit-tip {
+    padding: 12px 14px;
+    background: var(--cream);
+    border-left: 3px solid var(--teal-light);
+    border-radius: 0 3px 3px 0;
+    font-size: 12.5px;
+    color: var(--slate);
+    line-height: 1.5;
+  }
+  .limit-tip strong { color: var(--teal-light); }
+
+  .trust-callout {
+    margin-top: 24px;
+    padding: 18px 26px;
+    background: var(--teal);
+    color: white;
+    border-radius: 6px;
+    border-left: 5px solid var(--gold);
+    font-size: 15px;
+    line-height: 1.55;
+    text-align: center;
+  }
+  .trust-callout strong { color: var(--gold); }
+
+  /* Slide Coûts */
+  .cost-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-top: 4px;
+  }
+  .cost-card {
+    background: white;
+    padding: 20px 22px;
+    border-radius: 6px;
+    border-top: 4px solid var(--gold);
+    box-shadow: 0 4px 12px rgba(20, 54, 53, 0.05);
+  }
+  .cost-card.high { border-top-color: var(--red); }
+  .cost-card.medium { border-top-color: var(--gold); }
+  .cost-badge {
+    display: inline-block;
+    font-size: 12px;
+    color: var(--gold);
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .cost-card.high .cost-badge { color: var(--red); }
+  .cost-card h5 { font-size: 15px; color: var(--teal); margin-bottom: 8px; }
+  .cost-card p { font-size: 13px; color: var(--slate); line-height: 1.5; }
+
+  .reflex-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 4px;
+  }
+  .reflex-card {
+    background: white;
+    padding: 18px 16px;
+    border-radius: 6px;
+    border-left: 4px solid var(--teal-light);
+    box-shadow: 0 4px 12px rgba(20, 54, 53, 0.05);
+    transition: transform 0.2s;
+  }
+  .reflex-card:hover { transform: translateY(-3px); }
+  .reflex-icon {
+    font-size: 24px;
+    color: var(--gold);
+    font-weight: 700;
+    margin-bottom: 10px;
+    line-height: 1;
+  }
+  .reflex-card h5 { font-size: 13px; color: var(--teal); margin-bottom: 8px; line-height: 1.3; }
+  .reflex-card p { font-size: 12px; color: var(--slate); line-height: 1.5; }
+  .reflex-card code { background: var(--cream); padding: 1px 5px; border-radius: 2px; font-size: 11px; color: var(--teal); font-family: 'SF Mono', Consolas, monospace; }
+
+  /* Slide Projets — Sans / Avec */
+  .project-explain {
+    display: grid;
+    grid-template-columns: 1fr 42px 1fr;
+    align-items: stretch;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .explain-col {
+    background: white;
+    padding: 22px 24px;
+    border-radius: 6px;
+    border-top: 4px solid rgba(192, 57, 43, 0.6);
+    box-shadow: 0 4px 14px rgba(20, 54, 53, 0.06);
+  }
+  .explain-col.featured {
+    border-top-color: var(--teal-light);
+    background: linear-gradient(180deg, #fffdf5 0%, white 100%);
+  }
+  .explain-col h5 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--slate);
+    margin-bottom: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .explain-col.featured h5 { color: var(--teal-light); }
+  .explain-col ul { list-style: none; }
+  .explain-col ul li {
+    font-size: 13px;
+    color: var(--slate);
+    padding: 5px 0 5px 22px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .explain-col ul li::before {
+    content: '✗';
+    position: absolute;
+    left: 0;
+    color: var(--red);
+    font-weight: 700;
+  }
+  .explain-col.featured ul li::before {
+    content: '✓';
+    color: var(--teal-light);
+  }
+  .explain-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    color: var(--gold);
+    font-weight: 700;
+  }
+
+  /* Slide Projets — 4 exemples Jobalto */
+  .project-examples {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 4px;
+  }
+  .project-card {
+    background: white;
+    padding: 18px 16px;
+    border-radius: 6px;
+    border-left: 4px solid var(--gold);
+    box-shadow: 0 4px 12px rgba(20, 54, 53, 0.05);
+    transition: transform 0.2s;
+  }
+  .project-card:hover { transform: translateY(-3px); }
+  .project-card .project-name {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--teal);
+    margin-bottom: 10px;
+    line-height: 1.3;
+  }
+  .project-card .project-name::before { content: '« '; color: var(--gold); }
+  .project-card .project-name::after { content: ' »'; color: var(--gold); }
+  .project-card p {
+    font-size: 12px;
+    color: var(--slate);
+    line-height: 1.5;
+  }
+
+  /* Slide Projets — Best practices */
+  .best-practices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 4px;
+  }
+  .practice-card {
+    background: white;
+    padding: 20px 22px;
+    border-radius: 6px;
+    border-top: 4px solid var(--teal-light);
+    box-shadow: 0 4px 12px rgba(20, 54, 53, 0.05);
+  }
+  .practice-card.bad { border-top-color: var(--red); }
+  .practice-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 11px;
+    border-radius: 3px;
+    margin-bottom: 14px;
+    background: var(--teal-light);
+    color: white;
+  }
+  .practice-card.bad .practice-badge { background: var(--red); }
+  .practice-card ul { list-style: none; }
+  .practice-card ul li {
+    font-size: 13px;
+    color: var(--slate);
+    padding: 6px 0 6px 20px;
+    position: relative;
+    line-height: 1.55;
+  }
+  .practice-card ul li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--gold);
+    font-weight: 700;
+  }
+  .practice-card strong { color: var(--teal); }
+
+  /* Story-card intro pour l'analogie du bar */
+  .bar-intro {
+    margin: 4px 0 8px;
+    padding: 22px 28px;
+    background: white;
+    border-left: 5px solid var(--gold);
+    border-radius: 0 6px 6px 0;
+    font-size: 15.5px;
+    color: var(--charcoal);
+    line-height: 1.7;
+    box-shadow: 0 4px 16px rgba(20, 54, 53, 0.07);
+    position: relative;
+  }
+  .bar-intro::before {
+    content: '«';
+    position: absolute;
+    top: -8px;
+    left: 18px;
+    font-size: 64px;
+    color: var(--gold);
+    font-family: Georgia, serif;
+    line-height: 1;
+    opacity: 0.5;
+  }
+  .bar-intro strong { color: var(--teal); }
+  .bar-intro em { color: var(--gold-dark); font-style: italic; }
+
+  /* Scheduled actions section (slide 08) */
+  .schedule-intro {
+    font-size: 15px;
+    color: var(--slate);
+    line-height: 1.6;
+    margin: 4px 0 18px;
+  }
+  .schedule-intro strong { color: var(--teal); }
+  .schedule-examples {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .schedule-card {
+    background: white;
+    border-radius: 6px;
+    padding: 18px 20px;
+    border-left: 4px solid var(--teal-light);
+    box-shadow: 0 4px 14px rgba(20, 54, 53, 0.06);
+    transition: transform 0.2s;
+  }
+  .schedule-card:hover { transform: translateY(-3px); }
+  .schedule-when {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--teal-light);
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .schedule-when svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+  .schedule-what {
+    font-size: 13.5px;
+    color: var(--charcoal);
+    font-style: italic;
+    line-height: 1.5;
+  }
+  .schedule-what::before { content: '« '; color: var(--gold); font-style: normal; }
+  .schedule-what::after { content: ' »'; color: var(--gold); font-style: normal; }
+  .schedule-howto {
+    padding: 16px 22px;
+    background: var(--cream);
+    border-radius: 4px;
+    border-left: 3px solid var(--gold);
+    font-size: 13.5px;
+    color: var(--slate);
+    line-height: 1.6;
+  }
+  .schedule-howto strong { color: var(--teal); }
+
+  /* Compacter le tableau d'analogie */
+  .analogy-table.compact { margin-top: 0; padding: 16px 24px; }
+  .analogy-table.compact td { padding: 6px 14px; font-size: 12.5px; }
+
+  /* Prompt bubbles slide */
+  .prompt-example {
+    background: white;
+    border-radius: 6px;
+    padding: 24px;
+    margin-top: 16px;
+    box-shadow: 0 4px 14px rgba(20, 54, 53, 0.08);
+  }
+  .prompt-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--gold-dark);
+    font-weight: 700;
+    margin-bottom: 6px;
+    margin-top: 14px;
+  }
+  .prompt-label:first-child { margin-top: 0; }
+  .prompt-bubble {
+    background: var(--cream);
+    padding: 16px 20px;
+    border-radius: 4px 16px 16px 16px;
+    font-size: 15px;
+    color: var(--charcoal);
+    line-height: 1.55;
+    border-left: 4px solid var(--gold);
+  }
+  .prompt-bubble.claude {
+    background: var(--teal);
+    color: white;
+    border-radius: 16px 4px 16px 16px;
+    border-left: none;
+    border-right: 4px solid var(--gold);
+  }
+  .prompt-bubble strong { color: var(--gold); }
+  .prompt-bubble.claude em { color: rgba(255,255,255,0.65); font-size: 13px; }
+  .other-prompts {
+    margin-top: 24px;
+    padding: 20px;
+    background: var(--cream);
+    border-radius: 4px;
+  }
+  .other-prompts h5 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--gold-dark);
+    margin-bottom: 12px;
+    font-weight: 700;
+  }
+  .other-prompts ul {
+    list-style: none;
+  }
+  .other-prompts ul li {
+    padding: 6px 0 6px 18px;
+    font-size: 14px;
+    color: var(--slate);
+    font-style: italic;
+    position: relative;
+  }
+  .other-prompts ul li::before {
+    content: '»';
+    position: absolute;
+    left: 0;
+    color: var(--gold);
+    font-weight: 700;
+  }
+  .other-prompts ul li em { color: var(--teal); font-style: normal; font-weight: 700; }
+  .callout-warning {
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: var(--cream);
+    border-left: 4px solid var(--gold);
+    border-radius: 0 4px 4px 0;
+    font-size: 13px;
+    color: var(--slate);
+    line-height: 1.55;
+  }
+  .callout-warning strong { color: var(--teal); }
+
+  /* Resources */
+  .resources {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-top: 24px;
+  }
+  .resource-card {
+    background: var(--cream);
+    padding: 24px;
+    border-radius: 4px;
+    border-left: 4px solid var(--gold);
+  }
+  .resource-card h5 {
+    font-size: 14px;
+    color: var(--teal);
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+  .resource-card p {
+    font-size: 13px;
+    color: var(--slate);
+    line-height: 1.5;
+    margin-bottom: 8px;
+  }
+  .resource-card a {
+    color: var(--link);
+    text-decoration: none;
+    font-size: 12px;
+    font-family: 'SF Mono', Consolas, monospace;
+    word-break: break-all;
+  }
+  .resource-card a:hover { text-decoration: underline; }
+
+  /* Navigation buttons */
+  .nav-buttons {
+    position: fixed;
+    bottom: 24px;
+    right: 32px;
+    display: flex;
+    gap: 8px;
+    z-index: 50;
+  }
+  .nav-btn {
+    background: var(--teal);
+    color: white;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 3px;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font);
+  }
+  .nav-btn:hover { background: var(--gold); color: var(--teal); }
+  .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .nav-btn.primary { background: var(--gold); color: var(--teal); }
+
+  /* Highlights */
+  .highlight {
+    background: linear-gradient(180deg, transparent 60%, rgba(230, 181, 39, 0.35) 60%);
+    padding: 0 2px;
+    font-weight: 700;
+  }
+  .pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    background: var(--gold);
+    color: var(--teal);
+    text-transform: uppercase;
+    margin-right: 6px;
+  }
+  .pill.outline {
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+  }
+
+  /* Tagline */
+  .tagline-bar {
+    position: absolute;
+    bottom: 30px;
+    left: 80px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 3px;
+    font-weight: 700;
+  }
+  .tagline-bar.dark { color: rgba(20, 54, 53, 0.3); }
+
+  /* Cover special */
+  .slide.cover {
+    background: linear-gradient(135deg, #0E2424 0%, #143635 60%, #1f4a48 100%);
+    color: white;
+    overflow: hidden;
+  }
+  .slide.cover::before {
+    content: '';
+    position: absolute;
+    top: -200px;
+    right: -200px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(230, 181, 39, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .slide.cover::after {
+    content: '';
+    position: absolute;
+    bottom: -100px;
+    left: -100px;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(42, 107, 105, 0.2) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+
+  /* Final slide */
+  .closing {
+    text-align: center;
+    margin-top: 40px;
+  }
+  .closing-tagline {
+    font-size: 32px;
+    color: var(--gold);
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 12px;
+  }
+  .closing-sub {
+    font-size: 16px;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 40px;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--cream); }
+  ::-webkit-scrollbar-thumb { background: var(--teal); border-radius: 3px; }
+  .sidebar::-webkit-scrollbar-track { background: var(--teal-darker); }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--gold); }
+
+  /* Mobile fallback */
+  @media (max-width: 1100px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .slide { padding: 40px 30px; }
+    .slide h2 { font-size: 32px; }
+    .cover-title { font-size: 56px; }
+    .modes, .objectives, .resources, .rules, .plugins-grid { grid-template-columns: 1fr; }
+    .tree-branches { grid-template-columns: 1fr; }
+    .connectors { grid-template-columns: repeat(2, 1fr); }
+    .workflow { grid-template-columns: repeat(2, 1fr); }
+    .gitops-flow { grid-template-columns: 1fr; }
+    .gitops-arrow { transform: rotate(90deg); justify-self: center; }
+    .gitops-steps { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOP BAR — chapter selector -->
+  <header class="topbar">
+    <div class="topbar-brand">Claude @ Jobalto</div>
+    <button class="chapter-btn active" data-chapter="intro"><span class="ch-num">★</span> Intro</button>
+    <button class="chapter-btn" data-chapter="1"><span class="ch-num">01</span> Découvrir</button>
+    <button class="chapter-btn" data-chapter="2"><span class="ch-num">02</span> Écosystème</button>
+    <button class="chapter-btn" data-chapter="3"><span class="ch-num">03</span> Bien l'utiliser</button>
+    <button class="chapter-btn" data-chapter="4"><span class="ch-num">04</span> Pro &amp; Partage</button>
+    <button class="chapter-btn" data-chapter="end"><span class="ch-num">⇥</span> Ressources</button>
+  </header>
+
+  <!-- SIDEBAR — slides of the active chapter -->
+  <aside class="sidebar">
+    <div class="sidebar-chapter-label" id="sidebar-label">Intro</div>
+    <div class="sidebar-chapter-title" id="sidebar-title">Bienvenue</div>
+    <ul class="nav-list" id="nav">
+      <!-- Populated dynamically by JS based on active chapter -->
+    </ul>
+    <div class="sidebar-footer">
+      Animé par Diego · Mai 2026<br><br>
+      ← → entre chapitres<br>
+      ↑ ↓ dans le chapitre
+    </div>
+  </aside>
+
+  <!-- MAIN STAGE -->
+  <main class="stage" id="stage">
+    <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+
+    <!-- SLIDE 1 — COVER -->
+    <section class="slide cover" id="s1" data-chapter="intro" data-title="Bienvenue">
+      <div class="slide-badge">Atelier · 45 min</div>
+      <div class="cover-title">CLAUDE,<br>TON <span>COPILOTE</span><br>D'ÉQUIPE</div>
+      <div class="cover-sub">Comprends. Utilise. Personnalise. Partage.</div>
+      <div class="cover-meta">Atelier Jobalto · Mai 2026 · Diego</div>
+      <div class="tagline-bar">ÉLÈVE TA CARRIÈRE</div>
+      <div class="cover-arrow">Suivant →</div>
+    </section>
+
+    <!-- SLIDE 2 — OBJECTIFS -->
+    <!-- ============ CHAPITRE 1 — DÉCOUVRIR ============ -->
+    <section class="slide chapter-cover" id="ch1" data-chapter="1" data-title="Sommaire du chapitre">
+      <div class="chapter-meta">Chapitre 01 sur 04</div>
+      <div class="chapter-number-big">01</div>
+      <div class="chapter-cover-title">DÉCOUVRIR</div>
+      <p class="chapter-cover-subtitle">Pose les bases. Ce qu'est Claude, pourquoi on l'a choisi pour Jobalto, et comment l'attaquer au quotidien.</p>
+      <div class="chapter-toc">
+        <div class="toc-item"><span class="toc-num">1.1</span> Objectifs de l'atelier</div>
+        <div class="toc-item"><span class="toc-num">1.2</span> Pourquoi Claude (et pas un autre)</div>
+        <div class="toc-item"><span class="toc-num">1.3</span> Chat vs Cowork</div>
+      </div>
+    </section>
+
+    <section class="slide" id="s2" data-chapter="1" data-title="Objectifs">
+      <div class="slide-num">1.1 · Au menu</div>
+      <h2>Ce que tu vas savoir faire dans 45 minutes</h2>
+      <p class="lede">L'atelier est conçu pour rendre l'équipe autonome avec Claude — pas juste l'utiliser, mais le maîtriser et le faire évoluer avec nos cas d'usage.</p>
+      <div class="objectives">
+        <div class="obj-card">
+          <div class="obj-num">OBJECTIF 1</div>
+          <h4>Choisir le bon mode</h4>
+          <p>Chat, Cowork ou Code — savoir lequel attaquer selon la tâche, sans hésiter.</p>
+        </div>
+        <div class="obj-card">
+          <div class="obj-num">OBJECTIF 2</div>
+          <h4>Connaître l'arsenal Jobalto</h4>
+          <p>30+ plugins déjà construits pour notre métier : compta, prospection, CV, paie, factures.</p>
+        </div>
+        <div class="obj-card">
+          <div class="obj-num">OBJECTIF 3</div>
+          <h4>Écrire de bons prompts</h4>
+          <p>Les 6 règles qui font la différence entre une réponse moyenne et un livrable utilisable.</p>
+        </div>
+        <div class="obj-card">
+          <div class="obj-num">OBJECTIF 4</div>
+          <h4>Créer & partager une skill</h4>
+          <p>Du workflow récurrent à la skill installée par toute l'équipe en 4 étapes.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3 — POURQUOI CLAUDE -->
+    <section class="slide dark" id="s3" data-chapter="1" data-title="Pourquoi Claude">
+      <div class="slide-num">1.2 · Le contexte</div>
+      <h2>Pourquoi Claude, et pas ChatGPT ?</h2>
+      <p class="lede">ChatGPT est très bon pour la conversation grand public. Claude a été choisi par Jobalto pour une raison précise : il est <span class="highlight" style="color: var(--teal)">conçu pour le travail métier</span> — instructions complexes, outils intégrés, et un écosystème de skills qu'on contrôle.</p>
+      <table class="compare">
+        <thead>
+          <tr>
+            <th></th>
+            <th class="claude">Claude (Anthropic)</th>
+            <th class="gpt">ChatGPT (OpenAI)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Suivre des instructions longues et nuancées</td><td><span class="check">★★★★★</span></td><td>★★★★</td></tr>
+          <tr><td>Outils MCP (Gmail, Slack, Airtable, Box…)</td><td><span class="check">Natif & extensible</span></td><td><span class="partial">Limité aux GPTs</span></td></tr>
+          <tr><td>Accès au filesystem de ton Mac</td><td><span class="check">Oui (Cowork & Code)</span></td><td><span class="cross">Non</span></td></tr>
+          <tr><td>Skills d'équipe versionnées (Git)</td><td><span class="check">Oui — repo équipe Jobalto</span></td><td><span class="cross">Non</span></td></tr>
+          <tr><td>Lancer du Bash / des scripts</td><td><span class="check">Oui (sandbox isolée)</span></td><td><span class="partial">Code Interpreter limité</span></td></tr>
+          <tr><td>Refus de tâches sensibles (données privées)</td><td><span class="check">Strict — bon pour Jobalto</span></td><td>Moins strict</td></tr>
+          <tr><td>Personnalisation par utilisateur</td><td><span class="check">Skills + mémoire + plugins</span></td><td>Custom GPTs (cloisonné)</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:28px; font-size:14px; color: rgba(255,255,255,0.7); max-width:780px;">
+        <strong style="color: var(--gold)">À retenir :</strong> ChatGPT reste un bon outil de discussion ouverte. Mais quand tu veux <em>faire le boulot</em> — manipuler des fichiers, automatiser un workflow, brancher à nos systèmes — Claude est meilleur, et c'est l'outil sur lequel l'entreprise capitalise.
+      </p>
+    </section>
+
+    <!-- SLIDE 4 — CHAT VS COWORK INFOGRAPHIC -->
+    <section class="slide cream" id="s4" data-chapter="1" data-title="Chat vs Cowork">
+      <div class="slide-num">1.3 · Chat vs Cowork</div>
+      <h2>Une seule question à se poser : Chat ou Cowork ?</h2>
+      <p class="lede">Chez Jobalto, tu n'as que deux portes d'entrée à connaître. <strong>Chat</strong> pour discuter, chercher, brainstormer. <strong>Cowork</strong> pour faire le boulot. Voici comment trancher d'un coup d'œil.</p>
+
+      <div class="vs-infographic">
+        <div class="vs-col">
+          <div class="vs-col-header">
+            <div class="vs-col-title">Chat</div>
+            <div class="vs-col-subtitle">Web · iPhone · Android</div>
+          </div>
+          <div class="vs-section">
+            <div class="vs-section-label">À utiliser quand</div>
+            <ul class="usecase">
+              <li>Tu as une question rapide à poser</li>
+              <li>Tu brainstormes des idées</li>
+              <li>Tu cherches une info sur le web</li>
+              <li>Tu es sur ton téléphone, dans le train</li>
+            </ul>
+          </div>
+          <div class="vs-section">
+            <div class="vs-section-label">Avantages</div>
+            <ul class="pros">
+              <li>Accessible partout — web, iPhone, Android</li>
+              <li>Démarre instantanément, rien à installer</li>
+              <li>Parfait pour la conversation et la réflexion</li>
+              <li>Tu peux le sortir n'importe où</li>
+            </ul>
+          </div>
+          <div class="vs-section">
+            <div class="vs-section-label">Limitations</div>
+            <ul class="cons">
+              <li>Pas d'accès à tes fichiers Mac</li>
+              <li>Pas de skills d'équipe Jobalto</li>
+              <li>Connecteurs limités (Gmail, Calendar, Slack)</li>
+              <li>Ne peut PAS automatiser des tâches métier</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="vs-col featured">
+          <div class="vs-col-header">
+            <div class="vs-col-title">Cowork</div>
+            <div class="vs-col-subtitle">App desktop sur ton Mac</div>
+            <div class="vs-col-star">★ Recommandé</div>
+          </div>
+          <div class="vs-section">
+            <div class="vs-section-label">À utiliser quand</div>
+            <ul class="usecase">
+              <li>Tu veux manipuler des fichiers locaux</li>
+              <li>Tu veux automatiser une tâche métier</li>
+              <li>Tu veux lancer une skill Jobalto (CV, factures, dashboards…)</li>
+              <li>Tu travailles sur ton Mac et tu veux qu'il agisse pour toi</li>
+            </ul>
+          </div>
+          <div class="vs-section">
+            <div class="vs-section-label">Avantages</div>
+            <ul class="pros">
+              <li>Accès complet à ton filesystem et tes apps</li>
+              <li>Tous les connecteurs (Gmail, Drive, Slack, Airtable, OVH…)</li>
+              <li>Toutes les skills Jobalto installées</li>
+              <li>Peut lancer des automatisations, piloter Chrome, etc.</li>
+            </ul>
+          </div>
+          <div class="vs-section">
+            <div class="vs-section-label">Limitations</div>
+            <ul class="cons">
+              <li>Mac uniquement (pas mobile, pas PC)</li>
+              <li>Setup initial via Jamf Now (une fois)</li>
+              <li>Doit être ouvert sur ton ordinateur</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="vs-verdict">
+        Dans le doute → <span>COWORK</span>. C'est lui qui sait tout faire chez Jobalto.
+      </div>
+
+      <div class="callout-warning" style="margin-top: 18px;">
+        <strong>⚠ Attention — les skills d'équipe Jobalto ne sont PAS toutes dispos dans le Chat.</strong> Les skills qui manipulent des fichiers locaux, lancent des scripts ou pilotent des connecteurs profonds (CV anonymizer, dashboards, compta, etc.) tournent <strong>uniquement dans Cowork</strong>. Le Chat (web/mobile) a son propre système de skills, plus limité. Si tu te demandes « est-ce que ça marche aussi dans le Chat ? », la réponse honnête est : <em>souvent non, sauf pour les skills purement procédurales</em>.
+      </div>
+    </section>
+
+    <!-- ============ CHAPITRE 2 — ÉCOSYSTÈME ============ -->
+    <section class="slide chapter-cover" id="ch2" data-chapter="2" data-title="Sommaire du chapitre">
+      <div class="chapter-meta">Chapitre 02 sur 04</div>
+      <div class="chapter-number-big">02</div>
+      <div class="chapter-cover-title">L'ÉCOSYSTÈME</div>
+      <p class="chapter-cover-subtitle">Tout ce que Claude a déjà sous la main chez Jobalto. Les connecteurs, les skills d'équipe, les Projets, et leurs limites de portabilité.</p>
+      <div class="chapter-toc">
+        <div class="toc-item"><span class="toc-num">2.1</span> Les connecteurs disponibles</div>
+        <div class="toc-item"><span class="toc-num">2.2</span> Le catalogue de skills Jobalto</div>
+        <div class="toc-item"><span class="toc-num">2.3</span> Les Projets — contexte qui dure</div>
+        <div class="toc-item"><span class="toc-num">2.4</span> Skills — où elles tournent</div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2.1 — CONNECTEURS -->
+    <section class="slide dark" id="s6" data-chapter="2" data-title="Connecteurs">
+      <div class="slide-num">2.1 · L'arsenal</div>
+      <h2>Les connecteurs déjà branchés chez nous</h2>
+      <p class="lede">Claude ne vit pas dans une bulle. Voici tout ce à quoi il peut accéder directement, sans que tu aies besoin de copier-coller. Tout est déjà configuré — il suffit de demander.</p>
+      <div class="connectors">
+        <div class="conn-card"><div class="conn-name">Gmail</div><div class="conn-desc">Lire, chercher, envoyer, répondre, forwarder, télécharger les pièces jointes.</div></div>
+        <div class="conn-card"><div class="conn-name">Google Calendar</div><div class="conn-desc">Lister, créer, modifier des événements. Suggérer des créneaux libres.</div></div>
+        <div class="conn-card"><div class="conn-name">Google Drive</div><div class="conn-desc">Parcourir, lire, télécharger les fichiers partagés et personnels.</div></div>
+        <div class="conn-card"><div class="conn-name">Slack</div><div class="conn-desc">Rechercher channels & threads, envoyer des messages, créer des canvas.</div></div>
+        <div class="conn-card"><div class="conn-name">Airtable</div><div class="conn-desc">Toutes nos bases (Finance, Operations, Blue, Green). Lecture & écriture.</div></div>
+        <div class="conn-card"><div class="conn-name">OVH</div><div class="conn-desc">Accès au serveur jobalto.be (WordPress, plugins, configuration).</div></div>
+        <div class="conn-card"><div class="conn-name">Canva</div><div class="conn-desc">Générer des designs brandés Jobalto, exporter en PDF ou PNG.</div></div>
+        <div class="conn-card"><div class="conn-name">Figma</div><div class="conn-desc">Lire les designs, exporter, naviguer dans les fichiers d'équipe.</div></div>
+        <div class="conn-card"><div class="conn-name">Chrome <span class="conn-warning">Coûteux</span></div><div class="conn-desc">Naviguer, automatiser des saisies, scraper des données. <strong style="color: var(--gold);">Consomme beaucoup — à utiliser ponctuellement.</strong></div></div>
+        <div class="conn-card"><div class="conn-name">Apps Mac</div><div class="conn-desc">Piloter <strong>Notes, Rappels, Finder</strong> et les documents locaux (Word, Excel, PDF…).</div></div>
+        <div class="conn-card"><div class="conn-name">GitHub</div><div class="conn-desc">Partage des skills d'équipe (publication, mise à jour, marketplace).</div></div>
+        <div class="conn-card"><div class="conn-name">Recherche web</div><div class="conn-desc">Chercher sur Google, lire des pages web, vérifier des infos en ligne.</div></div>
+      </div>
+      <p style="margin-top: 28px; font-size: 13px; color: rgba(255,255,255,0.55); font-style: italic;">
+        Tout connecteur que tu utilises laisse une trace côté audit. Claude te demandera ton accord avant toute action sensible (envoi de mail, suppression, partage de fichier).
+      </p>
+    </section>
+
+    <!-- SLIDE 2.2 — PLUGINS D'ÉQUIPE -->
+    <section class="slide" id="s7" data-chapter="2" data-title="Plugins d'équipe">
+      <div class="slide-num">2.2 · Le catalogue Jobalto</div>
+      <h2>Les skills d'équipe déjà construites pour notre métier</h2>
+      <p class="lede">Ces skills (= mini-experts spécialisés) sont installées chez chacun de vous. Tu n'as <strong>rien à faire</strong> pour les activer — il suffit d'évoquer le sujet en langage naturel, Claude détecte et déclenche la bonne.</p>
+      <div class="plugins-grid">
+        <div class="plugin-cat">
+          <h4>RH</h4>
+          <ul>
+            <li><code>cv-anonymizer</code> Anonymise et reformate un CV au format brandé Jobalto pour envoi client</li>
+            <li><code>classifications-clients-industrie-gf</code> Taxonomie sectorielle : industrie + groupe de fonctions</li>
+          </ul>
+        </div>
+        <div class="plugin-cat">
+          <h4>Sales & Prospection</h4>
+          <ul>
+            <li><code>prospection-expert</code> Orchestrateur du workflow de prospection complet</li>
+            <li><code>belgian-company-analyzer</code> Analyse financière d'une société ou d'un groupe belge</li>
+            <li><code>bnb-financial-extractor</code> Extraction des bilans BNB (Centrale des Bilans)</li>
+            <li><code>advertsdata-connector</code> Signaux d'embauche : qui recrute, où, combien</li>
+            <li><code>nace-lookup</code> Codes NACE depuis BCE/KBO</li>
+            <li><code>belgian-address-finder</code> Adresses d'entreprises belges</li>
+          </ul>
+        </div>
+        <div class="plugin-cat">
+          <h4>Dashboards & Reporting</h4>
+          <ul>
+            <li><code>easypay-dashboard-builder</code> Analyse des jours prestés, absences et JF par région et par client</li>
+            <li><code>financial-analysis-dashboard-builder</code> Dashboard financier qui analyse les opportunités à travers une liste d'entreprises ou un grand groupe avec filiales (ex : Gehlen)</li>
+            <li><code>github-pages-publisher</code> Publication des dashboards en URL partageable</li>
+          </ul>
+        </div>
+        <div class="plugin-cat">
+          <h4>Digital Marketing</h4>
+          <ul>
+            <li><code>jobalto-wordpress</code> Gestion du site jobalto.be (contenu, Carerix, SEO, performance)</li>
+            <li><code>indeed-analytics</code> Performance des campagnes Indeed, optimisation budget pub recrutement</li>
+          </ul>
+        </div>
+        <div class="plugin-cat">
+          <h4>Airtable</h4>
+          <ul>
+            <li><code>jobalto-airtable</code> Interactions avec Airtable — poser des questions sur les factures payées ou impayées, les clients, les workers</li>
+            <li><code>airtable-formula-builder</code> Maintien des formules nested IF (classification automatique)</li>
+          </ul>
+        </div>
+        <div class="plugin-cat">
+          <h4>Outils transverses</h4>
+          <ul>
+            <li><code>souviens-toi</code> Récupère le transcript d'une session perdue</li>
+            <li><code>skill-creator</code> Crée tes propres skills</li>
+            <li><code>partage-skill-equipe</code> Propose tes skills au menu Jobalto</li>
+            <li><code>sync-skills-github</code> Synchronise les skills depuis le repo équipe</li>
+            <li><code>jobalto-branding</code> Charte graphique pour tout livrable</li>
+            <li><code>schedule</code> Tâches récurrentes automatisées</li>
+          </ul>
+        </div>
+      </div>
+      <p style="margin-top: 24px; font-size: 13px; color: var(--slate); font-style: italic;">
+        💡 Tu veux une skill que tu ne vois pas ici ? On la construit ensemble — c'est l'objet de la suite de l'atelier.
+      </p>
+    </section>
+
+    <!-- SLIDE 2.3 — PROJETS (moved into Ch.2) -->
+    <!-- (already exists below as s13 — keep reference) -->
+
+    <!-- SLIDE 2.3 — LES PROJETS (version accessible) -->
+    <section class="slide cream" id="s13" data-chapter="2" data-title="Les Projets">
+      <div class="slide-num">2.3 · Les Projets</div>
+      <h2>Les Projets — ton espace de travail organisé</h2>
+      <p class="lede">Un Projet, c'est ton <strong>bureau virtuel</strong> dans Claude. Tu y déposes tes fichiers, tu y écris tes consignes, et Claude garde tout en tête à chaque nouvelle conversation que tu y lances. Plus besoin de réexpliquer le contexte à chaque fois.</p>
+
+      <div class="section-label">Ce qu'il y a dans un Projet</div>
+      <div class="concept-visual">
+        <div class="concept-box">
+          <div class="concept-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <h4>Tes fichiers</h4>
+          <p>CVs, briefs, contrats, PDFs de bilans, tout ce qui sert régulièrement sur ce sujet.</p>
+        </div>
+        <div class="concept-box">
+          <div class="concept-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </div>
+          <h4>Tes consignes</h4>
+          <p>Le ton, le format attendu, le vocabulaire métier. Claude les respecte dans chaque réponse.</p>
+        </div>
+        <div class="concept-box">
+          <div class="concept-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          </div>
+          <h4>Tes conversations</h4>
+          <p>Toutes les discussions liées au même sujet, dans le même espace. Tu reprends où tu en étais.</p>
+        </div>
+      </div>
+
+      <div class="section-label">4 exemples concrets pour Jobalto</div>
+      <div class="examples-grid">
+        <div class="example">
+          <div class="example-name">Recrutement Buildup</div>
+          <p>Tous les CV reçus, le brief client, les feedbacks. Pour chaque nouveau candidat, contexte instant.</p>
+        </div>
+        <div class="example">
+          <div class="example-name">Prospection Q1 2026</div>
+          <p>Rapports d'analyse de groupes (Gehlen, etc.), emails clients, notes de RDV. Tu reprends d'une phrase.</p>
+        </div>
+        <div class="example">
+          <div class="example-name">Site jobalto.be</div>
+          <p>Notes sur le site, sur Carerix, sur les évolutions. Pour toute question ou debug, Claude sait déjà tout.</p>
+        </div>
+        <div class="example">
+          <div class="example-name">Comptes annuels 2025</div>
+          <p>Bilans, exports, analyses. Une bibliothèque interrogeable d'un coup, sans tout re-uploader.</p>
+        </div>
+      </div>
+
+      <div class="section-label">Les bonnes pratiques</div>
+      <div class="practices">
+        <div class="practice">
+          <div class="practice-badge">✓ À faire</div>
+          <ul>
+            <li><strong>Un Projet = un sujet</strong>. Un client, un dossier, un thème — pas tout mélangé.</li>
+            <li><strong>Donne un nom clair</strong> : « Buildup 2026 » plutôt que « Truc client ».</li>
+            <li><strong>Mets tes consignes maison</strong> : ton, format, vocabulaire que Claude doit respecter.</li>
+            <li><strong>Range tes documents dans le Projet</strong>, pas dans le chat à chaque fois.</li>
+            <li><strong>Archive ce qui est terminé</strong> pour garder ta liste lisible.</li>
+          </ul>
+        </div>
+        <div class="practice dont">
+          <div class="practice-badge">✗ À éviter</div>
+          <ul>
+            <li>Mettre <strong>tout dans un seul Projet</strong> « Travail » — Claude se perd dans le contexte.</li>
+            <li>Mélanger <strong>plusieurs clients</strong> (problème de clarté et de confidentialité).</li>
+            <li>Re-uploader <strong>le même fichier</strong> à chaque conversation.</li>
+            <li>Mettre <strong>des données très sensibles</strong> (NISS, salaires nominatifs) si le Projet est partagé avec l'équipe.</li>
+            <li>Oublier de <strong>faire le ménage</strong> — 50 Projets actifs, c'est ingérable.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footnote">
+        <strong>Disponible partout.</strong> Les Projets existent à la fois dans Cowork (sur ton Mac) et dans Claude.ai (web et mobile). Sur le plan Team Jobalto, tu peux <strong>partager un Projet</strong> avec d'autres membres de l'équipe — ils accèdent aux mêmes fichiers, consignes et conversations.
+      </div>
+    </section>
+
+    <!-- SLIDE 2.4 — SKILLS COWORK vs CLAUDE.AI -->
+    <section class="slide" id="s18" data-chapter="2" data-title="Skills — où elles tournent">
+      <div class="slide-num">2.4 · Skills — où elles tournent</div>
+      <h2>Les skills Cowork ne marchent pas toutes dans Claude.ai</h2>
+      <p class="lede">Les skills existent dans <strong>les deux environnements</strong>, mais elles ne sont pas interchangeables. Voici quand tu peux compter sur une skill équipe partout, et quand elle reste cantonnée à Cowork.</p>
+
+      <div class="section-label">Deux environnements différents</div>
+      <div class="portab-grid">
+        <div class="portab-col">
+          <h4>Skills Cowork</h4>
+          <div class="portab-sub">Sur ton Mac · pleine puissance</div>
+          <ul>
+            <li>Accès à <strong>tes fichiers Mac</strong> (Finder, dossiers, PDFs locaux)</li>
+            <li>Peut lancer <strong>des scripts</strong> Python ou bash en local</li>
+            <li>Connecteurs profonds : Gmail, Drive, Airtable, OVH, Chrome, apps Mac…</li>
+            <li>Distribuées via notre <strong>repo d'équipe</strong> (sync automatique)</li>
+            <li>Toutes les skills du catalogue Jobalto sont là</li>
+          </ul>
+        </div>
+        <div class="portab-col cloud">
+          <h4>Skills Claude.ai</h4>
+          <div class="portab-sub">Cloud · plus limité</div>
+          <ul>
+            <li><strong>Pas d'accès</strong> à tes fichiers Mac (tu dois uploader)</li>
+            <li>Scripts en sandbox cloud (pas tes fichiers locaux)</li>
+            <li>Connecteurs cloud uniquement (Gmail web, Calendar…)</li>
+            <li>Installées manuellement par <strong>chaque utilisateur</strong> dans l'UI</li>
+            <li>Sous-ensemble des skills équipe seulement</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section-label">Qu'est-ce qui se porte d'un côté à l'autre ?</div>
+      <div class="compat-table">
+        <table>
+          <tr>
+            <th>Type de skill</th>
+            <th>Cowork</th>
+            <th>Claude.ai</th>
+          </tr>
+          <tr>
+            <td>Skills procédurales (templates, style guides, prompts)</td>
+            <td class="yes">✓ Oui</td>
+            <td class="yes">✓ Oui (via Custom Instructions de Projet)</td>
+          </tr>
+          <tr>
+            <td>Skills avec scripts locaux (CV anonymizer, dashboards…)</td>
+            <td class="yes">✓ Natif</td>
+            <td class="no">✗ Non</td>
+          </tr>
+          <tr>
+            <td>Skills qui lisent des fichiers Mac</td>
+            <td class="yes">✓ Direct</td>
+            <td class="no">✗ Upload manuel obligatoire</td>
+          </tr>
+          <tr>
+            <td>Skills qui utilisent juste un connecteur (Gmail, Calendar)</td>
+            <td class="yes">✓ Oui</td>
+            <td class="yes">✓ Oui</td>
+          </tr>
+          <tr>
+            <td>Skills qui pilotent OVH, Airtable, apps Mac</td>
+            <td class="yes">✓ Oui</td>
+            <td class="partial">⚠ Partiel (Airtable oui, le reste non)</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="reco-block">
+        <h5>Recommandation pour Jobalto</h5>
+        <p>
+          <strong>Cowork reste l'outil principal</strong> pour 90 % de tes tâches métier — c'est là que tu as l'arsenal complet. Les skills CV anonymizer, dashboards Easypay, classements compta, factures TKT, etc. y resteront. Si tu veux qu'une skill fonctionne aussi dans Claude.ai (utile sur mobile, dans le train), <strong>conçois-la légère</strong> : juste des instructions et templates, sans script local. Tu peux alors la dupliquer en <strong>Custom Instructions d'un Projet Claude.ai</strong>.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ CHAPITRE 3 — BIEN UTILISER ============ -->
+    <section class="slide chapter-cover" id="ch3" data-chapter="3" data-title="Sommaire du chapitre">
+      <div class="chapter-meta">Chapitre 03 sur 04</div>
+      <div class="chapter-number-big">03</div>
+      <div class="chapter-cover-title">BIEN L'UTILISER</div>
+      <p class="chapter-cover-subtitle">Les habitudes qui font la différence entre une réponse moyenne et un livrable utilisable. Plus les garde-fous indispensables et l'hygiène pour ne pas exploser les tokens.</p>
+      <div class="chapter-toc">
+        <div class="toc-item"><span class="toc-num">3.1</span> L'art du prompting</div>
+        <div class="toc-item"><span class="toc-num">3.2</span> Mémoire & continuité</div>
+        <div class="toc-item"><span class="toc-num">3.3</span> Coûts &amp; hygiène token</div>
+        <div class="toc-item"><span class="toc-num">3.4</span> Confidentialité des données</div>
+        <div class="toc-item"><span class="toc-num">3.5</span> Limites — quand NE PAS utiliser Claude</div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3.1 — PROMPTING -->
+    <section class="slide cream" id="s8" data-chapter="3" data-title="L'art du prompting">
+      <div class="slide-num">3.1 · L'art du prompting</div>
+      <h2>Les 6 règles qui changent tout</h2>
+      <p class="lede">La différence entre une réponse moyenne et un livrable parfait, ce n'est pas le modèle — c'est la qualité du prompt. Voici les habitudes à prendre.</p>
+      <div class="rules">
+        <div class="rule">
+          <div class="rule-num">01</div>
+          <div class="rule-content">
+            <h5>Sois spécifique, donne du contexte</h5>
+            <p>Plus tu en dis sur la situation, mieux Claude répond. Mentionne le client, le secteur, l'objectif.</p>
+            <div class="example">
+              <span class="bad">« Fais-moi un CV »</span><br>
+              <span class="good">« Anonymise ce CV de soudeur, présentation à un client industriel à Liège, mettre en avant 10 ans d'expérience en chaudronnerie »</span>
+            </div>
+          </div>
+        </div>
+        <div class="rule">
+          <div class="rule-num">02</div>
+          <div class="rule-content">
+            <h5>Évoque le sujet, la skill se déclenche</h5>
+            <p>Pas besoin d'apprendre les noms techniques. Parle naturellement — Claude détecte.</p>
+            <div class="example">
+              <span class="good">« Anonymise ce CV de soudeur pour un client industriel »</span> → déclenche <code>cv-anonymizer</code><br>
+              <span class="good">« Analyse-moi le groupe Gehlen (BCE 0400.123.456) »</span> → déclenche <code>belgian-company-analyzer</code>
+            </div>
+          </div>
+        </div>
+        <div class="rule">
+          <div class="rule-num">03</div>
+          <div class="rule-content">
+            <h5>Donne des exemples ou des références</h5>
+            <p>« Comme la dernière fois » ou « dans le style de X » oriente le résultat en une phrase.</p>
+            <div class="example">
+              <span class="good">« Fais le même type de dashboard que pour Smart Group le mois dernier, mais pour Adecco »</span>
+            </div>
+          </div>
+        </div>
+        <div class="rule">
+          <div class="rule-num">04</div>
+          <div class="rule-content">
+            <h5>Découpe les tâches complexes</h5>
+            <p>Trois prompts ciblés battent un prompt monstre. Tu peux toujours enchaîner.</p>
+            <div class="example">
+              <span class="good">1. Extraire les données → 2. Vérifier → 3. Générer le dashboard</span><br>
+              <span class="bad">« Fais-moi tout l'audit financier du groupe Gehlen »</span>
+            </div>
+          </div>
+        </div>
+        <div class="rule">
+          <div class="rule-num">05</div>
+          <div class="rule-content">
+            <h5>Demande à Claude de se vérifier</h5>
+            <p>« Relis-toi et signale les incohérences » fait gagner 10 min de relecture humaine.</p>
+            <div class="example">
+              <span class="good">« Relis ce CV anonymisé et vérifie qu'aucune info personnelle (nom, email, ville exacte) n'y traîne encore »</span>
+            </div>
+          </div>
+        </div>
+        <div class="rule">
+          <div class="rule-num">06</div>
+          <div class="rule-content">
+            <h5>Protège les données sensibles</h5>
+            <p>Pas de mots de passe en clair. Pas de NISS, IBAN ou CV non anonymisés vers des services tiers.</p>
+            <div class="example">
+              <span class="good">Anonymise AVANT d'envoyer un CV. Utilise les MCP officiels (Box, Gmail) plutôt que copier-coller.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3.2 — MÉMOIRE & CONTINUITÉ -->
+    <section class="slide cream" id="s14" data-chapter="3" data-title="Mémoire & continuité">
+      <div class="slide-num">3.2 · Mémoire & continuité</div>
+      <h2>Trois façons pour Claude de se souvenir</h2>
+      <p class="lede">Par défaut, Claude oublie tout entre deux conversations. Mais Cowork te donne trois mécanismes pour lui faire garder le contexte — chacun pour un usage différent. Ne pas les confondre.</p>
+
+      <div class="section-label">Les 3 niveaux de mémoire</div>
+      <div class="memory-comparison">
+        <div class="memory-card">
+          <h4>Mémoire automatique</h4>
+          <div class="memory-scope">À l'échelle de tout Cowork</div>
+          <p>Une fois <strong>activée</strong>, Claude retient automatiquement tes <strong>préférences personnelles</strong> : ton secteur, tes outils favoris, ton style de communication, des faits que tu lui as déjà partagés.</p>
+          <div class="memory-usecase"><strong>À savoir :</strong> la mémoire n'est <strong>pas activée par défaut</strong>. Active-la dans Cowork → Settings → Memory. Tu peux ensuite voir, modifier ou supprimer ce que Claude a retenu, à tout moment.</div>
+        </div>
+        <div class="memory-card featured">
+          <h4>Projet</h4>
+          <div class="memory-scope">À l'échelle d'un sujet</div>
+          <p>Contexte persistant lié à un projet : <strong>fichiers, instructions custom, conversations multiples</strong> partageant le même contexte.</p>
+          <div class="memory-usecase"><strong>Idéal pour :</strong> un dossier client, un chantier en cours, une bibliothèque thématique (voir slide 2.3).</div>
+        </div>
+        <div class="memory-card">
+          <h4>Skill</h4>
+          <div class="memory-scope">À l'échelle d'une tâche</div>
+          <p>Recette procédurale réutilisable : <strong>la même tâche, faite de la même manière</strong>, à chaque déclenchement.</p>
+          <div class="memory-usecase"><strong>Idéal pour :</strong> un workflow répétitif (anonymiser un CV, générer un dashboard, etc.).</div>
+        </div>
+      </div>
+
+      <div class="trust-callout" style="background: white; color: var(--charcoal); border-left-color: var(--gold); margin-top: 22px; text-align: left; font-size: 14px;">
+        <strong style="color: var(--teal);">Cas concret — tu reçois un nouveau CV pour Buildup.</strong><br>
+        → Tu ouvres ton <strong>Projet</strong> « Recrutement Buildup 2026 » qui te donne le <em>contexte client</em> (brief, postes ouverts, candidats déjà placés, échanges email).<br>
+        → Dans cette conversation, tu déclenches la <strong>Skill</strong> <code style="background: var(--cream); padding: 1px 6px; border-radius: 2px; font-size: 12px;">cv-anonymizer</code> qui exécute la <em>procédure</em> d'anonymisation au format Jobalto.<br>
+        <span style="color: var(--gold-dark); font-weight: 700;">Le projet te donne le <em>quoi</em>, la skill te donne le <em>comment</em>.</span>
+      </div>
+
+      <div class="section-label">Commandes utiles pendant une conversation</div>
+      <div class="commands-grid">
+        <div class="command-card">
+          <div class="command-code">/clear</div>
+          <p>Repartir à zéro dans la conversation courante. À utiliser quand tu changes complètement de sujet et que le contexte précédent gêne plus qu'il aide.</p>
+        </div>
+        <div class="command-card">
+          <div class="command-code">/compact</div>
+          <p>Comprimer une longue conversation en gardant l'essentiel. À utiliser quand Claude rame ou devient hésitant après une longue session (50+ échanges).</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3.3 — COÛTS & HYGIÈNE TOKEN -->
+    <section class="slide cream" id="s17" data-chapter="3" data-title="Coûts & hygiène">
+      <div class="slide-num">3.3 · Coûts &amp; hygiène</div>
+      <h2>Hygiène d'usage — pour ne pas exploser les tokens</h2>
+      <p class="lede">Le plan Team Jobalto a des quotas généreux, mais pas illimités. Quelques réflexes simples permettent de rester efficace sans gaspiller.</p>
+
+      <div class="section-label">Ce qui consomme beaucoup</div>
+      <div class="cost-grid">
+        <div class="cost-card high">
+          <div class="cost-badge">★★★ Élevé</div>
+          <h5>Chrome / pilotage navigateur</h5>
+          <p>Chaque action sur une page web (clic, screenshot, lecture HTML) coûte cher en tokens. À utiliser ponctuellement, pas en routine quotidienne.</p>
+        </div>
+        <div class="cost-card high">
+          <div class="cost-badge">★★★ Élevé</div>
+          <h5>Très longues conversations</h5>
+          <p>Plus la session est longue, plus Claude doit relire tout l'historique à chaque message. Les coûts grimpent en flèche après 50+ échanges.</p>
+        </div>
+        <div class="cost-card medium">
+          <div class="cost-badge">★★ Modéré</div>
+          <h5>Gros fichiers uploadés dans le chat</h5>
+          <p>Un PDF de 200 pages dans le chat = 200 pages relues à chaque tour. Préfère un Projet avec Knowledge files (indexés une fois).</p>
+        </div>
+      </div>
+
+      <div class="section-label">Les bons réflexes</div>
+      <div class="reflex-grid">
+        <div class="reflex-card">
+          <div class="reflex-icon">↻</div>
+          <h5><code>/clear</code> quand tu changes de sujet</h5>
+          <p>Pas besoin de garder le contexte de la prospection quand tu passes à la compta. Repars frais, ça allège tout.</p>
+        </div>
+        <div class="reflex-card">
+          <div class="reflex-icon">↓</div>
+          <h5><code>/compact</code> si la session traîne</h5>
+          <p>Compresse une longue conversation en gardant l'essentiel. Tu gardes le fil, tu perds le bruit, Cowork redevient véloce.</p>
+        </div>
+        <div class="reflex-card">
+          <div class="reflex-icon">⊞</div>
+          <h5>Splitte en plusieurs sessions</h5>
+          <p>Une tâche = une session. Ne mélange pas analyse, brouillon d'email et calcul Excel dans la même conversation.</p>
+        </div>
+        <div class="reflex-card">
+          <div class="reflex-icon">⊕</div>
+          <h5>Préfère les Projets aux uploads répétés</h5>
+          <p>Un PDF dans Knowledge = indexé une fois, réutilisable à l'infini. Le même PDF re-uploadé 10 fois = 10× le coût.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3.4 — CONFIDENTIALITÉ DES DONNÉES -->
+    <section class="slide" id="s15" data-chapter="3" data-title="Confidentialité">
+      <div class="slide-num">3.4 · Confidentialité</div>
+      <h2>Confidentialité — ce qui part, ce qui reste</h2>
+      <p class="lede">Jobalto traite des CV, des contrats, des données salariales. Comprendre <strong>exactement où vont les données</strong> est non négociable. Voici les faits, sans ambiguïté.</p>
+
+      <div class="section-label">Ce qui part vs ce qui reste local</div>
+      <div class="privacy-flow">
+        <div class="privacy-col">
+          <h4>→ Part chez Anthropic</h4>
+          <ul class="privacy-items">
+            <li>Tes prompts (le texte que tu tapes)</li>
+            <li>Les fichiers que tu uploads explicitement dans le chat</li>
+            <li>Les outputs des connecteurs que Claude doit traiter (emails Gmail, données Airtable, etc.)</li>
+            <li>Les fichiers ouverts dans le contexte d'une conversation Cowork</li>
+          </ul>
+        </div>
+        <div class="privacy-col featured">
+          <h4>→ Reste local sur ton Mac</h4>
+          <ul class="privacy-items">
+            <li>Tous les fichiers de ton filesystem que Claude ne lit pas activement</li>
+            <li>Tes mots de passe, tokens, credentials (stockés dans Keychain)</li>
+            <li>L'historique des conversations passées (chiffré localement)</li>
+            <li>Les skills installées dans <code>~/.claude/skills/</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section-label">Ce qu'Anthropic fait des données (Plan Team)</div>
+      <div class="privacy-policy">
+        <div class="policy-item">
+          <div class="policy-icon">✓</div>
+          <p><strong>Stockage temporaire</strong> pour traitement par le modèle, puis suppression sous 30 jours</p>
+        </div>
+        <div class="policy-item no">
+          <div class="policy-icon">✗</div>
+          <p><strong>N'utilise PAS pour entraîner</strong> les modèles (différence majeure avec le plan gratuit / Pro perso)</p>
+        </div>
+        <div class="policy-item">
+          <div class="policy-icon">✓</div>
+          <p><strong>Hébergement</strong> aux US / Europe selon la zone — conforme RGPD pour les contrats Team/Enterprise</p>
+        </div>
+      </div>
+
+      <div class="section-label">Les 4 règles d'or pour Jobalto</div>
+      <div class="golden-rules">
+        <div class="gold-rule">
+          <div class="gold-rule-num">1</div>
+          <div>
+            <h5>Anonymise systématiquement</h5>
+            <p>Les CV avant tout partage tiers. Utilise la skill <code>cv-anonymizer</code> qui retire nom, email, téléphone, adresse précise.</p>
+          </div>
+        </div>
+        <div class="gold-rule">
+          <div class="gold-rule-num">2</div>
+          <div>
+            <h5>Zéro identifiant en clair</h5>
+            <p>JAMAIS de NISS, IBAN, mots de passe, tokens API dans le chat. Pas même "pour tester rapidement".</p>
+          </div>
+        </div>
+        <div class="gold-rule">
+          <div class="gold-rule-num">3</div>
+          <div>
+            <h5>Pour le très sensible, reste local</h5>
+            <p>Demande à Claude de travailler sur les fichiers en local via Cowork sans les uploader explicitement dans la conversation.</p>
+          </div>
+        </div>
+        <div class="gold-rule">
+          <div class="gold-rule-num">4</div>
+          <div>
+            <h5>Connecteurs &gt; copier-coller</h5>
+            <p>Pour les emails et données sensibles, utilise les connecteurs Gmail / Slack / Airtable (transit chiffré) plutôt que copier-coller.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3.5 — LIMITES DE CLAUDE -->
+    <section class="slide cream" id="s16" data-chapter="3" data-title="Limites de Claude">
+      <div class="slide-num">3.5 · Les limites</div>
+      <h2>Les limites de Claude — quand NE PAS l'utiliser tel quel</h2>
+
+      <div class="limits-grid">
+        <div class="limit-card">
+          <div class="limit-header">
+            <div class="limit-badge">Limite 01</div>
+            <h4>Hallucinations</h4>
+          </div>
+          <p>Claude peut <strong>inventer</strong> des chiffres, des dates, des noms de personnes — surtout sur des sujets précis qu'il ne connaît pas. Il "comble" avec ce qui sonne plausible.</p>
+          <div class="limit-tip">
+            <strong>Que faire :</strong> toujours vérifier les sorties chiffrées ou nominatives critiques. Demande-lui de citer ses sources. Pour les chiffres, lance le calcul en Python plutôt que de demander un résultat à la volée.
+          </div>
+        </div>
+
+        <div class="limit-card">
+          <div class="limit-header">
+            <div class="limit-badge">Limite 02</div>
+            <h4>Knowledge cutoff</h4>
+          </div>
+          <p>Claude ne sait <strong>rien</strong> des événements récents — sa connaissance s'arrête à sa date de fin d'entraînement, qui change à chaque nouvelle version du modèle (généralement quelques mois en arrière). Pas l'actualité, pas les nouveautés produit, pas les changements de législation belge.</p>
+          <div class="limit-tip">
+            <strong>Que faire :</strong> pour toute info récente, demande à Claude de chercher sur le web : « cherche sur Google les dernières nouvelles sur X ». Le connecteur Recherche web est fait pour ça.
+          </div>
+        </div>
+
+        <div class="limit-card">
+          <div class="limit-header">
+            <div class="limit-badge">Limite 03</div>
+            <h4>Calculs précis</h4>
+          </div>
+          <p>Pour la <strong>compta exacte</strong>, les conversions TVA, les calculs de salaires, Claude peut faire des erreurs d'arithmétique "de tête" — surtout sur des sommes de beaucoup de lignes.</p>
+          <div class="limit-tip">
+            <strong>Que faire :</strong> demande-lui d'écrire le calcul en Python (« calcule ça en Python pour être sûr »). Cowork lance le script et te donne le résultat exact, vérifiable, reproductible.
+          </div>
+        </div>
+
+        <div class="limit-card">
+          <div class="limit-header">
+            <div class="limit-badge">Limite 04</div>
+            <h4>Décisions à fort enjeu</h4>
+          </div>
+          <p>Pour les décisions <strong>RH (embauche, rupture), juridiques, médicales, contractuelles</strong> — Claude n'est pas le décideur. C'est un assistant, pas un avocat ni un DRH.</p>
+          <div class="limit-tip">
+            <strong>Que faire :</strong> Claude assiste (synthèse, analyse, options), l'humain décide. Garde le « pourquoi » de la décision dans tes propres notes, pas seulement dans le prompt.
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ============ CHAPITRE 4 — PRO & PARTAGE ============ -->
+    <section class="slide chapter-cover" id="ch4" data-chapter="4" data-title="Sommaire du chapitre">
+      <div class="chapter-meta">Chapitre 04 sur 04</div>
+      <div class="chapter-number-big">04</div>
+      <div class="chapter-cover-title">PRO &amp; PARTAGE</div>
+      <p class="chapter-cover-subtitle">Les features avancées pour faire bosser Claude en continu, et comment partager tes meilleures inventions avec le reste de l'équipe.</p>
+      <div class="chapter-toc">
+        <div class="toc-item"><span class="toc-num">4.1</span> Skills + Scheduled Actions</div>
+        <div class="toc-item"><span class="toc-num">4.2</span> Le bar de Diego (analogie partage)</div>
+        <div class="toc-item"><span class="toc-num">4.3</span> Partager en pratique</div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4.1 — NIVEAU PRO : SKILLS + SCHEDULED ACTIONS -->
+    <section class="slide" id="s9" data-chapter="4" data-title="Skills + Scheduled Actions">
+      <div class="slide-num">4.1 · Niveau Pro</div>
+      <h2>Deux super-pouvoirs pour pousser Claude plus loin</h2>
+      <p class="lede">Une fois à l'aise avec les basics, deux features avancées font passer de "j'utilise Claude" à "Claude bosse pour moi en continu". Aucune des deux ne demande de savoir coder.</p>
+
+      <!-- SUPER-POUVOIR 1 : Créer une skill -->
+      <div class="section-label">Super-pouvoir 1 — Crée tes propres skills</div>
+      <p style="font-size: 14px; color: var(--slate); margin-bottom: 14px; line-height: 1.55;">Tu refais le même workflow chaque semaine ? C'est exactement ce qu'une skill résout. Tu décris en langage naturel, Claude la construit.</p>
+      <div class="workflow">
+        <div class="workflow-step">
+          <div class="step-num">1</div>
+          <h5>Identifie le pattern</h5>
+          <p>Tâche répétitive, étapes manuelles, format figé.</p>
+        </div>
+        <div class="workflow-step">
+          <div class="step-num">2</div>
+          <h5>Demande à Claude</h5>
+          <p>« Crée-moi une skill pour [workflow] »</p>
+        </div>
+        <div class="workflow-step">
+          <div class="step-num">3</div>
+          <h5>Réponds aux questions</h5>
+          <p>Inputs, outputs, déclencheurs, format.</p>
+        </div>
+        <div class="workflow-step">
+          <div class="step-num">4</div>
+          <h5>Claude génère</h5>
+          <p>SKILL.md + scripts dans ~/.claude/skills/</p>
+        </div>
+        <div class="workflow-step">
+          <div class="step-num">5</div>
+          <h5>Teste</h5>
+          <p>Nouvelle session, formule naturelle, ça déclenche.</p>
+        </div>
+        <div class="workflow-step">
+          <div class="step-num">6</div>
+          <h5>Itère</h5>
+          <p>« Améliore la skill pour gérer X »</p>
+        </div>
+      </div>
+      <div class="workflow-example">
+        <h5>Exemple concret — un commercial</h5>
+        <div class="user-prompt">Diego, chaque vendredi je passe 2 heures à compiler les CV des candidats placés cette semaine dans un PDF que j'envoie aux clients. Tu peux me créer une skill pour ça ?</div>
+        <p style="margin-top: 16px; font-size: 13px; color: rgba(255,255,255,0.7);">
+          → Claude lance <code style="background: rgba(230,181,39,0.2); padding: 2px 6px; border-radius: 2px; color: var(--gold);">skill-creator</code>, te pose 5-6 questions, génère la skill, et la semaine prochaine tu tapes <em>« compile les CV des candidats placés cette semaine »</em> → c'est fait en 2 minutes.
+        </p>
+      </div>
+
+      <!-- SUPER-POUVOIR 2 : Scheduled Actions -->
+      <div class="section-label">Super-pouvoir 2 — Programme des tâches récurrentes</div>
+      <p class="schedule-intro">
+        Tu peux demander à Claude de faire des choses <strong>à intervalles réguliers</strong>, sans que tu aies à les déclencher. Cowork exécute en arrière-plan et te livre le résultat dans Slack, par email, ou dans une fenêtre Cowork — au choix.
+      </p>
+      <div class="schedule-examples">
+        <div class="schedule-card">
+          <div class="schedule-when">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Tous les lundis 9h
+          </div>
+          <div class="schedule-what">Fais-moi un brief des candidatures Indeed reçues le week-end, top 5 profils</div>
+        </div>
+        <div class="schedule-card">
+          <div class="schedule-when">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Le 1er du mois
+          </div>
+          <div class="schedule-what">Génère le dashboard Easypay du mois précédent, par agence et par région</div>
+        </div>
+        <div class="schedule-card">
+          <div class="schedule-when">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Tous les vendredis 17h
+          </div>
+          <div class="schedule-what">Récap des nouveaux prospects analysés cette semaine, poste-le sur #commercial</div>
+        </div>
+      </div>
+      <div class="schedule-howto">
+        <strong>Comment l'activer :</strong> dis simplement à Claude « programme cette tâche pour qu'elle se lance [fréquence] » — il la sauvegarde et l'exécute tout seul. Tu peux voir, modifier ou arrêter chaque tâche dans la fenêtre Cowork à tout moment.
+      </div>
+    </section>
+
+    <!-- SLIDE 4.2 — L'ANALOGIE DU BAR -->
+    <section class="slide cream" id="s10" data-chapter="4" data-title="Le bar de Diego">
+      <div class="slide-num">4.2 · L'analogie qui suffit</div>
+      <h2>Une skill, c'est un cocktail. Diego est mixologist.</h2>
+      <p class="lede">Si tu ne retiens qu'une seule chose de cet atelier, retiens ça. Le partage de skills marche <strong>exactement</strong> comme un bar à cocktails — cette image suffit à tout comprendre.</p>
+
+      <div class="bar-intro">
+        Imagine que <strong>Diego est mixologist</strong>. Il tient un bar et il a passé des mois à composer un menu de délicieux cocktails — <strong>chaque cocktail, c'est une skill d'équipe</strong>. Toute l'équipe peut commander ces cocktails à tout moment. Diego les améliore en continu, en ajoute, <em>en retire ceux qui ne marchent plus</em>.
+      </div>
+
+      <div class="bar-intro">
+        Mais Diego n'est pas tout seul. <strong>Tout le monde a le droit de jouer au barman chez soi.</strong> Tu peux confectionner tes propres cocktails dans ta cuisine — un Mojito-Pamplemousse pour l'apéro du jeudi, un Negroni-au-Picon parce que pourquoi pas. C'est ton bac à sable. <em>Personne ne te juge si tu fais du Get27 avec du Coca (sauf nous, intérieurement).</em><br><br>
+        Quand tu penses avoir inventé un truc qui mérite d'être au menu — un cocktail tellement bon que tes collègues vont en redemander — tu vas voir Diego et tu lui dis : <strong>« Goûte ça. »</strong>
+      </div>
+
+      <!-- SECTION A : Le parcours du cocktail -->
+      <div class="section-label">Le parcours du cocktail</div>
+      <div class="bar-flow">
+        <div class="bar-step">
+          <div class="bar-icon">
+            <!-- Cocktail shaker icon -->
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 2h8a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/>
+              <path d="M7 6h10l-1 14a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2z"/>
+              <line x1="9" y1="11" x2="15" y2="11"/>
+              <line x1="9.5" y1="15" x2="14.5" y2="15"/>
+            </svg>
+          </div>
+          <span class="step-pill">Étape 1</span>
+          <h4>Chez toi</h4>
+          <p>Tu confectionnes ton cocktail dans ta cuisine. Mojito-pamplemousse, Negroni-Picon, ce que tu veux. <em>(Le Get27-Coca, on en reparle.)</em></p>
+        </div>
+        <div class="bar-arrow-big">→</div>
+        <div class="bar-step middle">
+          <div class="bar-icon">
+            <!-- Martini glass with olive -->
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 5h16l-8 9z"/>
+              <line x1="12" y1="14" x2="12" y2="21"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="14" y1="2" x2="10" y2="8" stroke-width="1.2"/>
+              <circle cx="10" cy="8" r="1.3" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
+          <span class="step-pill">Étape 2</span>
+          <h4>Au bar de Diego</h4>
+          <p>Tu lui dis « goûte ça ». Diego goûte. Trois verdicts possibles — voir ci-dessous.</p>
+        </div>
+        <div class="bar-arrow-big">→</div>
+        <div class="bar-step last">
+          <div class="bar-icon">
+            <!-- Menu with checked items -->
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="3" width="16" height="18" rx="1.5"/>
+              <polyline points="7 8 8 9 10 7"/>
+              <line x1="12" y1="8" x2="17" y2="8"/>
+              <polyline points="7 13 8 14 10 12"/>
+              <line x1="12" y1="13" x2="17" y2="13"/>
+              <polyline points="7 18 8 19 10 17"/>
+              <line x1="12" y1="18" x2="17" y2="18"/>
+            </svg>
+          </div>
+          <span class="step-pill">Étape 3</span>
+          <h4>Sur le menu</h4>
+          <p>Ton cocktail entre dans la carte. Toute l'équipe peut le commander dès demain. <em>Sans rien faire d'autre.</em></p>
+        </div>
+      </div>
+
+      <!-- SECTION B : Les 3 verdicts de Diego -->
+      <div class="section-label">Au bar, Diego peut dire 3 choses</div>
+      <div class="verdicts-grid">
+        <div class="verdict verdict-yes">
+          <div class="verdict-badge">✓</div>
+          <div class="verdict-quote">« Excellent, on l'ajoute au menu ! »</div>
+          <div class="verdict-result">
+            <strong>Validé.</strong> Ton cocktail rejoint la carte. Toute l'équipe peut le commander dès le lendemain.
+          </div>
+        </div>
+        <div class="verdict verdict-no">
+          <div class="verdict-badge">✗</div>
+          <div class="verdict-quote">« C'est dangereux, il y a du verre dedans. »</div>
+          <div class="verdict-result">
+            <strong>Refusé.</strong> Diego t'explique pourquoi (un token oublié, une faille, un script qui plante). Tu corriges, tu reviens.
+          </div>
+        </div>
+        <div class="verdict verdict-dup">
+          <div class="verdict-badge">≠</div>
+          <div class="verdict-quote">« Tu sais qu'on a déjà le même, page 4 du menu ? »</div>
+          <div class="verdict-result">
+            <strong>Refusé aussi.</strong> Pas de doublons dans la carte. Diego te montre la version existante — souvent meilleure.
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION C : La traduction -->
+      <div class="section-label">La traduction en vrai</div>
+      <div class="analogy-table compact">
+        <table>
+          <tr><td>Le cocktail</td><td>=</td><td>Ta skill (que tu as créée avec Claude)</td></tr>
+          <tr><td>Ta cuisine</td><td>=</td><td>Le dossier de skills perso sur ton Mac</td></tr>
+          <tr><td>Le menu du bar</td><td>=</td><td>Le catalogue d'équipe Jobalto sur GitHub</td></tr>
+          <tr><td>Diego goûte</td><td>=</td><td>Une dégustation rapide (sécurité + doublons)</td></tr>
+          <tr><td>« On l'ajoute au menu »</td><td>=</td><td>Diffusion automatique à toute l'équipe</td></tr>
+        </table>
+      </div>
+
+      <p style="margin-top: 24px; font-size: 14px; color: var(--slate); font-style: italic; text-align: center;">
+        Pas de ticket à remplir. Pas de Comité Stratégique des Cocktails™. Pas de réunion de cadrage de 45 minutes.<br>
+        Juste un cocktail, un mixologist, et un menu.
+      </p>
+    </section>
+
+    <!-- SLIDE 11 — COMMENT TU FAIS CONCRÈTEMENT -->
+    <section class="slide" id="s11" data-chapter="4" data-title="Partager en pratique">
+      <div class="slide-num">4.3 · En pratique</div>
+      <h2>Comment tu proposes ton cocktail au menu</h2>
+      <p class="lede">Tu n'as <strong>rien d'autre</strong> à apprendre. Une seule phrase suffit. La skill <code style="background: var(--cream); padding: 2px 8px; border-radius: 2px; color: var(--teal);">partage-skill-equipe</code> fait tout le reste — checklist, envoi à Diego, lien de suivi.</p>
+
+      <div class="prompt-example">
+        <div class="prompt-label">Toi, dans Cowork :</div>
+        <div class="prompt-bubble">
+          « Ma skill <strong>compile-cv-hebdo</strong> est prête, je veux la partager avec l'équipe. »
+        </div>
+
+        <div class="prompt-label">Claude :</div>
+        <div class="prompt-bubble claude">
+          Parfait, je m'en occupe. <em>(Première fois ? Je te pose 2-3 questions et je t'explique. Habitué ? Je file droit au but.)</em>
+          <br><br>
+          <strong style="color: var(--gold);">1.</strong> Je relis ta skill (qualité, sécurité, naming)<br>
+          <strong style="color: var(--gold);">2.</strong> J'envoie le tout à Diego pour validation<br>
+          <strong style="color: var(--gold);">3.</strong> Je te donne le lien pour suivre l'avancement
+          <br><br>
+          Diego goûte, tranche. Si OK, ton cocktail est chez tous tes collègues dès demain.
+        </div>
+      </div>
+
+      <div class="other-prompts">
+        <h5>D'autres formulations qui marchent aussi (Claude détecte tout seul) :</h5>
+        <ul>
+          <li>« Je voudrais que mes collègues puissent utiliser ma nouvelle skill »</li>
+          <li>« Ma skill <em>xyz</em> marche bien, comment je la diffuse ? »</li>
+          <li>« Promeut ma skill <em>abc</em> au repo équipe »</li>
+          <li>« Mon cocktail est prêt, à Diego de goûter »</li>
+        </ul>
+      </div>
+
+      <div class="callout-warning">
+        <strong>Quand NE PAS proposer ton cocktail :</strong> s'il est trop personnel (genre tes photos de Ziggy), s'il plante un coup sur deux (termine d'abord), ou s'il contient ton mot de passe en clair (refactor d'abord). Tu épargneras à Diego une dégustation inutile, et à toi-même la honte d'un cocktail au verre.
+      </div>
+    </section>
+
+    <!-- SLIDE FINALE — RESSOURCES & Q&A -->
+    <section class="slide dark" id="s12" data-chapter="end" data-title="Ressources & Q&amp;A">
+      <div class="slide-num">Clôture · Pour aller plus loin</div>
+      <h2>Ressources & contacts</h2>
+      <p class="lede">Tu repars avec tout ce qu'il faut. La doc, les liens d'équipe, et la personne à pinger quand tu coinces.</p>
+      <div class="resources">
+        <div class="resource-card">
+          <h5>Slack — Canal d'entraide</h5>
+          <p>Le canal officiel pour partager, poser des questions, signaler des bugs. Diego et les power users répondent.</p>
+          <a>#claude-skills</a>
+        </div>
+        <div class="resource-card">
+          <h5>Marketplace équipe (GitHub)</h5>
+          <p>Le catalogue de plugins installables par toute l'équipe Jobalto. Tu peux y contribuer via PR.</p>
+          <a>github.com/Jobalto/jobalto-team-repo</a>
+        </div>
+        <div class="resource-card">
+          <h5>Documentation officielle Anthropic</h5>
+          <p>La référence complète sur Claude — features, skills, hooks, MCP, prompting.</p>
+          <a>docs.claude.com</a>
+        </div>
+        <div class="resource-card">
+          <h5>Onboarding individuel</h5>
+          <p>Tu veux une démo perso adaptée à ton poste ? Bloque 30 min avec Diego — on construit ta première skill ensemble.</p>
+          <a>diego@jobalto.be</a>
+        </div>
+      </div>
+
+      <div class="closing">
+        <div class="closing-tagline">Tu n'utilises pas Claude.<br>Tu le formes.</div>
+        <div class="closing-sub">Chaque skill que tu crées rend l'équipe plus forte la semaine d'après.</div>
+        <div style="font-size: 11px; color: var(--gold); letter-spacing: 3px; font-weight: 700;">ÉLÈVE TA CARRIÈRE — ÉLÈVE TON IA</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Navigation buttons -->
+  <div class="nav-buttons">
+    <button class="nav-btn" id="prev">← Précédent</button>
+    <button class="nav-btn primary" id="next">Suivant →</button>
+  </div>
+</div>
+
+<script>
+  // ─── Chapter & slide definitions ─────────────────────────────────────────
+  const chapters = [
+    { id: 'intro', short: 'Intro',        label: 'Intro' },
+    { id: '1',     short: 'Découvrir',    label: 'Chapitre 01' },
+    { id: '2',     short: 'Écosystème',   label: 'Chapitre 02' },
+    { id: '3',     short: 'Bien utiliser', label: 'Chapitre 03' },
+    { id: '4',     short: 'Pro & Partage', label: 'Chapitre 04' },
+    { id: 'end',   short: 'Ressources',   label: 'Clôture' },
+  ];
+
+  const allSlides = Array.from(document.querySelectorAll('.slide'));
+  const slidesByChapter = {};
+  chapters.forEach(c => {
+    slidesByChapter[c.id] = allSlides.filter(s => s.dataset.chapter === c.id);
+  });
+
+  const stage    = document.getElementById('stage');
+  const progress = document.getElementById('progress');
+  const prevBtn  = document.getElementById('prev');
+  const nextBtn  = document.getElementById('next');
+  const navList  = document.getElementById('nav');
+  const sidebarLabel = document.getElementById('sidebar-label');
+  const sidebarTitle = document.getElementById('sidebar-title');
+
+  let currentChapter = 'intro';
+  let currentSlideIdx = 0; // index within current chapter
+
+  const totalSlides = allSlides.length;
+
+  function getCurrentSlide() {
+    return slidesByChapter[currentChapter][currentSlideIdx];
+  }
+
+  function globalProgressPercent() {
+    let passed = 0;
+    let found = false;
+    chapters.forEach(c => {
+      if (found) return;
+      const slides = slidesByChapter[c.id];
+      if (c.id === currentChapter) {
+        passed += currentSlideIdx + 1;
+        found = true;
+      } else {
+        passed += slides.length;
+      }
+    });
+    return (passed / totalSlides) * 100;
+  }
+
+  function rebuildSidebar() {
+    const chapInfo = chapters.find(c => c.id === currentChapter);
+    sidebarLabel.textContent = chapInfo.label;
+    sidebarTitle.textContent = chapInfo.short;
+
+    navList.innerHTML = '';
+    const slides = slidesByChapter[currentChapter];
+    slides.forEach((slide, idx) => {
+      const li = document.createElement('li');
+      const title = slide.dataset.title || `Slide ${idx + 1}`;
+      let num;
+      if (currentChapter === 'intro')      num = '★';
+      else if (currentChapter === 'end')   num = '⇥';
+      else if (idx === 0)                  num = `${currentChapter}.0`;
+      else                                 num = `${currentChapter}.${idx}`;
+      li.innerHTML = `<span class="num">${num}</span> ${title}`;
+      if (idx === currentSlideIdx) li.classList.add('active');
+      li.addEventListener('click', () => {
+        currentSlideIdx = idx;
+        goToCurrentSlide();
+      });
+      navList.appendChild(li);
+    });
+  }
+
+  function updateTopbar() {
+    document.querySelectorAll('.chapter-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.chapter === currentChapter);
+    });
+  }
+
+  function goToCurrentSlide() {
+    const slide = getCurrentSlide();
+    if (!slide) return;
+    stage.scrollTo({ top: slide.offsetTop, behavior: 'smooth' });
+    rebuildSidebar();
+    updateTopbar();
+    progress.style.width = globalProgressPercent() + '%';
+
+    const chapIdx = chapters.findIndex(c => c.id === currentChapter);
+    prevBtn.disabled = (chapIdx === 0 && currentSlideIdx === 0);
+    nextBtn.disabled = (chapIdx === chapters.length - 1 &&
+                        currentSlideIdx === slidesByChapter[currentChapter].length - 1);
+  }
+
+  function switchChapter(chapterId) {
+    if (!slidesByChapter[chapterId] || slidesByChapter[chapterId].length === 0) return;
+    currentChapter = chapterId;
+    currentSlideIdx = 0;
+    goToCurrentSlide();
+  }
+
+  function nextSlide() {
+    const slides = slidesByChapter[currentChapter];
+    if (currentSlideIdx < slides.length - 1) {
+      currentSlideIdx++;
+      goToCurrentSlide();
+    } else {
+      const idx = chapters.findIndex(c => c.id === currentChapter);
+      if (idx < chapters.length - 1) switchChapter(chapters[idx + 1].id);
+    }
+  }
+
+  function prevSlide() {
+    if (currentSlideIdx > 0) {
+      currentSlideIdx--;
+      goToCurrentSlide();
+    } else {
+      const idx = chapters.findIndex(c => c.id === currentChapter);
+      if (idx > 0) {
+        const prev = chapters[idx - 1];
+        currentChapter = prev.id;
+        currentSlideIdx = slidesByChapter[prev.id].length - 1;
+        goToCurrentSlide();
+      }
+    }
+  }
+
+  function nextChapter() {
+    const idx = chapters.findIndex(c => c.id === currentChapter);
+    if (idx < chapters.length - 1) switchChapter(chapters[idx + 1].id);
+  }
+
+  function prevChapter() {
+    const idx = chapters.findIndex(c => c.id === currentChapter);
+    if (idx > 0) switchChapter(chapters[idx - 1].id);
+  }
+
+  // Topbar chapter button clicks
+  document.querySelectorAll('.chapter-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchChapter(btn.dataset.chapter));
+  });
+
+  // Keyboard nav : ← → = chapters, ↑ ↓ = slides
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      e.preventDefault(); prevChapter();
+    } else if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+      e.preventDefault(); nextChapter();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault(); prevSlide();
+    } else if (e.key === 'ArrowDown' || e.key === ' ') {
+      e.preventDefault(); nextSlide();
+    } else if (e.key === 'Home') {
+      switchChapter('intro');
+    } else if (e.key === 'End') {
+      switchChapter('end');
+    }
+  });
+
+  // Prev/next buttons
+  prevBtn.addEventListener('click', prevSlide);
+  nextBtn.addEventListener('click', nextSlide);
+
+  // Scroll detection — keep state in sync if user scrolls manually
+  let scrollTimeout;
+  stage.addEventListener('scroll', () => {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+      const stageTop = stage.scrollTop;
+      const stageMid = stageTop + window.innerHeight / 2;
+      for (const slide of allSlides) {
+        const top = slide.offsetTop;
+        const bottom = top + slide.offsetHeight;
+        if (stageMid >= top && stageMid < bottom) {
+          const ch = slide.dataset.chapter;
+          if (ch && slidesByChapter[ch]) {
+            const idx = slidesByChapter[ch].indexOf(slide);
+            if (idx >= 0 && (ch !== currentChapter || idx !== currentSlideIdx)) {
+              currentChapter = ch;
+              currentSlideIdx = idx;
+              rebuildSidebar();
+              updateTopbar();
+              progress.style.width = globalProgressPercent() + '%';
+            }
+          }
+          break;
+        }
+      }
+    }, 80);
+  });
+
+  // Init
+  rebuildSidebar();
+  updateTopbar();
+  progress.style.width = globalProgressPercent() + '%';
+</script>
+</body>
+</html>

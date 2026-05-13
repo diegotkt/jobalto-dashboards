@@ -27,6 +27,8 @@
     --st-bloque: #b91c1c; --st-bloque-bg: #fee2e2;
     --st-clos: #166534; --st-clos-bg: #dcfce7;
     --st-perdu: #57534e; --st-perdu-bg: #f5f5f4;
+    --st-litige: #c2410c; --st-litige-bg: #ffedd5;
+    --st-gp: #4338ca; --st-gp-bg: #e0e7ff;
 
     --owner-diego: #1d4ed8; --owner-diego-bg: #dbeafe;
     --owner-palof: #0d9488; --owner-palof-bg: #ccfbf1;
@@ -163,6 +165,8 @@
   .pill.st-bloque { background: var(--st-bloque-bg); color: var(--st-bloque); }
   .pill.st-clos { background: var(--st-clos-bg); color: var(--st-clos); }
   .pill.st-perdu { background: var(--st-perdu-bg); color: var(--st-perdu); text-decoration: line-through; }
+  .pill.st-litige { background: var(--st-litige-bg); color: var(--st-litige); }
+  .pill.st-gp { background: var(--st-gp-bg); color: var(--st-gp); }
   .pill.ow-diego { background: var(--owner-diego-bg); color: var(--owner-diego); }
   .pill.ow-palof { background: var(--owner-palof-bg); color: var(--owner-palof); }
   .pill.ow-compta { background: var(--owner-compta-bg); color: var(--owner-compta); }
@@ -341,16 +345,16 @@
     COMPTE_ATTENTE: 'fldy3avqATcMH6fhf'
   };
 
-  const STATUTS = ['A traiter', 'En cours', 'Document trouve', 'Envoye compta', 'Question posee', 'Bloque', 'Document perdu', 'Clos'];
+  const STATUTS = ['A traiter', 'En cours', 'Document trouve', 'Envoye compta', 'Question posee', 'Litige', 'Bloque', 'Document perdu', 'Gain/Perte', 'Clos'];
   const STATUT_LABEL = {
     'A traiter': 'À traiter', 'En cours': 'En cours', 'Document trouve': 'Document trouvé',
     'Envoye compta': 'Envoyé compta', 'Question posee': 'Question posée', 'Bloque': 'Bloqué',
-    'Document perdu': 'Document perdu', 'Clos': 'Clos'
+    'Litige': 'Litige', 'Document perdu': 'Document perdu', 'Gain/Perte': 'Enregistré G/P', 'Clos': 'Clos'
   };
   const STATUT_CLASS = {
     'A traiter': 'st-attr', 'En cours': 'st-cours', 'Document trouve': 'st-trouve',
     'Envoye compta': 'st-envoye', 'Question posee': 'st-quest', 'Bloque': 'st-bloque',
-    'Document perdu': 'st-perdu', 'Clos': 'st-clos'
+    'Litige': 'st-litige', 'Document perdu': 'st-perdu', 'Gain/Perte': 'st-gp', 'Clos': 'st-clos'
   };
   const OWNERS = ['Non assigne', 'Diego', 'Palof', 'Comptable'];
   const OWNER_LABEL = { 'Non assigne': 'Non assigné', 'Diego': 'Diego', 'Palof': 'Palof', 'Comptable': 'Comptable' };
@@ -378,8 +382,8 @@
       groupBy: r => r.nom || 'Autres' }
   ];
 
-  const IN_PROGRESS_STATUSES = ['En cours', 'Document trouve', 'Question posee'];
-  const CLOS_STATUSES = ['Clos', 'Envoye compta', 'Document perdu'];
+  const IN_PROGRESS_STATUSES = ['En cours', 'Document trouve', 'Question posee', 'Litige'];
+  const CLOS_STATUSES = ['Clos', 'Envoye compta', 'Document perdu', 'Gain/Perte'];
 
   const state = {
     records: [],

@@ -4443,6 +4443,72 @@ function populateColumnSelect(tableId, col, data) {
     return ta;
   }
 
+  // Date editor that CREATES a new Agenda event on first save (for société rows
+  // without any linked event yet). After creation, it acts like buildAgendaDateEditor.
+  function buildAgendaDateEditorForNew(contactId, societeName) {
+    const wrap = document.createElement("div");
+    wrap.className = "at-edit-rdv-date";
+
+    const dateInput = document.createElement("input");
+    dateInput.type = "datetime-local";
+    dateInput.className = "at-edit";
+    dateInput.title = "Début (heure locale Shenzhen) — créera un nouvel événement Agenda à la sauvegarde";
+    dateInput.placeholder = "—";
+
+    const dureeInput = document.createElement("input");
+    dureeInput.type = "text";
+    dureeInput.className = "at-edit";
+    dureeInput.placeholder = "h:mm";
+    dureeInput.title = "Durée (ex: 2:30)";
+    dureeInput.value = "1:00";
+
+    const save = async (dateInputEl, dureeInputEl) => {
+      const iso = localInputToIso(dateInputEl.value);
+      if (!iso) return;
+      const duree = hmToDureeSeconds(dureeInputEl.value) || 3600;
+
+      dateInputEl.classList.add("at-edit-saving");
+      dureeInputEl.classList.add("at-edit-saving");
+
+      const fields = {
+        "Titre": "RDV " + societeName,
+        "Type": "RDV business",
+        "Date": iso,
+        "Durée": duree,
+        "Société": [contactId],
+        "Statut RDV": "À confirmer",
+        "Dernière modif": new Date().toISOString(),
+      };
+      const res = await api("POST", "/" + BASE_ID + "/" + TBL.RDV, { records: [{ fields }] });
+      dateInputEl.classList.remove("at-edit-saving");
+      dureeInputEl.classList.remove("at-edit-saving");
+
+      if (!res.ok) {
+        const msg = (res.data && res.data.error && res.data.error.message) || ("HTTP " + res.status);
+        toast("Erreur : " + msg, false);
+        return;
+      }
+      const newRec = res.data.records[0];
+      cache.rdv.push(newRec);
+      toast("✓ Nouvel événement créé : " + (newRec.fields.Titre || societeName), true);
+
+      // Swap this editor for the live one tied to the new record
+      const liveEditor = buildAgendaDateEditor(newRec);
+      wrap.replaceWith(liveEditor);
+
+      // Re-render planning agenda + day maps
+      if (typeof setupAgenda === "function") setupAgenda();
+      if (typeof setupDayMaps === "function") setupDayMaps();
+    };
+
+    dateInput.onchange  = () => save(dateInput, dureeInput);
+    dureeInput.onchange = () => save(dateInput, dureeInput);
+
+    wrap.appendChild(dateInput);
+    wrap.appendChild(dureeInput);
+    return wrap;
+  }
+
   function buildAgendaDateEditor(agendaRec) {
     const wrap = document.createElement("div");
     wrap.className = "at-edit-rdv-date";
@@ -4547,16 +4613,21 @@ function populateColumnSelect(tableId, col, data) {
         tr.dataset.statut = current;
       }
 
-      // Cell 3 = Date / Heure → editable datetime+durée if there's a linked Agenda record
+      // Cell 3 = Date / Heure → editable datetime+durée
       const dateCell = tr.children[3];
       if (dateCell) {
         const ag = findAgendaForContact(recId, societe);
         if (ag) {
+          // Existing event → edit in place
           const editor = buildAgendaDateEditor(ag);
           dateCell.innerHTML = "";
           dateCell.appendChild(editor);
+        } else {
+          // No event yet → empty editor that CREATES an Agenda event on save
+          const editor = buildAgendaDateEditorForNew(recId, societe);
+          dateCell.innerHTML = "";
+          dateCell.appendChild(editor);
         }
-        // else: keep the existing static text (e.g. "Date à fixer", or contact's RDV slot)
       }
 
       // Cell 4 = Owner
@@ -6139,6 +6210,8 @@ function populateColumnSelect(tableId, col, data) {
         const ev = document.createElement("div");
         ev.className = "agenda-event";
         ev.dataset.color = e.color;
+        ev.dataset.recordId = e.recordId || "";
+        ev.dataset.type = e.type || "";
         ev.style.top = top + "px";
         ev.style.height = height + "px";
 
@@ -6154,7 +6227,7 @@ function populateColumnSelect(tableId, col, data) {
         ev.style.zIndex = String(1 + (e._priority || 0));
 
         if (e.color) ev.style.background = e.color;
-        ev.title = e.startTime + " – " + (e.endTime || "?") + (e.text ? "\n" + e.text : "");
+        ev.title = e.startTime + " – " + (e.endTime || "?") + (e.text ? "\n" + e.text : "") + (e.recordId ? "\n\n(cliquer pour éditer)" : "");
 
         const time = document.createElement("div");
         time.className = "agenda-event-time";
@@ -6167,6 +6240,14 @@ function populateColumnSelect(tableId, col, data) {
           txt.textContent = e.text;
           ev.appendChild(txt);
         }
+
+        // Make non-"RDV business" events clickable to open inline editor.
+        // RDV business events are edited from the Synthèse RDV page already.
+        if (e.recordId && e.type && e.type !== "RDV business") {
+          ev.style.cursor = "pointer";
+          ev.onclick = () => openAgendaEventEditor(e.recordId);
+        }
+
         col.appendChild(ev);
       });
       body.appendChild(col);
@@ -6726,8 +6807,214 @@ function populateColumnSelect(tableId, col, data) {
   // Re-trigger setupDayNotes on planning nav (in case data arrives after first render)
   document.addEventListener("click", (e) => {
     const a = e.target.closest('a[data-nav="planning"]');
-    if (a) setTimeout(setupDayNotes, 200);
+    if (a) setTimeout(() => { setupDayNotes(); setupDayEventNotes(); }, 200);
   });
+
+  // ============================================================
+  // AGENDA EVENT EDITOR (click on a non-RDV-business event in the Gantt)
+  // ============================================================
+  async function openAgendaEventEditor(agendaId) {
+    if (!pat) { toast("Connecte-toi à Airtable d'abord", false); return; }
+    closeModal();
+    try { await loadEditorAssets(); } catch (e) {
+      toast("Échec chargement éditeur : " + e.message, false); return;
+    }
+
+    const rec = (cache.rdv || []).find(r => r.id === agendaId);
+    if (!rec) { toast("Événement introuvable dans le cache", false); return; }
+    const f = rec.fields || {};
+
+    const overlay = document.createElement("div");
+    overlay.className = "at-modal-overlay";
+    overlay.id = "at-modal-overlay";
+    overlay.innerHTML =
+      '<div class="at-modal at-notes-modal">' +
+        '<h3>Éditer l\'événement</h3>' +
+        '<p class="at-modal-sub">Type: <strong>' + escapeHtml(f.Type || "—") + '</strong></p>' +
+        '<label class="elicit-question" style="display:block;font-size:12px;font-weight:600;color:var(--text-soft);margin:12px 0 4px;">Titre</label>' +
+        '<input type="text" id="at-ev-title" style="width:100%;padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;font-size:14px;box-sizing:border-box;" value="' + escapeHtml(f.Titre || "") + '">' +
+        '<label style="display:block;font-size:12px;font-weight:600;color:var(--text-soft);margin:12px 0 4px;">Date et heure (Shenzhen)</label>' +
+        '<div style="display:flex;gap:8px;align-items:center;">' +
+          '<input type="datetime-local" id="at-ev-date" style="padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;font-size:13px;flex:1;" value="' + escapeHtml(isoToLocalInput(f.Date) || "") + '">' +
+          '<input type="text" id="at-ev-duree" placeholder="h:mm" style="padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;font-size:13px;width:70px;" value="' + escapeHtml(dureeSecondsToHm(f["Durée"]) || "") + '">' +
+        '</div>' +
+        '<label style="display:block;font-size:12px;font-weight:600;color:var(--text-soft);margin:12px 0 4px;">Lieu</label>' +
+        '<input type="text" id="at-ev-lieu" style="width:100%;padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;font-size:14px;box-sizing:border-box;" value="' + escapeHtml(f.Lieu || "") + '">' +
+        '<label style="display:block;font-size:12px;font-weight:600;color:var(--text-soft);margin:12px 0 4px;">Notes (markdown)</label>' +
+        '<div id="at-ev-notes-wrap"><textarea id="at-ev-notes">' + escapeHtml(f.Notes || "") + '</textarea></div>' +
+        '<div class="at-modal-actions" style="justify-content:space-between;">' +
+          '<button type="button" id="at-ev-delete" style="background:#fee;color:#a32;border:1px solid #f4a08c;">🗑 Supprimer cet événement</button>' +
+          '<div style="display:flex;gap:8px;">' +
+            '<button type="button" id="at-ev-cancel">Annuler</button>' +
+            '<button type="button" class="primary" id="at-ev-save">Sauvegarder</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", e => { if (e.target === overlay) closeModal(); });
+
+    const ta = document.getElementById("at-ev-notes");
+    const easyMDE = new window.EasyMDE({
+      element: ta,
+      spellChecker: false,
+      status: false,
+      minHeight: "120px",
+      toolbar: ["bold", "italic", "heading", "|", "unordered-list", "ordered-list", "|", "link", "code", "|", "preview"],
+      renderingConfig: { singleLineBreaks: true },
+    });
+
+    document.getElementById("at-ev-cancel").onclick = closeModal;
+
+    document.getElementById("at-ev-save").onclick = async () => {
+      const title = document.getElementById("at-ev-title").value.trim() || f.Titre || "événement";
+      const dateVal = document.getElementById("at-ev-date").value;
+      const dureeVal = document.getElementById("at-ev-duree").value;
+      const lieuVal = document.getElementById("at-ev-lieu").value.trim();
+      const notesVal = easyMDE.value();
+
+      const fields = { "Titre": title, "Notes": notesVal, "Lieu": lieuVal, "Dernière modif": new Date().toISOString() };
+      const iso = localInputToIso(dateVal);
+      if (iso) fields.Date = iso;
+      const sec = hmToDureeSeconds(dureeVal);
+      if (sec !== null) fields["Durée"] = sec;
+
+      const btn = document.getElementById("at-ev-save");
+      btn.disabled = true; btn.textContent = "Envoi…";
+      const res = await api("PATCH", "/" + BASE_ID + "/" + TBL.RDV + "/" + agendaId, { fields });
+      if (!res.ok) {
+        const msg = (res.data && res.data.error && res.data.error.message) || ("HTTP " + res.status);
+        toast("Erreur : " + msg, false);
+        btn.disabled = false; btn.textContent = "Sauvegarder";
+        return;
+      }
+      // Update cache
+      const idx = cache.rdv.findIndex(x => x.id === agendaId);
+      if (idx >= 0) cache.rdv[idx] = res.data;
+      toast("✓ Événement mis à jour", true);
+      easyMDE.toTextArea();
+      closeModal();
+      if (typeof setupAgenda === "function") setupAgenda();
+      if (typeof setupDayMaps === "function") setupDayMaps();
+      if (typeof setupDayEventNotes === "function") setupDayEventNotes();
+    };
+
+    document.getElementById("at-ev-delete").onclick = async () => {
+      if (!confirm("Supprimer définitivement l'événement \"" + (f.Titre || "—") + "\" ?")) return;
+      const res = await api("DELETE", "/" + BASE_ID + "/" + TBL.RDV + "/" + agendaId);
+      if (!res.ok) {
+        const msg = (res.data && res.data.error && res.data.error.message) || ("HTTP " + res.status);
+        toast("Erreur : " + msg, false);
+        return;
+      }
+      cache.rdv = cache.rdv.filter(r => r.id !== agendaId);
+      toast("✓ Événement supprimé", true);
+      easyMDE.toTextArea();
+      closeModal();
+      if (typeof setupAgenda === "function") setupAgenda();
+      if (typeof setupDayMaps === "function") setupDayMaps();
+      if (typeof setupDayEventNotes === "function") setupDayEventNotes();
+    };
+  }
+
+  // ============================================================
+  // DAY EVENT NOTES — folded accordions on Planning page, one per
+  // event of the day that has linked Notes records.
+  // ============================================================
+  function setupDayEventNotes() {
+    const planning = document.getElementById("page-planning");
+    if (!planning) return;
+    if (!cache.rdv || !cache.rdv.length) return;
+    if (!cache.notes) return;
+
+    planning.querySelectorAll(".day-event-notes").forEach(n => n.remove());
+
+    const dayMatches = [
+      { id: "sam20", date: "2026-06-20", match: "Samedi 20" },
+      { id: "dim21", date: "2026-06-21", match: "Dimanche 21" },
+      { id: "lun22", date: "2026-06-22", match: "Lundi 22" },
+      { id: "mar23", date: "2026-06-23", match: "Mardi 23" },
+      { id: "mer24", date: "2026-06-24", match: "Mercredi 24" },
+      { id: "jeu25", date: "2026-06-25", match: "Jeudi 25" },
+    ];
+
+    dayMatches.forEach(day => {
+      const h2 = Array.from(planning.querySelectorAll("h2")).find(h => (h.textContent || "").trim().startsWith(day.match));
+      if (!h2) return;
+
+      // Events of this day, sorted by start time
+      const dayEvents = (cache.rdv || []).filter(r => {
+        const iso = r.fields && r.fields.Date;
+        if (!iso) return false;
+        const wall = isoToBrussels(iso);
+        return wall && wall.date === day.date;
+      }).sort((a, b) => (a.fields.Date || "").localeCompare(b.fields.Date || ""));
+
+      // For each event, collect linked notes
+      const eventsWithData = dayEvents.map(ev => {
+        const linkedNotes = (cache.notes || []).filter(n =>
+          ((n.fields || {})["RDV lié"] || []).indexOf(ev.id) !== -1
+        );
+        return { event: ev, notes: linkedNotes };
+      }).filter(x => x.notes.length > 0);
+
+      if (!eventsWithData.length) return;
+
+      const wrap = document.createElement("div");
+      wrap.className = "day-event-notes";
+      wrap.dataset.planningSegment = h2.dataset.planningSegment || day.id;
+
+      const header = document.createElement("h3");
+      header.style.cssText = "font-size:13px;color:var(--text-soft);margin:18px 0 8px;font-weight:600;letter-spacing:0.3px;text-transform:uppercase;";
+      header.textContent = "Notes liées aux événements (" + eventsWithData.length + ")";
+      wrap.appendChild(header);
+
+      eventsWithData.forEach(({event, notes}) => {
+        const details = document.createElement("details");
+        details.className = "day-event-note-accordion day-map-details";
+        details.style.marginBottom = "8px";
+
+        const summary = document.createElement("summary");
+        summary.className = "day-map-summary";
+        const ag = event.fields || {};
+        const startTime = ag.Date ? (isoToLocalInput(ag.Date) || "").split("T")[1] : "";
+        summary.innerHTML = "<span>📝 " + escapeHtml(ag.Titre || "Événement") +
+          (startTime ? " <span style=\"color:var(--text-soft);font-weight:400;\">· " + startTime + "</span>" : "") +
+          " <span style=\"color:var(--text-soft);font-weight:400;font-size:12px;\">(" + notes.length + " note" + (notes.length > 1 ? "s" : "") + ")</span></span>";
+        details.appendChild(summary);
+
+        const content = document.createElement("div");
+        content.style.padding = "0 18px 14px";
+        notes.forEach(n => {
+          const nf = n.fields || {};
+          const card = document.createElement("div");
+          card.className = "at-note-card";
+          card.style.marginBottom = "8px";
+          card.innerHTML =
+            '<div class="at-note-card-header"><div class="at-note-card-title">' + escapeHtml(nf.Titre || "(sans titre)") + '</div>' +
+            '<div class="at-note-card-meta">' + escapeHtml(fmtDate(nf["Dernière modif"] || n.createdTime)) + '</div></div>' +
+            '<div class="at-note-card-content">' + renderMarkdown(nf.Contenu) + '</div>';
+          content.appendChild(card);
+        });
+        details.appendChild(content);
+        wrap.appendChild(details);
+      });
+
+      // Insert AFTER the day-notes-dynamic (or after day-map / agenda if no notes-dynamic yet)
+      let after = h2.nextElementSibling;
+      while (after && (after.classList.contains("agenda") || after.classList.contains("day-map-details") || after.classList.contains("day-notes-dynamic"))) {
+        after = after.nextElementSibling;
+      }
+      if (after) after.parentNode.insertBefore(wrap, after);
+      else h2.parentNode.appendChild(wrap);
+    });
+  }
+
+  // Hook setupDayEventNotes into the post-sync chain (after notes + rdv are loaded)
+  const _origSyncAll4 = syncAll;
+  syncAll = async function() {
+    await _origSyncAll4.apply(this, arguments);
+    if (typeof setupDayEventNotes === "function") setupDayEventNotes();
+  };
 
   // ============================================================
   // NOTES SYSTEM (Airtable Notes table + EasyMDE markdown editor)

@@ -3947,6 +3947,28 @@ function populateColumnSelect(tableId, col, data) {
   .agenda-ics-btn { background:var(--accent); color:var(--accent-on); border:0; padding:7px 12px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600; }
   .agenda-ics-btn:hover { background:var(--accent-hover); }
 
+  /* Editorial day notes (Option C) */
+  .day-notes-dynamic { background:white; border:1px solid var(--border); border-radius:6px; margin:14px 0 24px; padding:18px 22px; position:relative; }
+  .day-notes-header { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:8px; }
+  .day-notes-header h3 { margin:0; font-size:14px; font-weight:600; color:var(--text); border:none; padding:0; }
+  .day-notes-meta { font-size:11px; color:var(--text-soft); font-weight:normal; }
+  .day-notes-actions { display:flex; gap:6px; }
+  .day-notes-actions button { padding:5px 12px; font-size:12px; font-weight:500; border:1px solid var(--border-strong); background:white; border-radius:6px; cursor:pointer; }
+  .day-notes-actions button:hover { background:#fafafa; border-color:var(--accent); }
+  .day-notes-actions button.primary { background:var(--accent); color:var(--accent-on); border-color:var(--accent); font-weight:600; }
+  .day-notes-actions button.primary:hover { background:var(--accent-hover); }
+  .day-notes-content { font-size:14px; line-height:1.6; color:var(--text); }
+  .day-notes-content h3 { font-size:15px; margin:18px 0 6px; color:var(--text); }
+  .day-notes-content h4 { font-size:13.5px; margin:14px 0 4px; color:var(--text); }
+  .day-notes-content p { margin:6px 0 10px; }
+  .day-notes-content ul, .day-notes-content ol { padding-left:24px; margin:8px 0; }
+  .day-notes-content li { margin:2px 0; }
+  .day-notes-content code { background:#f1f1f1; padding:1px 6px; border-radius:4px; font-size:12.5px; }
+  .day-notes-content blockquote { border-left:3px solid var(--accent); padding:4px 12px; color:var(--text-soft); margin:8px 0; background:#fafafa; border-radius:0 4px 4px 0; }
+  .day-notes-content table { width:auto; min-width:50%; }
+  .day-notes-content table thead th { background:#f8f8f8; color:#666; font-size:11.5px; }
+  .day-notes-editor-wrap { margin-top:8px; }
+
   /* Day map widget */
   .day-map-details { margin:14px 0 22px; border:1px solid var(--border); border-radius:10px; background:white; }
   .day-map-summary { padding:12px 18px; cursor:pointer; font-size:14px; font-weight:600; color:var(--text); user-select:none; list-style:none; display:flex; align-items:center; justify-content:space-between; }
@@ -4018,6 +4040,7 @@ function populateColumnSelect(tableId, col, data) {
     RDV:      "tblyZFiKmTW9W8gGj",
     TODO:     "tblJiwyiehKQ1BEgT",
     NOTES:    "tblIgm9E0Trp4MWL2",
+    JOURS:    "tbls8fScIj213Cdxb",
   };
   const STORAGE_KEY = "voyage_shenzhen_airtable_pat";
   const STATUTS_CONTACTS = ["Confirmé", "À confirmer", "Attente", "À contacter", "Reprogrammer", "Mort"];
@@ -4037,7 +4060,7 @@ function populateColumnSelect(tableId, col, data) {
   };
 
   let pat = localStorage.getItem(STORAGE_KEY) || "";
-  let cache = { contacts: [], todo: [], squad: [], rdv: [], notes: [] };
+  let cache = { contacts: [], todo: [], squad: [], rdv: [], notes: [], jours: [] };
   let mapping = {
     contactsBySociete: {}, // société (lowercased) → recordId — exact match
     contactsList:      [], // [{ key: "société lowercased", id: "rec..." }] — fuzzy fallback
@@ -4854,13 +4877,14 @@ function populateColumnSelect(tableId, col, data) {
       bannerOn("page-rdv");
       bannerOn("page-todo");
 
-      // Fetch all 5 tables in parallel
-      const [contactsRecs, todoRecs, squadRecs, agendaRecs, notesRecs] = await Promise.all([
+      // Fetch all 6 tables in parallel
+      const [contactsRecs, todoRecs, squadRecs, agendaRecs, notesRecs, joursRecs] = await Promise.all([
         fetchAll(TBL.CONTACTS),
         fetchAll(TBL.TODO),
         fetchAll(TBL.SQUAD),
-        fetchAll(TBL.RDV),  // table renamed to "Agenda" in Airtable, ID unchanged
+        fetchAll(TBL.RDV),
         fetchAll(TBL.NOTES),
+        fetchAll(TBL.JOURS),
       ]);
 
       cache.contacts = contactsRecs;
@@ -4868,6 +4892,7 @@ function populateColumnSelect(tableId, col, data) {
       cache.squad = squadRecs;
       cache.rdv = agendaRecs;
       cache.notes = notesRecs;
+      cache.jours = joursRecs;
 
       // Build lookups
       mapping.contactsBySociete = {};
@@ -4912,7 +4937,7 @@ function populateColumnSelect(tableId, col, data) {
         }
       }, 200);
 
-      console.log("[airtable] data fetched:", { contacts: contactsRecs.length, todo: todoRecs.length, squad: squadRecs.length, agenda: agendaRecs.length, notes: notesRecs.length });
+      console.log("[airtable] data fetched:", { contacts: contactsRecs.length, todo: todoRecs.length, squad: squadRecs.length, agenda: agendaRecs.length, notes: notesRecs.length, jours: joursRecs.length });
     } catch (e) {
       console.error("[airtable] sync failed:", e);
       bannerErr("page-contacts_db", e.message);
@@ -6529,10 +6554,180 @@ function populateColumnSelect(tableId, col, data) {
   syncAll = async function() {
     await _origSyncAll3.apply(this, arguments);
     if (typeof setupDayMaps === "function") setupDayMaps();
+    if (typeof setupDayNotes === "function") setupDayNotes();
     if (typeof renderNotesPage === "function" && document.getElementById("notes-page-list")) {
       renderNotesPage();
     }
   };
+
+  // ============================================================
+  // DAY NOTES (Option C) — editable narrative per day, sourced from Airtable.Jours
+  // ============================================================
+
+  // Map Airtable "Jour" string ("Samedi 20 juin") to the H2 we want to inject after.
+  const JOUR_TO_H2_MATCH = {
+    "Samedi 20 juin":   "Samedi 20",
+    "Dimanche 21 juin": "Dimanche 21",
+    "Lundi 22 juin":    "Lundi 22",
+    "Mardi 23 juin":    "Mardi 23",
+    "Mercredi 24 juin": "Mercredi 24",
+    "Jeudi 25 juin":    "Jeudi 25",
+  };
+
+  function setupDayNotes() {
+    const planning = document.getElementById("page-planning");
+    if (!planning || !cache.jours || !cache.jours.length) return;
+
+    // Remove previous dynamic notes (so we can re-render after sync)
+    planning.querySelectorAll(".day-notes-dynamic").forEach(n => n.remove());
+
+    cache.jours.forEach(rec => {
+      const jourText = (rec.fields || {}).Jour || "";
+      const matchStr = JOUR_TO_H2_MATCH[jourText];
+      if (!matchStr) return;
+
+      // Locate the H2 for this day
+      const h2 = Array.from(planning.querySelectorAll("h2"))
+        .find(h => (h.textContent || "").trim().startsWith(matchStr));
+      if (!h2) return;
+
+      // Hide the original static narrative for this day (everything between
+      // this H2 and the next H2, except the bridge-injected agenda/map elements).
+      let node = h2.nextElementSibling;
+      while (node && node.tagName !== "H2") {
+        const next = node.nextElementSibling;
+        const isBridgeInjected =
+          node.classList.contains("agenda") ||
+          node.classList.contains("day-map-details") ||
+          node.classList.contains("day-notes-dynamic");
+        if (!isBridgeInjected && !node.classList.contains("day-static-hidden")) {
+          node.classList.add("day-static-hidden", "at-hide-perm");
+        }
+        node = next;
+      }
+
+      // Build the dynamic notes container
+      const wrap = buildDayNotesCard(rec);
+      wrap.dataset.planningSegment = h2.dataset.planningSegment || "";
+
+      // Insert AFTER the mini-agenda and day-map (if present)
+      let after = h2.nextElementSibling;
+      while (after && (after.classList.contains("agenda") || after.classList.contains("day-map-details"))) {
+        after = after.nextElementSibling;
+      }
+      if (after) after.parentNode.insertBefore(wrap, after);
+      else h2.parentNode.appendChild(wrap);
+    });
+  }
+
+  function buildDayNotesCard(rec) {
+    const f = rec.fields || {};
+    const wrap = document.createElement("div");
+    wrap.className = "day-notes-dynamic";
+    wrap.dataset.jourId = rec.id;
+
+    const header = document.createElement("div");
+    header.className = "day-notes-header";
+    const title = document.createElement("h3");
+    title.innerHTML = "📝 Notes du jour <span class=\"day-notes-meta\">· dernière modif " + fmtDate(f["Dernière modif"] || rec.createdTime) + "</span>";
+    const actions = document.createElement("div");
+    actions.className = "day-notes-actions";
+    const editBtn = document.createElement("button");
+    editBtn.type = "button";
+    editBtn.textContent = "Éditer";
+    editBtn.onclick = () => switchDayNotesToEdit(wrap, rec);
+    actions.appendChild(editBtn);
+    header.appendChild(title);
+    header.appendChild(actions);
+    wrap.appendChild(header);
+
+    const content = document.createElement("div");
+    content.className = "day-notes-content";
+    content.innerHTML = renderMarkdown(f.Notes);
+    wrap.appendChild(content);
+
+    return wrap;
+  }
+
+  async function switchDayNotesToEdit(wrap, rec) {
+    if (!pat) { toast("Connecte-toi à Airtable d'abord", false); return; }
+    try { await loadEditorAssets(); } catch (e) {
+      toast("Échec chargement éditeur : " + e.message, false); return;
+    }
+
+    const f = rec.fields || {};
+    wrap.innerHTML = "";
+
+    // Header
+    const header = document.createElement("div");
+    header.className = "day-notes-header";
+    const title = document.createElement("h3");
+    title.textContent = "✏ Édition · " + (f.Jour || "");
+    const actions = document.createElement("div");
+    actions.className = "day-notes-actions";
+    const cancelBtn = document.createElement("button"); cancelBtn.textContent = "Annuler";
+    const saveBtn = document.createElement("button"); saveBtn.textContent = "Sauvegarder"; saveBtn.className = "primary";
+    actions.appendChild(cancelBtn); actions.appendChild(saveBtn);
+    header.appendChild(title); header.appendChild(actions);
+    wrap.appendChild(header);
+
+    // Editor
+    const editorWrap = document.createElement("div");
+    editorWrap.className = "day-notes-editor-wrap";
+    const ta = document.createElement("textarea");
+    ta.value = f.Notes || "";
+    editorWrap.appendChild(ta);
+    wrap.appendChild(editorWrap);
+
+    const easyMDE = new window.EasyMDE({
+      element: ta,
+      spellChecker: false,
+      status: false,
+      minHeight: "240px",
+      autofocus: true,
+      toolbar: ["bold", "italic", "heading", "|", "unordered-list", "ordered-list", "table", "|", "link", "quote", "code", "|", "preview"],
+      renderingConfig: { singleLineBreaks: true },
+    });
+
+    cancelBtn.onclick = () => {
+      easyMDE.toTextArea();
+      // Re-render the card with original content
+      const idx = cache.jours.findIndex(x => x.id === rec.id);
+      const fresh = idx >= 0 ? cache.jours[idx] : rec;
+      const newCard = buildDayNotesCard(fresh);
+      newCard.dataset.planningSegment = wrap.dataset.planningSegment;
+      wrap.replaceWith(newCard);
+    };
+
+    saveBtn.onclick = async () => {
+      const content = easyMDE.value();
+      saveBtn.disabled = true; saveBtn.textContent = "Envoi…";
+      const res = await patchRecord(TBL.JOURS, rec.id, { "Notes": content });
+      if (!res.ok) {
+        const msg = (res.data && res.data.error && res.data.error.message) || ("HTTP " + res.status);
+        toast("Erreur : " + msg, false);
+        saveBtn.disabled = false; saveBtn.textContent = "Sauvegarder";
+        return;
+      }
+      // Update cache and re-render
+      const idx = cache.jours.findIndex(x => x.id === rec.id);
+      if (idx >= 0) {
+        cache.jours[idx].fields = { ...cache.jours[idx].fields, Notes: content, "Dernière modif": new Date().toISOString() };
+        rec = cache.jours[idx];
+      }
+      easyMDE.toTextArea();
+      const newCard = buildDayNotesCard(rec);
+      newCard.dataset.planningSegment = wrap.dataset.planningSegment;
+      wrap.replaceWith(newCard);
+      toast("✓ Notes du " + (f.Jour || "jour") + " sauvegardées", true);
+    };
+  }
+
+  // Re-trigger setupDayNotes on planning nav (in case data arrives after first render)
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest('a[data-nav="planning"]');
+    if (a) setTimeout(setupDayNotes, 200);
+  });
 
   // ============================================================
   // NOTES SYSTEM (Airtable Notes table + EasyMDE markdown editor)

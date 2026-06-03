@@ -4489,12 +4489,36 @@ function populateColumnSelect(tableId, col, data) {
       const rec = cache.contacts.find(r => r.id === recId);
       const f = (rec && rec.fields) || {};
 
-      // Cell 0 = Statut
+      // Cell 0 = Statut — saves to Contacts.Statut AND cascades to linked Agenda."Statut RDV"
       const statutCell = tr.children[0];
       if (statutCell) {
         const current = f["Statut"] || tr.dataset.statut || "Attente";
         const statutSel = buildStatutSelect(current, STATUTS_CONTACTS);
-        statutSel.onchange = () => saveStatut(TBL.CONTACTS, recId, "Statut", statutSel.value, statutSel, societe);
+        statutSel.onchange = async () => {
+          const ok = await saveStatut(TBL.CONTACTS, recId, "Statut", statutSel.value, statutSel, societe);
+          if (ok) {
+            tr.dataset.statut = statutSel.value;
+            // Cascade to the linked Agenda event(s) so the Gantt and Airtable Agenda stay in sync
+            const CONTACT_TO_AGENDA_STATUT = {
+              "Confirmé": "Confirmé",
+              "À confirmer": "À confirmer",
+              "Reprogrammer": "Reprogrammer",
+              "Mort": "Annulé",
+            };
+            const agendaStatut = CONTACT_TO_AGENDA_STATUT[statutSel.value];
+            if (agendaStatut) {
+              const linkedAgenda = (cache.rdv || []).filter(r =>
+                ((r.fields || {})["Société"] || []).indexOf(recId) !== -1
+              );
+              for (const ag of linkedAgenda) {
+                if (ag.fields["Statut RDV"] === agendaStatut) continue; // already in sync
+                const res = await patchRecord(TBL.RDV, ag.id, { "Statut RDV": agendaStatut });
+                if (res.ok) ag.fields["Statut RDV"] = agendaStatut;
+              }
+              if (linkedAgenda.length && typeof setupAgenda === "function") setupAgenda();
+            }
+          }
+        };
         statutCell.innerHTML = "";
         statutCell.appendChild(statutSel);
         tr.dataset.statut = current;
@@ -6042,7 +6066,46 @@ function populateColumnSelect(tableId, col, data) {
         }
       }
 
-      const dayEvents = parsed.events.filter(e => e.day === d.id);
+      // Compute overlap layout: each overlapping cluster gets split into N columns.
+      // Sort: Confirmé first (so it gets column 0 and the priority z-index).
+      const COLOR_PRIORITY = { "#c6efce": 5, "#fff2cc": 4, "#fce4d6": 3, "#ddebf7": 2, "#e4dfec": 2, "#f2f2f2": 1 };
+      const dayEvents = parsed.events
+        .filter(e => e.day === d.id)
+        .map(e => ({
+          ...e,
+          _startMin: (() => {
+            const p = (e.startTime || "0:0").split(":").map(Number);
+            return (p[0] || 0) * 60 + (p[1] || 0);
+          })(),
+          _endMin: (() => {
+            const t = e.endTime || "24:00";
+            if (t === "00:00") return 24 * 60;
+            const p = t.split(":").map(Number);
+            return (p[0] || 0) * 60 + (p[1] || 0);
+          })(),
+          _priority: COLOR_PRIORITY[e.color] || 0,
+        }))
+        .sort((a, b) => a._startMin - b._startMin || b._priority - a._priority);
+
+      // Assign each event to the lowest-index column where it doesn't overlap a placed event
+      const columnEnds = [];  // columnEnds[i] = end-minute of last event placed in column i
+      dayEvents.forEach(e => {
+        let colIdx = 0;
+        while (columnEnds[colIdx] !== undefined && columnEnds[colIdx] > e._startMin) colIdx++;
+        e._colIdx = colIdx;
+        columnEnds[colIdx] = e._endMin;
+      });
+      // For each event, compute the total number of columns in its overlap cluster
+      dayEvents.forEach(e => {
+        let maxCols = 1;
+        dayEvents.forEach(other => {
+          if (other === e) return;
+          const overlap = other._startMin < e._endMin && other._endMin > e._startMin;
+          if (overlap) maxCols = Math.max(maxCols, e._colIdx + 1, other._colIdx + 1);
+        });
+        e._totalCols = maxCols;
+      });
+
       dayEvents.forEach(e => {
         const top = timeToPx(e.startTime);
         const bottom = timeToPx(e.endTime || "24:00");
@@ -6053,6 +6116,18 @@ function populateColumnSelect(tableId, col, data) {
         ev.dataset.color = e.color;
         ev.style.top = top + "px";
         ev.style.height = height + "px";
+
+        // Layout in columns when overlapping
+        const total = e._totalCols || 1;
+        if (total > 1) {
+          const widthPct = 100 / total;
+          ev.style.left = (e._colIdx * widthPct) + "%";
+          ev.style.right = "auto";
+          ev.style.width = "calc(" + widthPct + "% - 4px)";
+        }
+        // Confirmé and high-priority events render on top
+        ev.style.zIndex = String(1 + (e._priority || 0));
+
         if (e.color) ev.style.background = e.color;
         ev.title = e.startTime + " – " + (e.endTime || "?") + (e.text ? "\n" + e.text : "");
 

@@ -6105,6 +6105,7 @@ function populateColumnSelect(tableId, col, data) {
         '<span class="agenda-lg" data-color="#e4dfec" style="background:#E4DFEC">Soirée / networking</span>' +
         '<span class="agenda-lg" data-color="#f2f2f2" style="background:#F2F2F2">Logistique</span>' +
         '<span class="agenda-legend-hint">Cliquer une étiquette pour masquer ce type</span>' +
+        '<button type="button" class="agenda-new-btn" title="Créer un nouvel événement dans l\'agenda">+ Nouvel événement</button>' +
         '<button type="button" class="agenda-ics-btn" title="Télécharger un fichier .ics pour importer dans Google/Apple Calendar">📅 Export .ics</button>';
       wrap.appendChild(legend);
       legend.querySelectorAll(".agenda-lg").forEach(lg => {
@@ -6117,6 +6118,7 @@ function populateColumnSelect(tableId, col, data) {
         };
       });
       legend.querySelector(".agenda-ics-btn").onclick = () => downloadICS(parsed.events);
+      legend.querySelector(".agenda-new-btn").onclick = () => openAgendaEventEditor(null);
     }
 
     const header = document.createElement("div");
@@ -6241,9 +6243,9 @@ function populateColumnSelect(tableId, col, data) {
           ev.appendChild(txt);
         }
 
-        // Make non-"RDV business" events clickable to open inline editor.
-        // RDV business events are edited from the Synthèse RDV page already.
-        if (e.recordId && e.type && e.type !== "RDV business") {
+        // All events (including RDV business) are clickable on the Planning to
+        // open the inline editor.
+        if (e.recordId) {
           ev.style.cursor = "pointer";
           ev.onclick = () => openAgendaEventEditor(e.recordId);
         }
@@ -6820,33 +6822,66 @@ function populateColumnSelect(tableId, col, data) {
       toast("Échec chargement éditeur : " + e.message, false); return;
     }
 
-    const rec = (cache.rdv || []).find(r => r.id === agendaId);
-    if (!rec) { toast("Événement introuvable dans le cache", false); return; }
-    const f = rec.fields || {};
+    const isNew = !agendaId;
+    const rec = isNew ? null : (cache.rdv || []).find(r => r.id === agendaId);
+    if (!isNew && !rec) { toast("Événement introuvable dans le cache", false); return; }
+    const f = rec ? (rec.fields || {}) : {};
+
+    const TYPE_OPTIONS = ["RDV business", "Exploration tech", "Repas", "Soirée", "Logistique", "Personnel", "Travel"];
+    const STATUTS_AGENDA = ["", "Confirmé", "À confirmer", "Reprogrammer", "Annulé"];
+
+    function typeOptions(current) {
+      return TYPE_OPTIONS.map(t => '<option value="' + escapeHtml(t) + '"' + (t === current ? ' selected' : '') + '>' + escapeHtml(t) + '</option>').join("");
+    }
+    function statutOptions(current) {
+      return STATUTS_AGENDA.map(s => '<option value="' + escapeHtml(s) + '"' + (s === current ? ' selected' : '') + '>' + (s || "—") + '</option>').join("");
+    }
+    function contactOptions(currentId) {
+      let html = '<option value="">— aucune —</option>';
+      const sorted = (cache.contacts || []).slice().sort((a, b) =>
+        ((a.fields || {}).Société || "").localeCompare((b.fields || {}).Société || "")
+      );
+      sorted.forEach(c => {
+        const name = (c.fields || {}).Société || "?";
+        html += '<option value="' + c.id + '"' + (c.id === currentId ? ' selected' : '') + '>' + escapeHtml(name) + '</option>';
+      });
+      return html;
+    }
+
+    const currentSoc = (f["Société"] || [])[0] || "";
+    const defaultDate = isNew ? "2026-06-22T09:30" : (isoToLocalInput(f.Date) || "");
+    const defaultDuree = isNew ? "1:00" : (dureeSecondsToHm(f["Durée"]) || "");
 
     const overlay = document.createElement("div");
     overlay.className = "at-modal-overlay";
     overlay.id = "at-modal-overlay";
     overlay.innerHTML =
       '<div class="at-modal at-notes-modal">' +
-        '<h3>Éditer l\'événement</h3>' +
-        '<p class="at-modal-sub">Type: <strong>' + escapeHtml(f.Type || "—") + '</strong></p>' +
-        '<label class="elicit-question" style="display:block;font-size:12px;font-weight:600;color:var(--text-soft);margin:12px 0 4px;">Titre</label>' +
-        '<input type="text" id="at-ev-title" style="width:100%;padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;font-size:14px;box-sizing:border-box;" value="' + escapeHtml(f.Titre || "") + '">' +
+        '<h3>' + (isNew ? "Nouvel événement" : "Éditer l'événement") + '</h3>' +
+        '<label style="display:block;font-size:12px;font-weight:600;color:var(--text-soft);margin:12px 0 4px;">Titre <span style="color:#c92a2a">*</span></label>' +
+        '<input type="text" id="at-ev-title" placeholder="ex: RDV BYD HQ" style="width:100%;padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;font-size:14px;box-sizing:border-box;" value="' + escapeHtml(f.Titre || "") + '">' +
+        '<div style="display:flex;gap:10px;margin-top:4px;">' +
+          '<div style="flex:1;"><label style="display:block;font-size:12px;font-weight:600;color:var(--text-soft);margin:12px 0 4px;">Type</label>' +
+          '<select id="at-ev-type" style="width:100%;padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;font-size:14px;box-sizing:border-box;">' + typeOptions(f.Type || (isNew ? "Personnel" : "")) + '</select></div>' +
+          '<div style="flex:1;"><label style="display:block;font-size:12px;font-weight:600;color:var(--text-soft);margin:12px 0 4px;">Statut RDV</label>' +
+          '<select id="at-ev-statut" style="width:100%;padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;font-size:14px;box-sizing:border-box;">' + statutOptions(f["Statut RDV"] || "") + '</select></div>' +
+        '</div>' +
+        '<label style="display:block;font-size:12px;font-weight:600;color:var(--text-soft);margin:12px 0 4px;">Société liée (optionnel)</label>' +
+        '<select id="at-ev-societe" style="width:100%;padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;font-size:14px;box-sizing:border-box;">' + contactOptions(currentSoc) + '</select>' +
         '<label style="display:block;font-size:12px;font-weight:600;color:var(--text-soft);margin:12px 0 4px;">Date et heure (Shenzhen)</label>' +
         '<div style="display:flex;gap:8px;align-items:center;">' +
-          '<input type="datetime-local" id="at-ev-date" style="padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;font-size:13px;flex:1;" value="' + escapeHtml(isoToLocalInput(f.Date) || "") + '">' +
-          '<input type="text" id="at-ev-duree" placeholder="h:mm" style="padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;font-size:13px;width:70px;" value="' + escapeHtml(dureeSecondsToHm(f["Durée"]) || "") + '">' +
+          '<input type="datetime-local" id="at-ev-date" style="padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;font-size:13px;flex:1;" value="' + escapeHtml(defaultDate) + '">' +
+          '<input type="text" id="at-ev-duree" placeholder="h:mm" style="padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;font-size:13px;width:70px;" value="' + escapeHtml(defaultDuree) + '">' +
         '</div>' +
         '<label style="display:block;font-size:12px;font-weight:600;color:var(--text-soft);margin:12px 0 4px;">Lieu</label>' +
         '<input type="text" id="at-ev-lieu" style="width:100%;padding:8px 10px;border:1px solid var(--border-strong);border-radius:6px;font-size:14px;box-sizing:border-box;" value="' + escapeHtml(f.Lieu || "") + '">' +
         '<label style="display:block;font-size:12px;font-weight:600;color:var(--text-soft);margin:12px 0 4px;">Notes (markdown)</label>' +
         '<div id="at-ev-notes-wrap"><textarea id="at-ev-notes">' + escapeHtml(f.Notes || "") + '</textarea></div>' +
         '<div class="at-modal-actions" style="justify-content:space-between;">' +
-          '<button type="button" id="at-ev-delete" style="background:#fee;color:#a32;border:1px solid #f4a08c;">🗑 Supprimer cet événement</button>' +
+          (isNew ? '<span></span>' : '<button type="button" id="at-ev-delete" style="background:#fee;color:#a32;border:1px solid #f4a08c;">🗑 Supprimer cet événement</button>') +
           '<div style="display:flex;gap:8px;">' +
             '<button type="button" id="at-ev-cancel">Annuler</button>' +
-            '<button type="button" class="primary" id="at-ev-save">Sauvegarder</button>' +
+            '<button type="button" class="primary" id="at-ev-save">' + (isNew ? "Créer" : "Sauvegarder") + '</button>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -6866,13 +6901,25 @@ function populateColumnSelect(tableId, col, data) {
     document.getElementById("at-ev-cancel").onclick = closeModal;
 
     document.getElementById("at-ev-save").onclick = async () => {
-      const title = document.getElementById("at-ev-title").value.trim() || f.Titre || "événement";
+      const title = document.getElementById("at-ev-title").value.trim() || f.Titre || (isNew ? "" : "événement");
+      if (!title) { toast("Le titre est obligatoire", false); return; }
+      const typeVal = document.getElementById("at-ev-type").value;
+      const statutVal = document.getElementById("at-ev-statut").value;
+      const societeVal = document.getElementById("at-ev-societe").value;
       const dateVal = document.getElementById("at-ev-date").value;
       const dureeVal = document.getElementById("at-ev-duree").value;
       const lieuVal = document.getElementById("at-ev-lieu").value.trim();
       const notesVal = easyMDE.value();
 
-      const fields = { "Titre": title, "Notes": notesVal, "Lieu": lieuVal, "Dernière modif": new Date().toISOString() };
+      const fields = {
+        "Titre": title,
+        "Notes": notesVal,
+        "Lieu": lieuVal,
+        "Type": typeVal,
+        "Dernière modif": new Date().toISOString(),
+      };
+      if (statutVal) fields["Statut RDV"] = statutVal;
+      if (societeVal) fields["Société"] = [societeVal];
       const iso = localInputToIso(dateVal);
       if (iso) fields.Date = iso;
       const sec = hmToDureeSeconds(dureeVal);
@@ -6880,17 +6927,28 @@ function populateColumnSelect(tableId, col, data) {
 
       const btn = document.getElementById("at-ev-save");
       btn.disabled = true; btn.textContent = "Envoi…";
-      const res = await api("PATCH", "/" + BASE_ID + "/" + TBL.RDV + "/" + agendaId, { fields });
+
+      let res;
+      if (isNew) {
+        res = await api("POST", "/" + BASE_ID + "/" + TBL.RDV, { records: [{ fields }] });
+      } else {
+        res = await api("PATCH", "/" + BASE_ID + "/" + TBL.RDV + "/" + agendaId, { fields });
+      }
       if (!res.ok) {
         const msg = (res.data && res.data.error && res.data.error.message) || ("HTTP " + res.status);
         toast("Erreur : " + msg, false);
-        btn.disabled = false; btn.textContent = "Sauvegarder";
+        btn.disabled = false; btn.textContent = isNew ? "Créer" : "Sauvegarder";
         return;
       }
       // Update cache
-      const idx = cache.rdv.findIndex(x => x.id === agendaId);
-      if (idx >= 0) cache.rdv[idx] = res.data;
-      toast("✓ Événement mis à jour", true);
+      if (isNew) {
+        const newRec = res.data.records[0];
+        cache.rdv.push(newRec);
+      } else {
+        const idx = cache.rdv.findIndex(x => x.id === agendaId);
+        if (idx >= 0) cache.rdv[idx] = res.data;
+      }
+      toast(isNew ? "✓ Événement créé" : "✓ Événement mis à jour", true);
       easyMDE.toTextArea();
       closeModal();
       if (typeof setupAgenda === "function") setupAgenda();
@@ -6898,7 +6956,7 @@ function populateColumnSelect(tableId, col, data) {
       if (typeof setupDayEventNotes === "function") setupDayEventNotes();
     };
 
-    document.getElementById("at-ev-delete").onclick = async () => {
+    if (!isNew) document.getElementById("at-ev-delete").onclick = async () => {
       if (!confirm("Supprimer définitivement l'événement \"" + (f.Titre || "—") + "\" ?")) return;
       const res = await api("DELETE", "/" + BASE_ID + "/" + TBL.RDV + "/" + agendaId);
       if (!res.ok) {
@@ -7114,8 +7172,20 @@ function populateColumnSelect(tableId, col, data) {
   function renderMarkdown(md) {
     if (!md) return "<em style='color:var(--text-soft)'>(vide)</em>";
     if (window.marked && window.marked.parse) {
-      try { return window.marked.parse(md, { breaks: true, gfm: true }); }
-      catch (e) { return escapeHtml(md).replace(/\n/g, "<br>"); }
+      try {
+        // GFM tables need blank lines around them, otherwise marked treats the
+        // pipe-separated lines as paragraph text with <br>. Inject blank lines.
+        let normalized = md;
+        // Before any table header (a |...| line followed by |---|---|)
+        normalized = normalized.replace(/([^\n])\n(\|[^\n]+\|\n\|\s*[-:]+\s*\|)/g, "$1\n\n$2");
+        // After the last row of a table (line that starts with | but isn't followed by another |)
+        normalized = normalized.replace(/(\|[^\n]+\|)\n([^|\n])/g, "$1\n\n$2");
+        // Use breaks:false so inside tables, single newlines don't break cells.
+        // Single line breaks in paragraphs become spaces (markdown standard).
+        return window.marked.parse(normalized, { breaks: false, gfm: true });
+      } catch (e) {
+        return escapeHtml(md).replace(/\n/g, "<br>");
+      }
     }
     return escapeHtml(md).replace(/\n/g, "<br>");
   }

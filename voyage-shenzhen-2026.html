@@ -3944,8 +3944,10 @@ function populateColumnSelect(tableId, col, data) {
   .agenda-lg { padding:5px 11px; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; user-select:none; transition:opacity 0.15s; color:#1F2933; }
   .agenda-lg.lg-off { opacity:0.3; text-decoration:line-through; }
   .agenda-legend-hint { color:var(--text-soft); font-size:11px; margin-left:auto; font-style:italic; }
-  .agenda-ics-btn { background:var(--accent); color:var(--accent-on); border:0; padding:7px 12px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600; }
-  .agenda-ics-btn:hover { background:var(--accent-hover); }
+  .agenda-ics-btn, .agenda-new-btn { background:var(--accent); color:var(--accent-on); border:0; padding:7px 12px; border-radius:6px; font-size:12px; cursor:pointer; font-weight:600; }
+  .agenda-ics-btn:hover, .agenda-new-btn:hover { background:var(--accent-hover); }
+  .agenda-new-btn { background:var(--primary); color:white; }
+  .agenda-new-btn:hover { background:var(--primary-light); }
 
   /* Editorial day notes (Option C) */
   .day-notes-dynamic { background:white; border:1px solid var(--border); border-radius:6px; margin:14px 0 24px; padding:18px 22px; position:relative; }

@@ -1,0 +1,32 @@
+name: Sync Airtable → voyage-shenzhen-data.json
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # every 10 min
+  workflow_dispatch:           # allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Airtable snapshot
+        env:
+          AT_PAT: ${{ secrets.AIRTABLE_PAT }}
+        run: python3 scripts/sync-airtable-shenzhen.py
+
+      - name: Commit & push if changed
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name  "GitHub Actions"
+          git add voyage-shenzhen-data.json
+          if git diff --staged --quiet; then
+            echo "No changes — skip commit."
+          else
+            git commit -m "Snapshot Airtable $(date -u +%Y-%m-%dT%H:%MZ)"
+            git push
+          fi

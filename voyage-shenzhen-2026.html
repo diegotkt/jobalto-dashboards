@@ -4944,21 +4944,32 @@ function populateColumnSelect(tableId, col, data) {
   }
 
   // ---- Sync orchestrator ----
-  async function syncAll() {
+  async function syncAll(opts) {
+    const prefetched = opts && opts.prefetched;
     try {
       bannerOn("page-contacts_db");
       bannerOn("page-rdv");
       bannerOn("page-todo");
 
-      // Fetch all 6 tables in parallel
-      const [contactsRecs, todoRecs, squadRecs, agendaRecs, notesRecs, joursRecs] = await Promise.all([
-        fetchAll(TBL.CONTACTS),
-        fetchAll(TBL.TODO),
-        fetchAll(TBL.SQUAD),
-        fetchAll(TBL.RDV),
-        fetchAll(TBL.NOTES),
-        fetchAll(TBL.JOURS),
-      ]);
+      // Fetch all 6 tables in parallel (or use prefetched snapshot)
+      let contactsRecs, todoRecs, squadRecs, agendaRecs, notesRecs, joursRecs;
+      if (prefetched) {
+        contactsRecs = prefetched.contacts || [];
+        todoRecs     = prefetched.todo     || [];
+        squadRecs    = prefetched.squad    || [];
+        agendaRecs   = prefetched.rdv      || [];
+        notesRecs    = prefetched.notes    || [];
+        joursRecs    = prefetched.jours    || [];
+      } else {
+        [contactsRecs, todoRecs, squadRecs, agendaRecs, notesRecs, joursRecs] = await Promise.all([
+          fetchAll(TBL.CONTACTS),
+          fetchAll(TBL.TODO),
+          fetchAll(TBL.SQUAD),
+          fetchAll(TBL.RDV),
+          fetchAll(TBL.NOTES),
+          fetchAll(TBL.JOURS),
+        ]);
+      }
 
       cache.contacts = contactsRecs;
       cache.todo = todoRecs;
@@ -5019,11 +5030,61 @@ function populateColumnSelect(tableId, col, data) {
     }
   }
 
+  // ---- Snapshot fallback (no PAT collé) ----
+  async function loadFromSnapshot() {
+    try {
+      const resp = await fetch("voyage-shenzhen-data.json", { cache: "no-store" });
+      if (!resp.ok) throw new Error("Snapshot non disponible (HTTP " + resp.status + ")");
+      const snap = await resp.json();
+      await syncAll({ prefetched: snap });
+      showSnapshotBanner(snap.syncedAt);
+      console.log("[airtable] loaded from snapshot " + snap.syncedAt);
+    } catch (e) {
+      console.warn("[airtable] snapshot fallback failed:", e);
+    }
+  }
+
+  function showSnapshotBanner(syncedAt) {
+    if (document.getElementById("snapshot-banner")) return;
+    const banner = document.createElement("div");
+    banner.id = "snapshot-banner";
+    banner.style.cssText = "position:fixed;bottom:14px;left:14px;background:#0a0a0b;color:#fff;padding:10px 14px;border-radius:8px;font-size:12px;z-index:9999;box-shadow:0 6px 20px rgba(0,0,0,0.25);border-left:3px solid #00d4a0;font-family:inherit;max-width:380px;";
+    let ts = "—";
+    if (syncedAt) {
+      try {
+        const d = new Date(syncedAt);
+        ts = d.toLocaleString("fr-FR", { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" });
+      } catch(e) {}
+    }
+    banner.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;">' +
+        '<span>📸 Lecture seule · snapshot du <b>' + ts + '</b></span>' +
+        '<a href="#" id="snap-edit" style="color:#00d4a0;text-decoration:underline;font-weight:600;white-space:nowrap;">Coller PAT pour éditer</a>' +
+        '<span id="snap-close" style="cursor:pointer;opacity:0.5;padding:0 4px;" title="Fermer">×</span>' +
+      '</div>';
+    document.body.appendChild(banner);
+    document.getElementById("snap-edit").onclick = (e) => {
+      e.preventDefault();
+      const newPat = prompt("Colle ton PAT Airtable (commence par pat…) :");
+      if (newPat && newPat.startsWith("pat")) {
+        localStorage.setItem(STORAGE_KEY, newPat.trim());
+        location.reload();
+      } else if (newPat) {
+        alert("PAT invalide (doit commencer par 'pat')");
+      }
+    };
+    document.getElementById("snap-close").onclick = () => banner.remove();
+  }
+
   function init() {
     bannerOn("page-contacts_db");
     bannerOn("page-rdv");
     bannerOn("page-todo");
-    if (pat) syncAll();
+    if (pat) {
+      syncAll();
+    } else {
+      loadFromSnapshot();
+    }
   }
 
   if (document.readyState === "loading") {

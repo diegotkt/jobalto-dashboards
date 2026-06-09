@@ -6659,9 +6659,12 @@ function populateColumnSelect(tableId, col, data) {
     "Jeudi 25 juin":    "Jeudi 25",
   };
 
-  function setupDayNotes() {
+  async function setupDayNotes() {
     const planning = document.getElementById("page-planning");
     if (!planning || !cache.jours || !cache.jours.length) return;
+
+    // Ensure marked.js is loaded so markdown tables/code/etc render correctly
+    await loadEditorAssets().catch(() => {});
 
     // Remove previous dynamic notes (so we can re-render after sync)
     planning.querySelectorAll(".day-notes-dynamic").forEach(n => n.remove());
@@ -6980,11 +6983,14 @@ function populateColumnSelect(tableId, col, data) {
   // DAY EVENT NOTES — folded accordions on Planning page, one per
   // event of the day that has linked Notes records.
   // ============================================================
-  function setupDayEventNotes() {
+  async function setupDayEventNotes() {
     const planning = document.getElementById("page-planning");
     if (!planning) return;
     if (!cache.rdv || !cache.rdv.length) return;
     if (!cache.notes) return;
+
+    // Ensure marked.js is loaded before rendering note content
+    await loadEditorAssets().catch(() => {});
 
     planning.querySelectorAll(".day-event-notes").forEach(n => n.remove());
 

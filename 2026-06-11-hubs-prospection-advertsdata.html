@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Hubs Prospection — Sync Advertsdata · Jobalto</title>
+<style>
+  :root {
+    --teal: #143635;
+    --gold: #E6B527;
+    --cream: #F9F7F0;
+    --charcoal: #333333;
+    --border: #E3DFD2;
+    --green: #2E7D4F;
+    --red: #B3402A;
+    --amber: #9A7B1E;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Suisse Intl", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--cream);
+    color: var(--charcoal);
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  header {
+    background: var(--teal);
+    color: #fff;
+    padding: 28px 32px;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
+  }
+  header h1 .acc { color: var(--gold); }
+  header p { margin: 8px 0 0 0; opacity: 0.85; font-size: 14px; max-width: 760px; }
+  main { max-width: 1080px; margin: 0 auto; padding: 24px 20px 80px; }
+  .toolbar {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    margin: 0 0 20px 0; font-size: 13px;
+  }
+  .toolbar .who { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .toolbar input[type=text] {
+    padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px;
+    font-size: 13px; font-family: inherit; background: #fff; width: 140px;
+  }
+  .pill {
+    display: inline-block; padding: 2px 10px; border-radius: 999px;
+    font-size: 12px; font-weight: 700;
+  }
+  .pill.propose { background: #F5E8BC; color: var(--amber); }
+  .pill.valide  { background: #D9EDD9; color: var(--green); }
+  .pill.rejete  { background: #F3D9D2; color: var(--red); }
+  section.region {
+    background: #fff; border: 1px solid var(--border); border-radius: 10px;
+    margin-bottom: 22px; overflow: hidden;
+  }
+  .region-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px; background: var(--teal); color: #fff;
+  }
+  .region-head h2 {
+    margin: 0; font-size: 17px; font-weight: 700; text-transform: uppercase;
+  }
+  .region-head .range {
+    font-size: 12px; opacity: 0.75; font-family: ui-monospace, monospace;
+  }
+  .region-head button { margin-left: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 14px; border-top: 1px solid var(--border); vertical-align: top; }
+  th {
+    border-top: none; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+    color: #8a857a; background: #FDFCF8;
+  }
+  td.pc { font-family: ui-monospace, monospace; white-space: nowrap; }
+  td.why { color: #5a564d; font-size: 13px; max-width: 360px; }
+  td.actions { white-space: nowrap; text-align: right; }
+  .meta { font-size: 11px; color: #9a958a; margin-top: 3px; }
+  button {
+    font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+    border: none; border-radius: 6px; padding: 7px 14px;
+  }
+  button.gold { background: var(--gold); color: var(--teal); }
+  button.gold:hover { filter: brightness(1.06); }
+  button.ghost {
+    background: transparent; border: 1px solid var(--border); color: var(--charcoal);
+    font-weight: 400; padding: 5px 10px; font-size: 12px;
+  }
+  button.ghost:hover { background: var(--cream); }
+  button.ok   { background: #D9EDD9; color: var(--green); padding: 5px 10px; font-size: 12px; }
+  button.ko   { background: #F3D9D2; color: var(--red);   padding: 5px 10px; font-size: 12px; }
+  .addform {
+    display: none; padding: 14px 18px; background: #FDFCF8; border-top: 1px solid var(--border);
+  }
+  .addform.open { display: block; }
+  .addform .row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .addform input, .addform textarea {
+    font-family: inherit; font-size: 13px; padding: 8px 10px;
+    border: 1px solid var(--border); border-radius: 6px; background: #fff;
+  }
+  .addform input.hub { width: 220px; }
+  .addform input.cp { width: 110px; font-family: ui-monospace, monospace; }
+  .addform textarea { width: 100%; min-height: 50px; resize: vertical; }
+  .banner {
+    padding: 12px 16px; border-radius: 8px; margin-bottom: 18px; font-size: 14px;
+  }
+  .banner.err { background: #F3D9D2; color: var(--red); }
+  .banner.info { background: #E8EFEA; color: var(--teal); }
+  #gate {
+    max-width: 460px; margin: 60px auto; background: #fff; border: 1px solid var(--border);
+    border-radius: 10px; padding: 28px;
+  }
+  #gate h2 { margin: 0 0 10px 0; color: var(--teal); font-size: 18px; text-transform: uppercase; }
+  #gate p { font-size: 14px; line-height: 1.55; }
+  #gate input {
+    width: 100%; padding: 10px 12px; font-size: 13px; font-family: ui-monospace, monospace;
+    border: 1px solid var(--border); border-radius: 6px; margin-bottom: 12px;
+  }
+  footer { text-align: center; font-size: 12px; color: #9a958a; padding: 20px; }
+  .spinner { text-align: center; padding: 40px; color: #9a958a; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Hubs Prospection <span class="acc">▲</span> Sync Advertsdata</h1>
+  <p>Villes / zonings de départ pour la détection automatique des entreprises qui recrutent.
+     Le CRM scanne les offres d'emploi dans un <strong>rayon de 25 km</strong> autour de chaque hub validé.
+     Propose des hubs, valide ou rejette ceux des autres — tout est sauvegardé pour toute l'équipe.</p>
+</header>
+
+<main>
+  <div id="gate" style="display:none;">
+    <h2>Accès équipe</h2>
+    <p>Colle le token Airtable que Diego t'a envoyé via Slack (accès base <strong>Jobalto Operations</strong>).
+       Stocké uniquement dans ton navigateur.</p>
+    <input type="password" id="pat-input" placeholder="patXXXXXXXXX.YYYYYYY...">
+    <button class="gold" onclick="savePat()">Entrer</button>
+  </div>
+
+  <div id="app" style="display:none;">
+    <div id="banner"></div>
+    <div class="toolbar">
+      <span>Statuts :</span>
+      <span class="pill propose">Proposé</span>
+      <span class="pill valide">Validé</span>
+      <span class="pill rejete">Rejeté</span>
+      <span class="who">
+        Ton prénom : <input type="text" id="author" placeholder="ex: Simon">
+        <button class="ghost" onclick="logout()" title="Changer de token">Token</button>
+      </span>
+    </div>
+    <div id="regions" class="spinner">Chargement…</div>
+  </div>
+</main>
+
+<footer>Jobalto — Élève ta carrière · Données stockées dans Airtable (Jobalto Operations · Prospection Hubs)</footer>
+
+<script>
+const BASE_ID = 'appvvs3wvBG15yipM'; // Jobalto Operations (Green Base)
+const TABLE = 'Prospection Hubs';
+const API = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(TABLE)}`;
+const PAT_KEY = 'hubs.airtable.pat';
+const AUTHOR_KEY = 'hubs.author';
+
+const REGIONS = [
+  { name: 'Liège',                      range: '4000-4999' },
+  { name: 'Namur',                      range: '5000-5999' },
+  { name: 'Charleroi',                  range: '6000-6299' },
+  { name: 'Bruxelles + Brabant wallon', range: '1000-1499' },
+  { name: 'WAPI',                       range: '7500-7999' },
+  { name: 'Kortrijk & Vlaanderen',      range: '8500-8999 + 9000-9999' },
+];
+
+const SEED = [
+  ['Liège','Liège','4000','Hub central : couvre Herstal/Hauts-Sarts, Seraing, Ans'],
+  ['Liège','Grâce-Hollogne','4460','Liège Airport, zoning cargo & logistique'],
+  ['Liège','Verviers','4800','Est : Verviers, Eupen, Pepinster, Dison'],
+  ['Liège','Huy','4500','Sud-ouest : Huy, Amay, Wanze, Hesbaye sud'],
+  ['Liège','Malmedy','4960','Couvre Malmedy / Stavelot / Spa — zone peu dense, à confirmer'],
+  ['Namur','Namur','5000','Hub central : Jambes, Floreffe, Andenne'],
+  ['Namur','Gembloux','5030','Parc Créalys, axe N4 vers le Brabant wallon'],
+  ['Namur','Dinant','5500','Sud Meuse'],
+  ['Namur','Ciney','5590','Condroz / Famenne — zone rurale, à confirmer'],
+  ['Charleroi','Charleroi','6000','Hub central : Marchienne, Fleurus, Châtelet'],
+  ['Charleroi','Gosselies','6041','Aéropôle, Biopark, aéroport — zoning industriel nord'],
+  ['Bruxelles + Brabant wallon','Bruxelles','1000','Couvre les 19 communes + périphérie'],
+  ['Bruxelles + Brabant wallon','Nivelles','1400','Zoning Nivelles Sud, axe N5/E19'],
+  ['Bruxelles + Brabant wallon','Baisy-Thy (Genappe)','1470','Axe N5 vers Charleroi'],
+  ['Bruxelles + Brabant wallon','Wavre','1300','Zoning Wavre Nord (GSK), Louvain-la-Neuve, est BW'],
+  ['WAPI','Tournai','7500','Hub central WAPI'],
+  ['WAPI','Mouscron','7700','Zone industrielle frontalière, textile / agro'],
+  ['WAPI','Ath','7800','Est WAPI : Leuze, Lessines'],
+  ['Kortrijk & Vlaanderen','Kortrijk','8500','Hub central : Waregem, Menen, Wevelgem'],
+  ['Kortrijk & Vlaanderen','Roeselare','8800','Industrie forte : Izegem, Torhout'],
+  ['Kortrijk & Vlaanderen','Ieper','8900','Ouest : Poperinge, Diksmuide partiel'],
+  ['Kortrijk & Vlaanderen','Gent','9000','Hub central + port de Gand'],
+  ['Kortrijk & Vlaanderen','Sint-Niklaas','9100','Waasland, couvre Beveren / port partiel'],
+  ['Kortrijk & Vlaanderen','Aalst','9300','Sud-est : Dendermonde, Ninove'],
+  ['Kortrijk & Vlaanderen','Oudenaarde','9700','Vlaamse Ardennen : Ronse, Zottegem'],
+];
+
+let records = [];
+
+function getPat() { return localStorage.getItem(PAT_KEY) || ''; }
+function savePat() {
+  const v = document.getElementById('pat-input').value.trim();
+  if (!v) return;
+  localStorage.setItem(PAT_KEY, v);
+  boot();
+}
+function logout() {
+  localStorage.removeItem(PAT_KEY);
+  location.reload();
+}
+
+function getAuthor() {
+  return (document.getElementById('author').value || '').trim();
+}
+function requireAuthor() {
+  const a = getAuthor();
+  if (!a) { alert('Indique ton prénom en haut à droite avant de modifier.'); return null; }
+  localStorage.setItem(AUTHOR_KEY, a);
+  return a;
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(API + (path || ''), {
+    ...opts,
+    headers: {
+      'Authorization': 'Bearer ' + getPat(),
+      'Content-Type': 'application/json',
+      ...(opts.headers || {}),
+    },
+  });
+  if (res.status === 401 || res.status === 403) { throw new Error('AUTH'); }
+  if (!res.ok) { throw new Error('Airtable ' + res.status + ': ' + await res.text()); }
+  return res.json();
+}
+
+async function loadAll() {
+  records = [];
+  let offset = '';
+  do {
+    const json = await api('?pageSize=100' + (offset ? '&offset=' + offset : ''));
+    records.push(...json.records);
+    offset = json.offset || '';
+  } while (offset);
+}
+
+function banner(html, cls) {
+  document.getElementById('banner').innerHTML =
+    html ? `<div class="banner ${cls || 'info'}">${html}</div>` : '';
+}
+
+function esc(s) {
+  return String(s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+function render() {
+  const root = document.getElementById('regions');
+  if (records.length === 0) {
+    root.innerHTML = `
+      <div class="banner info">
+        La table est vide. Importer la liste initiale proposée (25 hubs) ?
+        <button class="gold" style="margin-left:10px;" onclick="seed()">Importer les 25 hubs</button>
+      </div>`;
+    return;
+  }
+  root.innerHTML = REGIONS.map((reg, i) => {
+    const rows = records
+      .filter(r => (r.fields['Région'] || '') === reg.name)
+      .sort((a, b) => (a.fields['Code postal'] || '').localeCompare(b.fields['Code postal'] || ''));
+    const body = rows.map(r => {
+      const f = r.fields;
+      const st = f['Statut'] || 'Proposé';
+      const cls = st === 'Validé' ? 'valide' : st === 'Rejeté' ? 'rejete' : 'propose';
+      return `<tr>
+        <td><strong>${esc(f['Hub'])}</strong>
+          <div class="meta">${f['Ajouté par'] ? 'par ' + esc(f['Ajouté par']) : ''}</div></td>
+        <td class="pc">${esc(f['Code postal'])}</td>
+        <td class="why">${esc(f['Pourquoi'])}
+          ${f['Commentaire'] ? `<div class="meta">💬 ${esc(f['Commentaire'])}</div>` : ''}</td>
+        <td><span class="pill ${cls}">${esc(st)}</span></td>
+        <td class="actions">
+          ${st !== 'Validé' ? `<button class="ok" onclick="setStatus('${r.id}','Validé')">✓ Valider</button>` : ''}
+          ${st !== 'Rejeté' ? `<button class="ko" onclick="setStatus('${r.id}','Rejeté')">✗</button>` : ''}
+          <button class="ghost" onclick="comment('${r.id}')">💬</button>
+        </td>
+      </tr>`;
+    }).join('');
+    return `<section class="region">
+      <div class="region-head">
+        <h2>${esc(reg.name)}</h2>
+        <span class="range">CP ${esc(reg.range)}</span>
+        <button class="gold" onclick="toggleForm(${i})">+ Ajouter un hub</button>
+      </div>
+      <div class="addform" id="form-${i}">
+        <div class="row">
+          <input class="hub" id="hub-${i}" placeholder="Ville / zoning (ex: Seraing)">
+          <input class="cp" id="cp-${i}" placeholder="CP (ex: 4100)" maxlength="4">
+        </div>
+        <div class="row"><textarea id="why-${i}" placeholder="Pourquoi ce hub ? (zoning, industrie, couverture…)"></textarea></div>
+        <button class="gold" onclick="addHub(${i})">Enregistrer</button>
+        <button class="ghost" onclick="toggleForm(${i})">Annuler</button>
+      </div>
+      <table>
+        <thead><tr><th>Hub</th><th>CP</th><th>Pourquoi</th><th>Statut</th><th></th></tr></thead>
+        <tbody>${body || '<tr><td colspan="5" style="color:#9a958a;">Aucun hub — ajoute le premier !</td></tr>'}</tbody>
+      </table>
+    </section>`;
+  }).join('');
+}
+
+function toggleForm(i) {
+  document.getElementById('form-' + i).classList.toggle('open');
+}
+
+async function addHub(i) {
+  const author = requireAuthor(); if (!author) return;
+  const hub = document.getElementById('hub-' + i).value.trim();
+  const cp = document.getElementById('cp-' + i).value.trim();
+  const why = document.getElementById('why-' + i).value.trim();
+  if (!hub || !/^\d{4}$/.test(cp)) { alert('Hub + code postal à 4 chiffres requis.'); return; }
+  await safe(() => api('', {
+    method: 'POST',
+    body: JSON.stringify({ records: [{ fields: {
+      'Hub': hub, 'Code postal': cp, 'Région': REGIONS[i].name,
+      'Pourquoi': why, 'Statut': 'Proposé', 'Ajouté par': author,
+    }}], typecast: true }),
+  }));
+}
+
+async function setStatus(id, statut) {
+  const author = requireAuthor(); if (!author) return;
+  await safe(() => api('', {
+    method: 'PATCH',
+    body: JSON.stringify({ records: [{ id, fields: {
+      'Statut': statut,
+      'Commentaire': appendNote(id, `${statut} par ${author}`),
+    }}], typecast: true }),
+  }));
+}
+
+async function comment(id) {
+  const author = requireAuthor(); if (!author) return;
+  const txt = prompt('Ton commentaire :');
+  if (!txt) return;
+  await safe(() => api('', {
+    method: 'PATCH',
+    body: JSON.stringify({ records: [{ id, fields: {
+      'Commentaire': appendNote(id, `${author}: ${txt}`),
+    }}], typecast: true }),
+  }));
+}
+
+function appendNote(id, line) {
+  const rec = records.find(r => r.id === id);
+  const prev = (rec && rec.fields['Commentaire']) || '';
+  return prev ? prev + '\n' + line : line;
+}
+
+async function seed() {
+  const author = requireAuthor(); if (!author) return;
+  const recs = SEED.map(([region, hub, cp, why]) => ({ fields: {
+    'Hub': hub, 'Code postal': cp, 'Région': region,
+    'Pourquoi': why, 'Statut': 'Proposé', 'Ajouté par': 'Claude (proposition)',
+  }}));
+  await safe(async () => {
+    for (let i = 0; i < recs.length; i += 10) {
+      await api('', { method: 'POST', body: JSON.stringify({ records: recs.slice(i, i + 10), typecast: true }) });
+    }
+  });
+}
+
+async function safe(fn) {
+  try {
+    banner('');
+    await fn();
+    await loadAll();
+    render();
+  } catch (e) {
+    if (e.message === 'AUTH') { logout(); return; }
+    banner('Erreur : ' + esc(e.message) +
+      '<br>Si la table « Prospection Hubs » n\'existe pas encore, préviens Diego.', 'err');
+  }
+}
+
+async function boot() {
+  if (!getPat()) {
+    document.getElementById('gate').style.display = 'block';
+    document.getElementById('app').style.display = 'none';
+    return;
+  }
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('author').value = localStorage.getItem(AUTHOR_KEY) || '';
+  await safe(async () => {});
+}
+
+document.getElementById('pat-input') && document.getElementById('pat-input')
+  .addEventListener('keydown', e => { if (e.key === 'Enter') savePat(); });
+boot();
+</script>
+</body>
+</html>

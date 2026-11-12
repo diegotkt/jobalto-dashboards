@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jobalto-cloture",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": { "directory": "./public", "run_worker_first": true, "binding": "ASSETS" },
+  "vars": {
+    "ACCESS_TEAM_DOMAIN": "https://jobalto.cloudflareaccess.com",
+    "ACCESS_AUD": "71bc0fa32e58e3d121663d74cbb6ebb08b8f80467a3dca74ac9136d2bce80241"
+  }
+  // Secret (jamais dans ce fichier) : wrangler secret put AIRTABLE_PAT
+}

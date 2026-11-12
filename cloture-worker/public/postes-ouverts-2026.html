@@ -1,0 +1,983 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Postes ouverts 2026</title>
+<style>
+  :root {
+    color-scheme: light;
+    --teal: #1f7a76;
+    --teal-dark: #145955;
+    --teal-light: #e6f3f2;
+    --gold: #c9a961;
+    --gold-light: #f5ecd6;
+    --bg: #fafaf9;
+    --card: #ffffff;
+    --border: #e5e5e3;
+    --text: #1c1c1b;
+    --text-muted: #6b6b68;
+    --shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.02);
+
+    --st-attr: #6b7280; --st-attr-bg: #f3f4f6;
+    --st-cours: #b45309; --st-cours-bg: #fef3c7;
+    --st-trouve: #0e7490; --st-trouve-bg: #cffafe;
+    --st-envoye: #1d4ed8; --st-envoye-bg: #dbeafe;
+    --st-quest: #7c3aed; --st-quest-bg: #ede9fe;
+    --st-bloque: #b91c1c; --st-bloque-bg: #fee2e2;
+    --st-clos: #166534; --st-clos-bg: #dcfce7;
+
+    --owner-diego: #1d4ed8; --owner-diego-bg: #dbeafe;
+    --owner-palof: #0d9488; --owner-palof-bg: #ccfbf1;
+    --owner-compta: #7c3aed; --owner-compta-bg: #ede9fe;
+    --owner-none: #6b7280; --owner-none-bg: #f3f4f6;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.45;
+  }
+
+  .header {
+    background: linear-gradient(135deg, var(--teal) 0%, var(--teal-dark) 100%);
+    color: white; padding: 18px 24px; border-bottom: 4px solid var(--gold);
+  }
+  .header-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .header h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -.01em; }
+  .header .sub { font-size: 12px; opacity: .85; margin-top: 4px; }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+  .cycle-switch {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.25);
+    border-radius: 999px; padding: 3px;
+  }
+  .cycle-pill {
+    padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600;
+    color: rgba(255,255,255,.7); text-decoration: none; transition: all .15s;
+  }
+  .cycle-pill:hover { color: white; }
+  .cycle-pill.active { background: white; color: var(--teal-dark); }
+  .header-btn {
+    padding: 8px 14px; background: rgba(255,255,255,.18); color: white;
+    border: 1px solid rgba(255,255,255,.3); border-radius: 6px;
+    font-size: 13px; cursor: pointer; font-weight: 500;
+  }
+  .header-btn:hover { background: rgba(255,255,255,.28); }
+
+  .container { max-width: 1280px; margin: 0 auto; padding: 16px 20px 32px; }
+
+  .stats-row { display: grid; grid-template-columns: minmax(120px, 0.8fr) repeat(5, 1fr); gap: 8px; margin-bottom: 8px; align-items: stretch; }
+  .stats-row.compact { margin-bottom: 14px; }
+  .stats-label {
+    display: flex; align-items: center; padding: 0 10px;
+    font-size: 11.5px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .stat {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; box-shadow: var(--shadow); cursor: pointer;
+    transition: transform .08s ease, box-shadow .15s ease;
+  }
+  .stat:hover { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+  .stat.active { border-color: var(--teal); background: var(--teal-light); }
+  .stat .label { font-size: 10.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+  .stat .value { font-size: 19px; font-weight: 600; margin-top: 2px; }
+  .stat.attr .value { color: var(--st-attr); }
+  .stat.cours .value { color: var(--st-cours); }
+  .stat.bloque .value { color: var(--st-bloque); }
+  .stat.clos .value { color: var(--st-clos); }
+  .stat.total .value { color: var(--teal); }
+
+  .toolbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 12px; box-shadow: var(--shadow);
+  }
+  .toolbar label { font-size: 12px; color: var(--text-muted); }
+  .toolbar select, .toolbar input[type=text] {
+    font-size: 13px; padding: 5px 8px; border: 1px solid var(--border);
+    border-radius: 6px; background: white; color: var(--text);
+  }
+  .toolbar input[type=text] { min-width: 180px; }
+  .switch { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .switch input { accent-color: var(--teal); }
+
+  .tabs {
+    display: flex; gap: 4px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 4px; margin-bottom: 14px; overflow-x: auto;
+  }
+  .tab {
+    flex: 1 1 auto; min-width: 120px; padding: 8px 12px; border: 0; background: transparent;
+    border-radius: 6px; cursor: pointer; font-size: 13px; color: var(--text-muted);
+    font-weight: 500; transition: background .12s, color .12s; white-space: nowrap;
+  }
+  .tab .count { display: inline-block; min-width: 20px; padding: 1px 6px; margin-left: 4px;
+    background: var(--bg); color: var(--text-muted); border-radius: 10px; font-size: 11px; font-weight: 500; }
+  .tab.active { background: var(--teal); color: white; }
+  .tab.active .count { background: rgba(255,255,255,.22); color: white; }
+  .tab:not(.active):hover { background: var(--bg); color: var(--text); }
+
+  .group { margin-bottom: 18px; }
+  .group-header {
+    font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: .05em; padding: 6px 4px; margin-bottom: 4px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .group-header .group-count { color: var(--teal); }
+
+  .row {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 6px; box-shadow: var(--shadow);
+    display: grid; grid-template-columns: 1fr auto auto auto auto auto; gap: 10px; align-items: center;
+    transition: opacity .15s;
+  }
+  .row.is-clos { opacity: .55; }
+  .row .main { min-width: 0; }
+  .row .item-name { font-weight: 600; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; }
+  .row .item-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px;
+    display: flex; gap: 10px; flex-wrap: wrap; }
+  .row .item-meta .amount { font-weight: 500; color: var(--text); }
+  .row .problem { font-size: 12px; color: var(--text-muted); margin-top: 4px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .row .badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+  .badge { font-size: 10.5px; padding: 1px 7px; border-radius: 999px; background: var(--bg); color: var(--text-muted); }
+  .badge.has-discussion { background: var(--st-quest-bg); color: var(--st-quest); font-weight: 500; }
+  .badge.has-attachments { background: var(--gold-light); color: #8a6d2a; font-weight: 500; }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 500;
+    cursor: pointer; border: 1px solid transparent; white-space: nowrap;
+    transition: filter .12s;
+  }
+  .pill:hover { filter: brightness(.96); }
+  .pill .arrow { font-size: 9px; opacity: .55; }
+  .pill.st-attr { background: var(--st-attr-bg); color: var(--st-attr); }
+  .pill.st-cours { background: var(--st-cours-bg); color: var(--st-cours); }
+  .pill.st-trouve { background: var(--st-trouve-bg); color: var(--st-trouve); }
+  .pill.st-envoye { background: var(--st-envoye-bg); color: var(--st-envoye); }
+  .pill.st-quest { background: var(--st-quest-bg); color: var(--st-quest); }
+  .pill.st-bloque { background: var(--st-bloque-bg); color: var(--st-bloque); }
+  .pill.st-clos { background: var(--st-clos-bg); color: var(--st-clos); }
+  .pill.ow-diego { background: var(--owner-diego-bg); color: var(--owner-diego); }
+  .pill.ow-palof { background: var(--owner-palof-bg); color: var(--owner-palof); }
+  .pill.ow-compta { background: var(--owner-compta-bg); color: var(--owner-compta); }
+  .pill.ow-none { background: var(--owner-none-bg); color: var(--owner-none); }
+
+  .link-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 600;
+    background: var(--gold-light); color: #8a6d2a; border: 1px solid #e3d4a8;
+    text-decoration: none; cursor: pointer; white-space: nowrap;
+  }
+  .link-btn.gmail { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+  .link-btn.drive { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
+  .link-btn.empty {
+    background: transparent; color: var(--text-muted); border: 1px dashed var(--border);
+    font-weight: 400; font-style: italic;
+  }
+  .link-btn:hover { filter: brightness(.95); }
+
+  .menu {
+    position: absolute; z-index: 50; background: white; border: 1px solid var(--border);
+    border-radius: 8px; padding: 4px; min-width: 170px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.12);
+  }
+  .menu button {
+    display: block; width: 100%; text-align: left; padding: 7px 10px; font-size: 12.5px;
+    border: 0; background: transparent; cursor: pointer; border-radius: 5px; color: var(--text);
+  }
+  .menu button:hover { background: var(--bg); }
+  .menu button .mi-pill { display: inline-block; padding: 2px 7px; border-radius: 999px; font-size: 11px; margin-right: 6px; }
+
+  .expand-btn {
+    border: 0; background: transparent; cursor: pointer; padding: 4px 6px; color: var(--text-muted);
+    font-size: 12px; border-radius: 4px;
+  }
+  .expand-btn:hover { background: var(--bg); }
+
+  .details {
+    grid-column: 1 / -1; background: var(--bg); border-radius: 6px; padding: 12px; margin-top: 8px;
+    font-size: 12.5px; display: flex; flex-direction: column; gap: 12px;
+  }
+  .details-block { background: white; border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; }
+  .details-block .label {
+    font-size: 11px; color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: .04em; margin-bottom: 6px; font-weight: 600;
+  }
+  .details .value { white-space: pre-wrap; }
+  .details textarea, .details input[type=url] {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border);
+    border-radius: 6px; font-family: inherit; font-size: 12.5px;
+    background: white; box-sizing: border-box;
+  }
+  .details textarea { min-height: 60px; resize: vertical; }
+  .details input[type=url] { font-size: 12px; color: #1d4ed8; }
+  .save-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+  .save-btn {
+    padding: 7px 14px; background: var(--teal); color: white; border: 0; border-radius: 6px;
+    font-size: 12px; cursor: pointer; font-weight: 500;
+  }
+  .save-btn:hover { background: var(--teal-dark); }
+  .save-btn:disabled { background: var(--text-muted); cursor: default; }
+  .save-btn.secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+  .save-btn.secondary:hover { background: var(--card); }
+
+  /* Discussions thread */
+  .discussions-thread { margin-bottom: 10px; max-height: 280px; overflow-y: auto; padding-right: 4px; }
+  .discussion-msg {
+    background: var(--bg); border-left: 3px solid var(--teal);
+    border-radius: 4px; padding: 6px 10px; margin-bottom: 6px; font-size: 12.5px;
+  }
+  .discussion-msg.virginie { border-left-color: var(--owner-compta); }
+  .discussion-msg.diego { border-left-color: var(--owner-diego); }
+  .discussion-msg.palof { border-left-color: var(--owner-palof); }
+  .discussion-msg .meta { font-size: 10.5px; color: var(--text-muted); margin-bottom: 2px; font-weight: 600; }
+  .discussion-msg .body { white-space: pre-wrap; }
+  .discussion-empty { color: var(--text-muted); font-style: italic; font-size: 12px; padding: 8px 0; }
+  .discussion-input-row { display: flex; gap: 6px; align-items: stretch; }
+  .discussion-input-row textarea { flex: 1; min-height: 50px; }
+  .discussion-input-row select {
+    font-size: 12px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: white;
+  }
+
+  /* Attachments */
+  .attachments-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .attachment-item {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--gold-light); color: #8a6d2a; padding: 6px 10px;
+    border-radius: 6px; text-decoration: none; font-size: 12px; border: 1px solid #e3d4a8;
+  }
+  .attachment-item img {
+    width: 28px; height: 28px; object-fit: cover; border-radius: 4px;
+  }
+  .attachment-item:hover { filter: brightness(.96); }
+  .attachment-empty { color: var(--text-muted); font-style: italic; font-size: 12px; }
+
+  .empty {
+    text-align: center; padding: 36px 16px; color: var(--text-muted);
+    background: var(--card); border: 1px dashed var(--border); border-radius: 8px;
+  }
+  .loading { text-align: center; padding: 60px 16px; color: var(--text-muted); }
+  .error {
+    background: var(--st-bloque-bg); color: var(--st-bloque); padding: 10px 14px;
+    border-radius: 8px; margin-bottom: 12px; font-size: 13px;
+  }
+
+  .toast {
+    position: fixed; bottom: 16px; right: 16px; background: var(--teal); color: white;
+    padding: 8px 14px; border-radius: 6px; font-size: 13px; box-shadow: 0 4px 14px rgba(0,0,0,.18);
+    opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 100;
+  }
+  .toast.show { opacity: 1; }
+  .toast.error { background: #b91c1c; }
+
+  @media (max-width: 760px) {
+    .row { grid-template-columns: 1fr auto; row-gap: 8px; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .stats-label { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-row">
+    <div>
+      <h1>Postes ouverts 2026</h1>
+      <div class="sub">Suivi collaboratif Diego &amp; Palof — postes ouverts clients &amp; fournisseurs</div>
+    </div>
+    <div class="header-actions">
+      <div class="cycle-switch">
+        <a href="2026-05-04-cloture-2025.html" class="cycle-pill ">2025 Clôture</a>
+        <a href="postes-ouverts-2026.html" class="cycle-pill active">2026 Postes ouverts</a>
+      </div>
+      <button id="refresh-btn" class="header-btn">↻ Recharger</button>
+    </div>
+  </div>
+</div>
+<div class="container">
+  <div id="root"><div class="loading">Chargement des postes ouverts…</div></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ————— CYCLE config (différent par fichier) —————
+  const CYCLE = '2026';   // '2025' ou '2026'
+
+  // ————— Airtable —————
+  // Token Airtable côté serveur (secret Worker AIRTABLE_PAT) — rien dans le navigateur.
+
+  const BASE_ID = 'appglh7wfz1QDn8N9';
+  const TABLE_ID = 'tblna1Xzs6Np66ROd';
+  const AIRTABLE_BASE_URL = '/api/records';
+
+  const F = {
+    ITEM: 'fldcSJwvAZtCwUUK0',
+    TYPE: 'fldMlvU6ESB1c202m',
+    NOM: 'fldfkDQuiXo0GPgDl',
+    CAT: 'fldow5LqIkU3iWVrQ',
+    MONTANT: 'fldpI6JBOXUMe3mJI',
+    DATE: 'fld2oU3Cl1lq13642',
+    PROBLEME: 'fldEOcOXx9xYzAE0U',
+    STATUT: 'fldaE4qvJum78fVFS',
+    OWNER: 'fldV0VqBuT1LUBdBX',
+    NOTES: 'fldHiX4kzgZGnyNEx',
+    MAJ: 'fldXlD9MKqqkFftGE',
+    LIEN: 'fld2qB50smVNwCgDZ',
+    CYCLE: 'fldF3f3YHjwZ7oOxj',
+    DISCUSSIONS: 'fldK44SYKtdpEbwy0',
+    ATTACHMENTS: 'fldGOhX6lupzV1kV2',
+    COMPTE_ATTENTE: 'fldy3avqATcMH6fhf'
+  };
+
+  const STATUTS = ['A traiter', 'En cours', 'Document trouve', 'Envoye compta', 'Question posee', 'Bloque', 'Clos'];
+  const STATUT_LABEL = {
+    'A traiter': 'À traiter', 'En cours': 'En cours', 'Document trouve': 'Document trouvé',
+    'Envoye compta': 'Envoyé compta', 'Question posee': 'Question posée', 'Bloque': 'Bloqué', 'Clos': 'Clos'
+  };
+  const STATUT_CLASS = {
+    'A traiter': 'st-attr', 'En cours': 'st-cours', 'Document trouve': 'st-trouve',
+    'Envoye compta': 'st-envoye', 'Question posee': 'st-quest', 'Bloque': 'st-bloque', 'Clos': 'st-clos'
+  };
+  const OWNERS = ['Non assigne', 'Diego', 'Palof', 'Comptable'];
+  const OWNER_LABEL = { 'Non assigne': 'Non assigné', 'Diego': 'Diego', 'Palof': 'Palof', 'Comptable': 'Comptable' };
+  const OWNER_CLASS = { 'Non assigne': 'ow-none', 'Diego': 'ow-diego', 'Palof': 'ow-palof', 'Comptable': 'ow-compta' };
+
+  // 6 onglets
+  const TABS = [
+    { key: 'clients', label: 'Clients ouverts',
+      filter: r => r.type === 'Client' && !r.compteAttente,
+      groupBy: r => r.cat || 'Autres' },
+    { key: 'fact_email', label: 'Fournisseurs — Factures email',
+      filter: r => r.cat === 'Fournisseur - Facture email (recurrent)' && !r.compteAttente,
+      groupBy: () => null },
+    { key: 'tickets', label: 'Fournisseurs — Tickets/Scans',
+      filter: r => r.cat === 'Fournisseur - Ticket/Scan (ponctuel)' && !r.compteAttente,
+      groupBy: () => null },
+    { key: 'portails', label: 'Portails',
+      filter: r => r.cat === 'Fournisseur - Portail en ligne' && !r.compteAttente,
+      groupBy: () => null },
+    { key: 'litiges', label: 'Litiges & Discussions',
+      filter: r => !r.compteAttente && (r.cat === 'Fournisseur - Question/Litige' || (r.discussions && r.discussions.trim().length > 0)),
+      groupBy: r => r.cat || 'Autres' },
+    { key: 'compte_attente', label: 'Compte d\'attente',
+      filter: r => r.compteAttente === true,
+      groupBy: r => r.nom || 'Autres' }
+  ];
+
+  const IN_PROGRESS_STATUSES = ['En cours', 'Document trouve', 'Envoye compta', 'Question posee'];
+
+  const state = {
+    records: [],
+    loading: true,
+    error: null,
+    activeTab: localStorage.getItem('cloture.tab.' + CYCLE) || 'clients',
+    hideClosedRaw: localStorage.getItem('cloture.hideClosed.' + CYCLE),
+    statusFilter: '',
+    typeFilter: '',
+    statusGroup: '',  // '_in_progress' pour grouper plusieurs statuts
+    crossTabActive: false,  // quand true, ignore le filtre onglet (vue cross-tab)
+    ownerFilter: localStorage.getItem('cloture.ownerFilter.' + CYCLE) || '',
+    search: '',
+    expanded: new Set(),
+    pendingMenu: null,
+    discussionAuthor: localStorage.getItem('cloture.discussionAuthor') || 'Diego'
+  };
+  state.hideClosed = state.hideClosedRaw === null ? true : state.hideClosedRaw === 'true';
+
+  function val(rec, fieldId) {
+    const v = rec.fields ? rec.fields[fieldId] : undefined;
+    if (v === undefined || v === null) return null;
+    if (typeof v === 'object' && !Array.isArray(v) && 'name' in v) return v.name;
+    return v;
+  }
+
+  function flatten(rec) {
+    return {
+      id: rec.id,
+      item: val(rec, F.ITEM) || '',
+      type: val(rec, F.TYPE),
+      nom: val(rec, F.NOM) || '',
+      cat: val(rec, F.CAT),
+      montant: val(rec, F.MONTANT),
+      date: val(rec, F.DATE),
+      probleme: val(rec, F.PROBLEME) || '',
+      statut: val(rec, F.STATUT) || 'A traiter',
+      owner: val(rec, F.OWNER) || 'Non assigne',
+      notes: val(rec, F.NOTES) || '',
+      lien: val(rec, F.LIEN) || '',
+      maj: val(rec, F.MAJ),
+      cycle: val(rec, F.CYCLE) || '2025',
+      discussions: val(rec, F.DISCUSSIONS) || '',
+      attachments: val(rec, F.ATTACHMENTS) || [],
+      compteAttente: val(rec, F.COMPTE_ATTENTE) === true
+    };
+  }
+
+  async function airtableFetch(url, opts) {
+    const headers = Object.assign({ 'Content-Type': 'application/json' }, opts && opts.headers || {});
+    const res = await fetch(url, Object.assign({ credentials: 'same-origin' }, opts, { headers }));
+    if (res.status === 401 || res.status === 403) throw new Error('Session expirée — recharge la page pour te reconnecter.');
+    if (!res.ok) {
+      let msg = `Airtable ${res.status}`;
+      try { const e = await res.json(); msg += ' — ' + (e.error && e.error.message || JSON.stringify(e)); } catch(_) {}
+      throw new Error(msg);
+    }
+    return await res.json();
+  }
+
+  async function fetchAll() {
+    let all = []; let offset = null;
+    do {
+      const params = new URLSearchParams({ pageSize: '100', returnFieldsByFieldId: 'true' });
+      if (offset) params.set('offset', offset);
+      const data = await airtableFetch(`${AIRTABLE_BASE_URL}?${params}`);
+      if (!data || !data.records) throw new Error('Réponse Airtable inattendue');
+      all = all.concat(data.records);
+      offset = data.offset || null;
+    } while (offset);
+    // Filter by current cycle
+    return all.map(flatten).filter(r => r.cycle === CYCLE);
+  }
+
+  async function updateRecord(recordId, fields) {
+    const url = AIRTABLE_BASE_URL;
+    return await airtableFetch(url, {
+      method: 'PATCH',
+      body: JSON.stringify({ records: [{ id: recordId, fields }] })
+    });
+  }
+
+  async function updateField(recordId, fieldId, value) {
+    const fields = {};
+    fields[fieldId] = value;
+    fields[F.MAJ] = new Date().toISOString();
+    return await updateRecord(recordId, fields);
+  }
+
+  function fmtMontant(m) {
+    if (m === null || m === undefined || m === '') return '';
+    return new Intl.NumberFormat('fr-BE', { style: 'currency', currency: 'EUR' }).format(m);
+  }
+  function fmtDate(d) {
+    if (!d) return '';
+    const [y, m, day] = d.split('-');
+    return `${day}/${m}/${y.slice(2)}`;
+  }
+  function escape(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function showToast(msg, isError) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => { t.className = 'toast' + (isError ? ' error' : ''); }, 2200);
+  }
+
+  function applyFilters(records, tab) {
+    return records.filter(r => {
+      // En mode cross-tab, ignorer le filtre onglet
+      if (!state.crossTabActive && !tab.filter(r)) return false;
+      // En mode cross-tab CompteAttente, on inclut les CA records
+      if (state.crossTabActive && state.typeFilter === 'CompteAttente') {
+        if (!r.compteAttente) return false;
+      } else if (state.crossTabActive) {
+        // Cross-tab pour Fournisseur/Client : exclure CA
+        if (r.compteAttente) return false;
+      }
+      if (state.hideClosed && r.statut === 'Clos') return false;
+      if (state.typeFilter && state.typeFilter !== 'CompteAttente' && r.type !== state.typeFilter) return false;
+      if (state.statusFilter && r.statut !== state.statusFilter) return false;
+      if (state.statusGroup === '_in_progress' && !IN_PROGRESS_STATUSES.includes(r.statut)) return false;
+      if (state.ownerFilter && r.owner !== state.ownerFilter) return false;
+      if (state.search) {
+        const q = state.search.toLowerCase();
+        const hay = (r.nom + ' ' + r.probleme + ' ' + r.notes + ' ' + r.discussions + ' ' + r.item).toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+
+  function statsForType(records, type, includeCA) {
+    const stats = { total: 0, attr: 0, cours: 0, bloque: 0, clos: 0 };
+    records.filter(r => {
+      if (type === 'CompteAttente') return r.compteAttente === true;
+      return r.type === type && !r.compteAttente;
+    }).forEach(r => {
+      stats.total++;
+      if (r.statut === 'A traiter') stats.attr++;
+      else if (r.statut === 'En cours' || r.statut === 'Document trouve' || r.statut === 'Envoye compta' || r.statut === 'Question posee') stats.cours++;
+      else if (r.statut === 'Bloque') stats.bloque++;
+      else if (r.statut === 'Clos') stats.clos++;
+    });
+    return stats;
+  }
+
+  function statsRowHtml(label, type, stats) {
+    function isActive(statut) {
+      return state.crossTabActive && state.typeFilter === type && state.statusFilter === statut ? 'active' : '';
+    }
+    const totalActive = state.crossTabActive && state.typeFilter === type && state.statusFilter === '' && state.statusGroup === '' ? 'active' : '';
+    const coursActive = state.crossTabActive && state.typeFilter === type && state.statusGroup === '_in_progress' ? 'active' : '';
+    return `<div class="stats-row">
+      <div class="stats-label">${label}</div>
+      <div class="stat total ${totalActive}" data-type="${type}" data-statut=""><div class="label">Total</div><div class="value">${stats.total}</div></div>
+      <div class="stat attr ${isActive('A traiter')}" data-type="${type}" data-statut="A traiter"><div class="label">À traiter</div><div class="value">${stats.attr}</div></div>
+      <div class="stat cours ${coursActive}" data-type="${type}" data-statut="_in_progress"><div class="label">En cours</div><div class="value">${stats.cours}</div></div>
+      <div class="stat bloque ${isActive('Bloque')}" data-type="${type}" data-statut="Bloque"><div class="label">Bloqué</div><div class="value">${stats.bloque}</div></div>
+      <div class="stat clos ${isActive('Clos')}" data-type="${type}" data-statut="Clos"><div class="label">Clos</div><div class="value">${stats.clos}</div></div>
+    </div>`;
+  }
+
+  function render() {
+    const root = document.getElementById('root');
+    if (state.loading) { root.innerHTML = '<div class="loading">Chargement des postes ouverts…</div>'; return; }
+    if (state.error) { root.innerHTML = `<div class="error">Erreur : ${escape(state.error)}</div>`; return; }
+
+    const fournStats = statsForType(state.records, 'Fournisseur');
+    const clientStats = statsForType(state.records, 'Client');
+    const caStats = statsForType(state.records, 'CompteAttente');
+
+    let html = '';
+    html += statsRowHtml('Fournisseurs', 'Fournisseur', fournStats);
+    html += statsRowHtml('Clients', 'Client', clientStats);
+    if (caStats.total > 0) html += statsRowHtml('Compte d\'attente', 'CompteAttente', caStats);
+
+    html += `<div class="toolbar">
+      <input type="text" id="search" placeholder="Recherche (nom, problème, notes, discussions)…" value="${escape(state.search)}">
+      <label class="switch"><input type="checkbox" id="hideClosed" ${state.hideClosed ? 'checked' : ''}>Masquer les clos</label>
+      <label>Statut <select id="statusFilter">
+        <option value="">Tous</option>
+        ${STATUTS.map(s => `<option value="${s}" ${state.statusFilter === s ? 'selected' : ''}>${STATUT_LABEL[s]}</option>`).join('')}
+      </select></label>
+      <label>Owner <select id="ownerFilter">
+        <option value="">Tous</option>
+        ${OWNERS.map(o => `<option value="${o}" ${state.ownerFilter === o ? 'selected' : ''}>${OWNER_LABEL[o]}</option>`).join('')}
+      </select></label>
+    </div>`;
+
+    html += `<div class="tabs">`;
+    TABS.forEach(t => {
+      const tabRecs = state.records.filter(r => t.filter(r) && (!state.hideClosed || r.statut !== 'Clos'));
+      const tabActive = !state.crossTabActive && state.activeTab === t.key;
+      html += `<button class="tab ${tabActive ? 'active' : ''}" data-tab="${t.key}">${t.label}<span class="count">${tabRecs.length}</span></button>`;
+    });
+    html += `</div>`;
+
+    const activeTabDef = TABS.find(t => t.key === state.activeTab) || TABS[0];
+
+    // Bannière cross-tab
+    if (state.crossTabActive) {
+      const typeLabel = state.typeFilter === 'CompteAttente' ? "Compte d'attente" : state.typeFilter === 'Fournisseur' ? "Fournisseurs" : "Clients";
+      let statusLabel = '';
+      if (state.statusGroup === '_in_progress') statusLabel = " — En cours (toutes étapes intermédiaires)";
+      else if (state.statusFilter) statusLabel = ` — ${STATUT_LABEL[state.statusFilter] || state.statusFilter}`;
+      else statusLabel = ' — tous statuts';
+      html += `<div style="background: var(--teal-light); border: 1px solid var(--teal); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <div><strong style="color: var(--teal-dark);">Vue cross-tab</strong> · ${typeLabel}${statusLabel}</div>
+        <button id="exit-cross-tab" style="padding: 5px 12px; background: var(--teal); color: white; border: 0; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 500;">↩ Retour à l'onglet ${activeTabDef.label.replace('Fournisseurs — ', '')}</button>
+      </div>`;
+    }
+
+    const visible = applyFilters(state.records, activeTabDef);
+
+    if (visible.length === 0) {
+      html += `<div class="empty">Aucune ligne ne correspond aux filtres.</div>`;
+    } else if (state.crossTabActive) {
+      // En mode cross-tab : grouper par catégorie (cat ou Compte d'attente)
+      const groups = {};
+      visible.forEach(r => {
+        const g = r.compteAttente ? "Compte d'attente" : (r.cat || 'Autres');
+        (groups[g] = groups[g] || []).push(r);
+      });
+      Object.keys(groups).sort().forEach(g => {
+        html += `<div class="group">
+          <div class="group-header"><span>${escape(prettyCat(g))}</span><span class="group-count">${groups[g].length}</span></div>
+          ${groups[g].map(rowHtml).join('')}
+        </div>`;
+      });
+    } else if (visible.length > 0 && activeTabDef.groupBy(visible[0])) {
+      const groups = {};
+      visible.forEach(r => { const g = activeTabDef.groupBy(r) || 'Autres'; (groups[g] = groups[g] || []).push(r); });
+      Object.keys(groups).sort().forEach(g => {
+        html += `<div class="group">
+          <div class="group-header"><span>${escape(prettyCat(g))}</span><span class="group-count">${groups[g].length}</span></div>
+          ${groups[g].map(rowHtml).join('')}
+        </div>`;
+      });
+    } else {
+      html += `<div class="group">${visible.map(rowHtml).join('')}</div>`;
+    }
+
+    root.innerHTML = html;
+    bindEvents();
+  }
+
+  function prettyCat(c) {
+    if (!c) return 'Autres';
+    return c.replace('Client - ', '').replace('Fournisseur - ', '');
+  }
+
+  function linkBtnHtml(r) {
+    if (!r.lien) return `<span class="link-btn empty">—</span>`;
+    const isGmail = /mail\.google\.com/i.test(r.lien);
+    const isDrive = /drive\.google\.com/i.test(r.lien);
+    const cls = isGmail ? 'gmail' : (isDrive ? 'drive' : 'portal');
+    const icon = isGmail ? '✉' : (isDrive ? '📁' : '↗');
+    const label = isGmail ? 'Gmail' : (isDrive ? 'Drive' : 'Lien');
+    return `<a class="link-btn ${cls}" href="${escape(r.lien)}" target="_blank" rel="noopener" title="${escape(r.lien)}"><span>${icon}</span> ${label}</a>`;
+  }
+
+  function rowBadgesHtml(r) {
+    const badges = [];
+    const discCount = r.discussions ? r.discussions.split('\n').filter(l => /^\[/.test(l)).length : 0;
+    if (discCount > 0) badges.push(`<span class="badge has-discussion">💬 ${discCount}</span>`);
+    if (r.attachments && r.attachments.length > 0) badges.push(`<span class="badge has-attachments">📎 ${r.attachments.length}</span>`);
+    return badges.length > 0 ? `<div class="badges">${badges.join('')}</div>` : '';
+  }
+
+  function rowHtml(r) {
+    const isClos = r.statut === 'Clos';
+    const expanded = state.expanded.has(r.id);
+    const meta = [];
+    if (r.montant) meta.push(`<span class="amount">${fmtMontant(r.montant)}</span>`);
+    if (r.date) meta.push(`<span>${fmtDate(r.date)}</span>`);
+    return `<div class="row ${isClos ? 'is-clos' : ''}" data-id="${r.id}">
+      <div class="main">
+        <div class="item-name">${escape(r.nom)}</div>
+        <div class="item-meta">${meta.join('')}</div>
+        ${!expanded ? `<div class="problem">${escape(r.probleme)}</div>` : ''}
+        ${!expanded ? rowBadgesHtml(r) : ''}
+      </div>
+      ${linkBtnHtml(r)}
+      <button class="pill ${STATUT_CLASS[r.statut]}" data-action="status" data-id="${r.id}">${escape(STATUT_LABEL[r.statut])} <span class="arrow">▾</span></button>
+      <button class="pill ${OWNER_CLASS[r.owner]}" data-action="owner" data-id="${r.id}">${escape(OWNER_LABEL[r.owner])} <span class="arrow">▾</span></button>
+      <span></span>
+      <button class="expand-btn" data-action="expand" data-id="${r.id}">${expanded ? '▴' : '▾'}</button>
+      ${expanded ? detailsHtml(r) : ''}
+    </div>`;
+  }
+
+  function parseDiscussion(text) {
+    // Parse "[Author YYYY-MM-DD HH:MM] body"
+    const lines = text.split(/\n(?=\[)/);
+    return lines.filter(l => l.trim()).map(line => {
+      const m = line.match(/^\[([^\s\]]+)(?:\s([^\]]+))?\]\s*([\s\S]*)$/);
+      if (m) return { author: m[1], date: m[2] || '', body: m[3].trim() };
+      return { author: '?', date: '', body: line.trim() };
+    });
+  }
+
+  function discussionsHtml(r) {
+    const messages = r.discussions ? parseDiscussion(r.discussions) : [];
+    let html = '<div class="discussions-thread">';
+    if (messages.length === 0) {
+      html += '<div class="discussion-empty">Aucune discussion. Posez une question, ajoutez un commentaire pour la comptable, etc.</div>';
+    } else {
+      messages.forEach(m => {
+        const cls = (m.author || '').toLowerCase();
+        html += `<div class="discussion-msg ${cls}">
+          <div class="meta">${escape(m.author)}${m.date ? ' · ' + escape(m.date) : ''}</div>
+          <div class="body">${escape(m.body)}</div>
+        </div>`;
+      });
+    }
+    html += '</div>';
+    html += `<div class="discussion-input-row">
+      <textarea data-id="${r.id}" class="disc-input" placeholder="Ajouter une question / un commentaire…"></textarea>
+      <select class="disc-author">
+        ${OWNERS.filter(o => o !== 'Non assigne').map(o => `<option value="${o}" ${state.discussionAuthor === o ? 'selected' : ''}>${OWNER_LABEL[o]}</option>`).join('')}
+        <option value="Virginie" ${state.discussionAuthor === 'Virginie' ? 'selected' : ''}>Virginie</option>
+      </select>
+    </div>
+    <div class="save-row"><button class="save-btn" data-action="add-disc" data-id="${r.id}">Envoyer commentaire</button></div>`;
+    return html;
+  }
+
+  function attachmentsHtml(r) {
+    if (!r.attachments || r.attachments.length === 0) {
+      return '<div class="attachment-empty">Aucune pièce jointe. Pour ajouter un screenshot, ouvrez la ligne dans Airtable (lien ci-dessous).</div>';
+    }
+    return `<div class="attachments-grid">${r.attachments.map(a => {
+      const isImg = (a.type || '').startsWith('image/');
+      const thumb = isImg && a.thumbnails && a.thumbnails.small ? a.thumbnails.small.url : (isImg ? a.url : '');
+      return `<a class="attachment-item" href="${escape(a.url)}" target="_blank" rel="noopener">
+        ${thumb ? `<img src="${escape(thumb)}" alt="">` : '<span>📎</span>'}
+        <span>${escape(a.filename || 'fichier')}</span>
+      </a>`;
+    }).join('')}</div>`;
+  }
+
+  function detailsHtml(r) {
+    const airtableRecordUrl = `https://airtable.com/${BASE_ID}/${TABLE_ID}/${r.id}`;
+    return `<div class="details">
+      <div class="details-block">
+        <div class="label">Problème (formulation comptable)</div>
+        <div class="value">${escape(r.probleme)}</div>
+      </div>
+      <div class="details-block">
+        <div class="label">Catégorie · Cycle · Dernière MAJ</div>
+        <div class="value">${escape(r.cat || '—')} · Cycle ${escape(r.cycle)}${r.maj ? ' · MAJ ' + escape(new Date(r.maj).toLocaleString('fr-BE')) : ''}</div>
+      </div>
+      <div class="details-block">
+        <div class="label">💬 Discussions</div>
+        ${discussionsHtml(r)}
+      </div>
+      <div class="details-block">
+        <div class="label">📎 Pièces jointes <a href="${airtableRecordUrl}" target="_blank" style="float:right; font-size:11px; font-weight:400; text-decoration:none; color:var(--text-muted);">Ouvrir dans Airtable ↗</a></div>
+        ${attachmentsHtml(r)}
+      </div>
+      <div class="details-block">
+        <div class="label">Lien (URL Gmail / Drive / portail)</div>
+        <input type="url" class="lien-input" data-id="${r.id}" placeholder="https://…" value="${escape(r.lien)}">
+        <div class="label" style="margin-top:10px">Notes (modifiables)</div>
+        <textarea data-id="${r.id}" class="notes-input">${escape(r.notes)}</textarea>
+        <div class="save-row">
+          <button class="save-btn secondary" data-action="open-airtable" data-id="${r.id}">Ouvrir dans Airtable ↗</button>
+          <button class="save-btn" data-action="save-details" data-id="${r.id}">Enregistrer Notes + Lien</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function closeMenu() { if (state.pendingMenu) { state.pendingMenu.remove(); state.pendingMenu = null; } }
+
+  function openStatusMenu(anchor, recId) {
+    closeMenu();
+    const rect = anchor.getBoundingClientRect();
+    const m = document.createElement('div');
+    m.className = 'menu';
+    m.style.top = (window.scrollY + rect.bottom + 4) + 'px';
+    m.style.left = (window.scrollX + rect.left) + 'px';
+    m.innerHTML = STATUTS.map(s => `<button data-status="${s}"><span class="mi-pill pill ${STATUT_CLASS[s]}">${STATUT_LABEL[s]}</span></button>`).join('');
+    m.addEventListener('click', e => {
+      const btn = e.target.closest('button[data-status]'); if (!btn) return;
+      const s = btn.getAttribute('data-status'); closeMenu();
+      changeField(recId, F.STATUT, s, 'statut');
+    });
+    document.body.appendChild(m); state.pendingMenu = m;
+  }
+
+  function openOwnerMenu(anchor, recId) {
+    closeMenu();
+    const rect = anchor.getBoundingClientRect();
+    const m = document.createElement('div');
+    m.className = 'menu';
+    m.style.top = (window.scrollY + rect.bottom + 4) + 'px';
+    m.style.left = (window.scrollX + rect.left) + 'px';
+    m.innerHTML = OWNERS.map(o => `<button data-owner="${o}"><span class="mi-pill pill ${OWNER_CLASS[o]}">${OWNER_LABEL[o]}</span></button>`).join('');
+    m.addEventListener('click', e => {
+      const btn = e.target.closest('button[data-owner]'); if (!btn) return;
+      const o = btn.getAttribute('data-owner'); closeMenu();
+      changeField(recId, F.OWNER, o, 'owner');
+    });
+    document.body.appendChild(m); state.pendingMenu = m;
+  }
+
+  async function changeField(recId, fieldId, value, localKey) {
+    const rec = state.records.find(x => x.id === recId);
+    if (!rec) return;
+    const oldVal = rec[localKey];
+    rec[localKey] = value; rec.maj = new Date().toISOString();
+    render();
+    try { await updateField(recId, fieldId, value); showToast(`✓ ${rec.nom} → ${value}`); }
+    catch (err) { rec[localKey] = oldVal; render(); showToast(`Erreur : ${err && err.message || err}`, true); }
+  }
+
+  async function saveDetails(recId, notes, lien) {
+    const rec = state.records.find(x => x.id === recId);
+    if (!rec) return;
+    const oldNotes = rec.notes, oldLien = rec.lien;
+    rec.notes = notes; rec.lien = lien; rec.maj = new Date().toISOString();
+    const fields = {};
+    fields[F.NOTES] = notes; fields[F.LIEN] = lien || ''; fields[F.MAJ] = rec.maj;
+    try { await updateRecord(recId, fields); showToast('✓ Enregistré'); }
+    catch (err) { rec.notes = oldNotes; rec.lien = oldLien; showToast(`Erreur : ${err && err.message || err}`, true); }
+  }
+
+  async function addDiscussion(recId, author, body) {
+    const rec = state.records.find(x => x.id === recId);
+    if (!rec) return;
+    const ts = new Date();
+    const tsStr = ts.toISOString().slice(0, 16).replace('T', ' ');
+    const newLine = `[${author} ${tsStr}] ${body.trim()}`;
+    const newDisc = rec.discussions ? rec.discussions.trim() + '\n' + newLine : newLine;
+    const oldDisc = rec.discussions;
+    rec.discussions = newDisc; rec.maj = ts.toISOString();
+    state.discussionAuthor = author;
+    localStorage.setItem('cloture.discussionAuthor', author);
+    render();
+    state.expanded.add(recId);
+    render();
+    try {
+      const fields = {};
+      fields[F.DISCUSSIONS] = newDisc;
+      fields[F.MAJ] = rec.maj;
+      await updateRecord(recId, fields);
+      showToast('✓ Commentaire ajouté');
+    } catch (err) {
+      rec.discussions = oldDisc; render();
+      showToast(`Erreur : ${err && err.message || err}`, true);
+    }
+  }
+
+  function bindEvents() {
+    const root = document.getElementById('root');
+    document.addEventListener('click', onDocClick, { once: true });
+
+    root.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => {
+      state.activeTab = b.getAttribute('data-tab');
+      localStorage.setItem('cloture.tab.' + CYCLE, state.activeTab);
+      // Sortir du mode cross-tab quand on clique un onglet
+      state.crossTabActive = false;
+      state.typeFilter = '';
+      state.statusFilter = '';
+      state.statusGroup = '';
+      render();
+    }));
+
+    root.querySelectorAll('.stat').forEach(s => s.addEventListener('click', () => {
+      const t = s.getAttribute('data-type');
+      const statut = s.getAttribute('data-statut');
+      const isCurrentlyActive = state.crossTabActive && state.typeFilter === t &&
+        ((statut === '_in_progress' && state.statusGroup === '_in_progress') ||
+         (statut !== '_in_progress' && state.statusFilter === statut));
+      if (isCurrentlyActive) {
+        // Toggle off : revenir au mode tab normal
+        state.crossTabActive = false;
+        state.typeFilter = '';
+        state.statusFilter = '';
+        state.statusGroup = '';
+      } else {
+        // Activer mode cross-tab avec ce filtre
+        state.crossTabActive = true;
+        state.typeFilter = t;
+        if (statut === '_in_progress') {
+          state.statusFilter = '';
+          state.statusGroup = '_in_progress';
+        } else {
+          state.statusFilter = statut;
+          state.statusGroup = '';
+        }
+      }
+      render();
+    }));
+
+    const exitCrossTabBtn = root.querySelector('#exit-cross-tab');
+    if (exitCrossTabBtn) exitCrossTabBtn.addEventListener('click', () => {
+      state.crossTabActive = false;
+      state.typeFilter = '';
+      state.statusFilter = '';
+      state.statusGroup = '';
+      render();
+    });
+
+    const sf = root.querySelector('#statusFilter');
+    if (sf) sf.addEventListener('change', e => { state.statusFilter = e.target.value; render(); });
+
+    const of = root.querySelector('#ownerFilter');
+    if (of) of.addEventListener('change', e => {
+      state.ownerFilter = e.target.value;
+      localStorage.setItem('cloture.ownerFilter.' + CYCLE, state.ownerFilter);
+      render();
+    });
+
+    const hc = root.querySelector('#hideClosed');
+    if (hc) hc.addEventListener('change', e => {
+      state.hideClosed = e.target.checked;
+      localStorage.setItem('cloture.hideClosed.' + CYCLE, state.hideClosed);
+      render();
+    });
+
+    const search = root.querySelector('#search');
+    if (search) search.addEventListener('input', e => {
+      state.search = e.target.value;
+      clearTimeout(window._searchTimeout);
+      window._searchTimeout = setTimeout(render, 150);
+    });
+
+    root.querySelectorAll('[data-action]').forEach(el => {
+      const action = el.getAttribute('data-action');
+      const id = el.getAttribute('data-id');
+      if (action === 'status') el.addEventListener('click', e => { e.stopPropagation(); openStatusMenu(el, id); });
+      else if (action === 'owner') el.addEventListener('click', e => { e.stopPropagation(); openOwnerMenu(el, id); });
+      else if (action === 'expand') el.addEventListener('click', e => {
+        e.stopPropagation();
+        if (state.expanded.has(id)) state.expanded.delete(id); else state.expanded.add(id);
+        render();
+      });
+      else if (action === 'save-details') el.addEventListener('click', async e => {
+        e.stopPropagation();
+        const ta = root.querySelector(`textarea.notes-input[data-id="${id}"]`);
+        const li = root.querySelector(`input.lien-input[data-id="${id}"]`);
+        if (!ta) return;
+        el.disabled = true; el.textContent = 'Enregistrement…';
+        await saveDetails(id, ta.value, li ? li.value.trim() : '');
+        render();
+      });
+      else if (action === 'add-disc') el.addEventListener('click', async e => {
+        e.stopPropagation();
+        const ta = root.querySelector(`textarea.disc-input[data-id="${id}"]`);
+        const sel = ta && ta.parentElement.querySelector('select.disc-author');
+        if (!ta || !ta.value.trim()) return;
+        el.disabled = true; el.textContent = 'Envoi…';
+        await addDiscussion(id, sel ? sel.value : 'Diego', ta.value);
+      });
+      else if (action === 'open-airtable') el.addEventListener('click', e => {
+        e.stopPropagation();
+        window.open(`https://airtable.com/${BASE_ID}/${TABLE_ID}/${id}`, '_blank');
+      });
+    });
+  }
+
+  function onDocClick(e) {
+    if (state.pendingMenu && !state.pendingMenu.contains(e.target)) closeMenu();
+    document.addEventListener('click', onDocClick, { once: true });
+  }
+
+  async function init(silent) {
+    try {
+      if (!silent) { state.loading = true; render(); }
+      const records = await fetchAll();
+      records.sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
+      // ponytail: re-check juste avant le render — l'utilisateur a pu commencer à taper pendant le fetch
+      if (silent && isBusy()) return;
+      state.records = records;
+      state.loading = false; state.error = null; render();
+    } catch (err) {
+      if (silent) return; // garde l'affichage actuel, on réessaie au prochain tick
+      state.loading = false;
+      state.error = err && err.message || String(err); render();
+    }
+  }
+
+  // Auto-refresh : jamais pendant une saisie, un menu ouvert ou onglet caché.
+  function isBusy() {
+    if (document.hidden || state.pendingMenu) return true;
+    const a = document.activeElement;
+    if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true;
+    return Array.from(document.querySelectorAll('#root textarea')).some(t => t.value !== t.defaultValue);
+  }
+  const AUTO_REFRESH_MS = 60000;
+  setInterval(() => { if (!isBusy()) init(true); }, AUTO_REFRESH_MS);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && !isBusy()) init(true); });
+
+  document.getElementById('refresh-btn').addEventListener('click', () => {
+    state.expanded = new Set(); init(); showToast('Rechargement…');
+  });
+
+  try { localStorage.removeItem('cloture.airtablePat'); } catch (_) {}
+  init();
+})();
+</script>
+</body>
+</html>

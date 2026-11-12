@@ -1,10 +1,10 @@
 # jobalto-cloture (Cloudflare Worker)
 
-Dashboard de clôture Jobalto (onglets 2025 Clôture / 2026 Postes ouverts), servi par un Worker
+Dashboard Jobalto « 2026 Postes ouverts » (la page 2025 Clôture a été retirée), servi par un Worker
 avec proxy Airtable. Plus aucun token Airtable dans le navigateur.
 
 - URL : https://jobalto-cloture.diego-e9c.workers.dev
-- Accès : Cloudflare Access app « Clôture compta — Jobalto » (login Google, policy *Jobalto Staff* = `@jobalto.be`).
+- Accès : Cloudflare Access app « Clôture compta — Jobalto » (login Google, policy réutilisable *Jobalto Adminsitrators* = diego@ + alex@).
   Le Worker revérifie le JWT Access (`cf-access-jwt-assertion`, aud + iss + exp + signature).
 - API : `GET /api/records?offset=` (liste paginée, champs whitelistés) · `PATCH /api/records`
   (1 record, seulement Statut / Owner / Notes / Lien / Discussions / MAJ).

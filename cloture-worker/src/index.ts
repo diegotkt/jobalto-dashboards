@@ -105,7 +105,7 @@ export default {
     const url = new URL(req.url);
     if (url.pathname === '/api/records') return api(req, env, email);
     if (url.pathname.startsWith('/api/')) return json({ error: 'Not found' }, 404);
-    if (url.pathname === '/') return Response.redirect(new URL('/2026-05-04-cloture-2025.html', url).toString(), 302);
+    if (url.pathname === '/') return Response.redirect(new URL('/postes-ouverts-2026.html', url).toString(), 302);
     return env.ASSETS.fetch(req);
   },
 } satisfies ExportedHandler<Env>;

@@ -88,9 +88,10 @@ async function api(req: Request, env: Env, email: string): Promise<Response> {
     if (bad.length) return json({ error: `Champ non modifiable : ${bad.join(', ')}` }, 400);
     if (Object.values(fields).some(v => v !== null && typeof v !== 'string')) return json({ error: 'Valeurs texte uniquement' }, 400);
     console.log(JSON.stringify({ patch: id, by: email, fields: Object.keys(fields) }));
-    return airtable(env, `${AIRTABLE}?returnFieldsByFieldId=true`, {
+    return airtable(env, AIRTABLE, {
       method: 'PATCH',
-      body: JSON.stringify({ records: [{ id, fields }] }),
+      // en écriture, Airtable lit returnFieldsByFieldId dans le body (ignoré en query)
+      body: JSON.stringify({ records: [{ id, fields }], returnFieldsByFieldId: true }),
     });
   }
   return json({ error: 'Méthode non autorisée' }, 405);

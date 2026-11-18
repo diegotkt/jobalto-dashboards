@@ -101,6 +101,18 @@
     border-radius: 6px; background: white; color: var(--text);
   }
   .toolbar input[type=text] { min-width: 180px; }
+  .dropzone { display: block; margin-top: 10px; padding: 14px; border: 2px dashed var(--border); border-radius: 8px; text-align: center; font-size: 12px; color: var(--text-muted); cursor: pointer; }
+  .dropzone:hover, .dropzone.over { border-color: var(--teal); background: var(--teal-light); color: var(--teal-dark); }
+  .drop-results .dr { font-size: 12px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+  .drop-results .ok { color: #15803d; font-weight: 600; }
+  .drop-results .warn, .drop-results .err { color: #b91c1c; }
+  table.lignes { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.lignes td { padding: 3px 6px; border-bottom: 1px solid var(--border); }
+  table.lignes td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.lg-ok td:first-child { color: #15803d; font-weight: 700; }
+  tr.lg-miss td:first-child { color: #b91c1c; }
+  tr.lg-arch { color: var(--text-muted); text-decoration: line-through; }
+  .badge.has-lines { background: var(--teal-light); color: var(--teal-dark); }
   .ms { position: relative; font-size: 13px; }
   .ms summary { list-style: none; cursor: pointer; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: white; color: var(--text-muted); font-size: 12px; user-select: none; }
   .ms summary::-webkit-details-marker { display: none; }
@@ -339,6 +351,9 @@
     COMPTE_ATTENTE: 'fldy3avqATcMH6fhf'
   };
 
+  // Table « Lignes Virginie 2026 »
+  const L = { LIBELLE: 'fldb089WWgNR6i8Fs', POSTE: 'fldF8ajWOyTfO5fzE', DATE: 'fldsrgQwaZ89UxkcL', MONTANT: 'fldf94jxumvePEpQH', REF: 'fldTu1Uk4HYEF9b1b', STATUT: 'fld08hl1oIpFqlAed' };
+
   const STATUTS = ['A traiter', 'En cours', 'Document trouve', 'Envoye compta', 'Question posee', 'Bloque', 'Clos'];
   const STATUT_LABEL = {
     'A traiter': 'À traiter', 'En cours': 'En cours', 'Document trouve': 'Document trouvé',
@@ -388,6 +403,8 @@
     crossTabActive: false,  // quand true, ignore le filtre onglet (vue cross-tab)
     ownerFilter: loadList('cloture.ownerFilter.' + CYCLE),
     openDd: null,
+    dropResults: {},
+    uploading: 0,
     search: '',
     expanded: new Set(),
     pendingMenu: null,
@@ -461,8 +478,16 @@
       all = all.concat(data.records);
       offset = data.offset || null;
     } while (offset);
+    // Lignes Virginie (table liée), regroupées par poste
+    const ld = await airtableFetch('/api/lines');
+    const byPoste = {};
+    ld.records.forEach(l => (l.fields[L.POSTE] || []).forEach(pid => (byPoste[pid] = byPoste[pid] || []).push({
+      id: l.id, date: l.fields[L.DATE] || '', montant: l.fields[L.MONTANT], ref: l.fields[L.REF] || '',
+      libelle: l.fields[L.LIBELLE] || '', statut: l.fields[L.STATUT] || 'Manquante'
+    })));
+    Object.values(byPoste).forEach(a => a.sort((x, y) => x.date.localeCompare(y.date)));
     // Filter by current cycle
-    return all.map(flatten).filter(r => r.cycle === CYCLE);
+    return all.map(flatten).filter(r => r.cycle === CYCLE).map(r => (r.lignes = byPoste[r.id] || [], r));
   }
 
   async function updateRecord(recordId, fields) {
@@ -656,6 +681,8 @@
     const discCount = r.discussions ? r.discussions.split('\n').filter(l => /^\[/.test(l)).length : 0;
     if (discCount > 0) badges.push(`<span class="badge has-discussion">💬 ${discCount}</span>`);
     if (r.attachments && r.attachments.length > 0) badges.push(`<span class="badge has-attachments">📎 ${r.attachments.length}</span>`);
+    const open = (r.lignes || []).filter(l => l.statut !== 'Archivée');
+    if (open.length) badges.push(`<span class="badge has-lines">🧾 ${open.filter(l => l.statut === 'Reçue').length}/${open.length} reçues</span>`);
     return badges.length > 0 ? `<div class="badges">${badges.join('')}</div>` : '';
   }
 
@@ -731,6 +758,46 @@
     }).join('')}</div>`;
   }
 
+  function lignesHtml(r) {
+    if (!r.lignes || !r.lignes.length) return '';
+    const vis = r.lignes.filter(l => l.statut !== 'Archivée');
+    return `<div class="details-block">
+      <div class="label">🧾 Lignes Virginie (${vis.filter(l => l.statut === 'Reçue').length}/${vis.length} reçues)</div>
+      <table class="lignes">${r.lignes.map(l => `<tr class="lg-${l.statut === 'Reçue' ? 'ok' : l.statut === 'Archivée' ? 'arch' : 'miss'}">
+        <td>${l.statut === 'Reçue' ? '✓' : l.statut === 'Archivée' ? '–' : '✗'}</td><td>${fmtDate(l.date)}</td>
+        <td class="num">${fmtMontant(l.montant)}</td><td>${escape(l.ref || l.libelle)}</td></tr>`).join('')}</table>
+    </div>`;
+  }
+
+  function dropResultHtml(d) {
+    if (d.pending) return `<div class="dr">⏳ ${escape(d.name)} — lecture…</div>`;
+    if (d.error) return `<div class="dr err">✗ ${escape(d.name)} — ${escape(d.error)}</div>`;
+    const x = d.extraction;
+    const lu = `${x.date ? fmtDate(x.date) : 'date ?'} · ${x.montant != null ? fmtMontant(x.montant) : 'montant ?'} · réf. ${escape(x.ref || '?')}`;
+    const match = d.line
+      ? `<span class="ok">✓ ligne du ${fmtDate(d.line.date)} (${fmtMontant(d.line.montant)})${d.line.approx ? ' ≈' : ''}</span>`
+      : `<span class="warn">aucune ligne manquante à ce montant</span>`;
+    return `<div class="dr">${escape(d.name)} — ${lu} — ${match} · ${d.emailed ? 'OkiOki ✓' : `<span class="warn">OkiOki ✗ ${escape(d.emailError || '')}</span>`}</div>`;
+  }
+
+  async function dropFiles(recId, files) {
+    const list = state.dropResults[recId] = state.dropResults[recId] || [];
+    state.uploading++;
+    for (const f of files) {
+      const d = { name: f.name, pending: true }; list.push(d); render();
+      try {
+        const fd = new FormData(); fd.append('file', f); fd.append('recordId', recId);
+        const res = await fetch('/api/pj', { method: 'POST', body: fd, credentials: 'same-origin' });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
+        Object.assign(d, body);
+      } catch (e) { d.error = e && e.message || String(e); }
+      d.pending = false; render();
+    }
+    state.uploading--;
+    await init(true, true); // relit PJ + statuts des lignes
+  }
+
   function detailsHtml(r) {
     const airtableRecordUrl = `https://airtable.com/${BASE_ID}/${TABLE_ID}/${r.id}`;
     return `<div class="details">
@@ -749,7 +816,13 @@
       <div class="details-block">
         <div class="label">📎 Pièces jointes <a href="${airtableRecordUrl}" target="_blank" style="float:right; font-size:11px; font-weight:400; text-decoration:none; color:var(--text-muted);">Ouvrir dans Airtable ↗</a></div>
         ${attachmentsHtml(r)}
+        <label class="dropzone" data-id="${r.id}">
+          <input type="file" accept="application/pdf,image/png,image/jpeg" multiple hidden>
+          Glisse ici les factures (PDF, PNG, JPG) ou clique — montant, date et réf. lus automatiquement, envoi OkiOki + Airtable
+        </label>
+        <div class="drop-results">${(state.dropResults[r.id] || []).map(dropResultHtml).join('')}</div>
       </div>
+      ${lignesHtml(r)}
       <div class="details-block">
         <div class="label">Lien (URL Gmail / Drive / portail)</div>
         <input type="url" class="lien-input" data-id="${r.id}" placeholder="https://…" value="${escape(r.lien)}">
@@ -895,6 +968,15 @@
       render();
     });
 
+    root.querySelectorAll('.dropzone').forEach(z => {
+      const id = z.getAttribute('data-id');
+      const inp = z.querySelector('input');
+      inp.addEventListener('change', () => { if (inp.files.length) dropFiles(id, Array.from(inp.files)); });
+      z.addEventListener('dragover', e => { e.preventDefault(); z.classList.add('over'); });
+      z.addEventListener('dragleave', () => z.classList.remove('over'));
+      z.addEventListener('drop', e => { e.preventDefault(); z.classList.remove('over'); dropFiles(id, Array.from(e.dataTransfer.files)); });
+    });
+
     root.querySelectorAll('details.ms').forEach(d => {
       d.addEventListener('toggle', () => { if (d.open) state.openDd = d.id; else if (state.openDd === d.id) state.openDd = null; });
       d.querySelectorAll('input[type=checkbox]').forEach(cb => cb.addEventListener('change', () => {
@@ -960,13 +1042,13 @@
     document.addEventListener('click', onDocClick, { once: true });
   }
 
-  async function init(silent) {
+  async function init(silent, force) {
     try {
       if (!silent) { state.loading = true; render(); }
       const records = await fetchAll();
       records.sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
       // ponytail: re-check juste avant le render — l'utilisateur a pu commencer à taper pendant le fetch
-      if (silent && isBusy()) return;
+      if (silent && !force && isBusy()) return;
       state.records = records;
       state.loading = false; state.error = null; render();
     } catch (err) {
@@ -978,7 +1060,7 @@
 
   // Auto-refresh : jamais pendant une saisie, un menu ouvert ou onglet caché.
   function isBusy() {
-    if (document.hidden || state.pendingMenu || state.openDd) return true;
+    if (document.hidden || state.pendingMenu || state.openDd || state.uploading) return true;
     const a = document.activeElement;
     if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true;
     return Array.from(document.querySelectorAll('#root textarea')).some(t => t.value !== t.defaultValue);
@@ -991,6 +1073,9 @@
     state.expanded = new Set(); init(); showToast('Rechargement…');
   });
 
+  // Fichier lâché hors de la zone : ne pas ouvrir le PDF à la place du dashboard
+  window.addEventListener('dragover', e => e.preventDefault());
+  window.addEventListener('drop', e => e.preventDefault());
   try { localStorage.removeItem('cloture.airtablePat'); } catch (_) {}
   init();
 })();

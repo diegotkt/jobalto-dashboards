@@ -24,3 +24,16 @@ npm i && npx wrangler deploy
 ```
 
 Les pages vivent dans `public/`. Modifier là, pas dans les copies GitHub Pages à la racine du repo.
+
+## Dépôt de factures (PJ)
+
+Dans le détail d'un poste, la zone « Glisse ici les factures » accepte PDF/PNG/JPG (≤ 5 Mo). `POST /api/pj` :
+1. lit fournisseur, réf., date, montant TTC via Workers AI (`toMarkdown` pour les PDF texte, Llama 4 Scout vision pour les images) ;
+2. cherche une ligne « Manquante » du poste dans la table **Lignes Virginie 2026** (`tblB9pMLjESSBS1hK`) au même montant (sinon ±2 % / 1 € pour les frais de change, marqué ≈) ;
+3. attache le fichier au poste et à la ligne trouvée, passe la ligne en « Reçue » ;
+4. envoie le fichier à OkiOki (`OKIOKI_TO`) depuis `factures@mcpjobalto.com` (Cloudflare Email Sending, nécessite Workers Paid).
+
+Anti-doublon : même nom + même taille déjà en PJ du poste → 409, pas de second envoi.
+Limites : PDF scannés sans texte refusés (déposer une capture PNG).
+
+**Lignes Virginie** : importées depuis la balance du 31/10/26. À chaque nouvelle balance, ajouter les nouvelles lignes, mettre à jour « Vue dans balance du », et passer en « Archivée » les lignes absentes.
